@@ -1,0 +1,26 @@
+{
+  "name": "taurus/workflow",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Taurus\\Workflow\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Jimish Gamit",
+      "email": "unique.jimish@gmail.com"
+    }
+  ],
+  "require": {
+    "illuminate/support": "^11.0",
+    "aws/aws-sdk-php": "^3.342"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Taurus\\Workflow\\Providers\\WorkflowProvider"
+      ]
+    }
+  }
+}
