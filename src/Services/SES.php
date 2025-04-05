@@ -42,12 +42,6 @@ class SES
 
         $bulkEmailEntries = [];
         foreach ($payload as $item) {
-            // TEMP LOGIC FOR NFIP
-            if (strtoupper($item['subscribed']) != 'Y') {
-                \Log::warning(message: "Skipping email to: " . $item['email']);
-                continue;
-            }
-
             \Log::info("Sending email to: " . $item['email']);
 
             $bulkEmailEntries[] = [
@@ -78,7 +72,6 @@ class SES
                         'TemplateData' => '{}',
                     ],
                 ],
-                'ConfigurationSetName' => 'farmers',
                 'BulkEmailEntries' => $bulkEmailEntries
             ];
 

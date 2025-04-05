@@ -60,18 +60,21 @@ class Workflow
             $csvFile = storage_path('app/nfip_07_april.csv');
             $emailTemplate = storage_path('app/nfip_07_april.html');
             $plainEmailTemplate = storage_path('app/nfip_07_april.txt');
+            $subject = 'Welcome to NFIP Direct System';
         }
 
         if ($this->workflowId == 2) {
             $csvFile = storage_path('app/nfip_08_april.csv');
             $emailTemplate = storage_path('app/nfip_08_april.html');
             $plainEmailTemplate = storage_path('app/nfip_08_april.txt');
+            $subject = 'Login to the New NFIP Direct System';
         }
 
         if ($this->workflowId == 3) {
             $csvFile = storage_path('app/nfip_09_april.csv');
             $emailTemplate = storage_path('app/nfip_09_april.html');
             $plainEmailTemplate = storage_path('app/nfip_09_april.txt');
+            $subject = 'The NFIP Direct Flood Experience';
         }
 
         $actionPayload = [
@@ -81,7 +84,7 @@ class Workflow
             'csvFile' => $csvFile,
             'emailTemplate' => $emailTemplate,
             'plainEmailTemplate' => $plainEmailTemplate,
-            'subject' => 'Welcome to NFIP Direct System',
+            'subject' => $subject,
             'payload' => []
         ];
 
