@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         $tablePrefix = config('workflow.table_prefix', 'tbl_taurus');
-        Schema::create("{$tablePrefix}_workflow_actions", function (Blueprint $table) {
+        Schema::create("{$tablePrefix}_workflow_actions", function (Blueprint $table) use ($tablePrefix) {
             $table->id();
             $table->unsignedBigInteger('condition_id');
             $table->json('payload');
@@ -20,7 +20,7 @@ return new class extends Migration
             $table->softDeletes(); // deleted_at
 
             $table->index('condition_id');
-            $table->foreign('condition_id')->references('id')->on('tbl_workflow_conditions')->onDelete('cascade');
+            $table->foreign('condition_id')->references('id')->on("{$tablePrefix}_workflow_conditions")->onDelete('cascade');
         });
     }
 
@@ -29,10 +29,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('tbl_workflow_actions', function ($table) {
-            $table->dropForeign('tbl_workflow_actions_condition_id_foreign');
-            $table->dropIndex('tbl_workflow_actions_condition_id_index');
+        $tablePrefix = config('workflow.table_prefix', 'tbl_taurus');
+        Schema::table("{$tablePrefix}_workflow_actions", function ($table) use ($tablePrefix) {
+            $table->dropForeign("{$tablePrefix}_workflow_actions_condition_id_foreign");
+            $table->dropIndex("{$tablePrefix}_workflow_actions_condition_id_index");
         });
-        Schema::dropIfExists('tbl_workflow_actions');
+        Schema::dropIfExists("{$tablePrefix}_workflow_actions");
     }
 };

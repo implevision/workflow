@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Services;
 
 use Aws\SesV2\SesV2Client;
 use Aws\Exception\AwsException;
+use Taurus\Workflow\Events\JobWorkflowUpdated;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
 class SES
@@ -72,27 +73,27 @@ class SES
                         'TemplateData' => '{}',
                     ],
                 ],
+                'ConfigurationSetName' => 'farmers',
                 'BulkEmailEntries' => $bulkEmailEntries
             ];
 
-            //$response = $sesClient->sendBulkEmail($bulkEmailPayload);
+            $response = $sesClient->sendBulkEmail($bulkEmailPayload);
+            //\Log::info($response);
+
+
             if ($jobWorkflowId) {
                 $jobWorkflowRepo = app(JobWorkflowRepository::class);
-                try {
-                    $jobWorkflowInfo = $jobWorkflowRepo->getInfo($jobWorkflowId);
-                    $countOfProcessedRecord = $jobWorkflowInfo['total_no_of_records_executed'] + count($payload);
-                    $status = $countOfProcessedRecord == $jobWorkflowInfo['total_no_of_records_to_execute'] ? 'COMPLETED' : 'IN_PROGRESS';
-                    $jobWorkflow = [
-                        'total_no_of_records_executed' => $countOfProcessedRecord,
-                        'status' => $status
-                    ];
-                    $jobWorkflowRepo->updateData($jobWorkflowId, $jobWorkflow);
-                } catch (\Exception $e) {
-                    \Log::error($e->getMessage());
-                    return false;
-                }
+
+                $jobWorkflowInfo = $jobWorkflowRepo->getInfo($jobWorkflowId);
+                $countOfProcessedRecord = $jobWorkflowInfo['total_no_of_records_executed'] + count($payload);
+                $status = $countOfProcessedRecord == $jobWorkflowInfo['total_no_of_records_to_execute'] ? 'COMPLETED' : 'IN_PROGRESS';
+                $payload = [
+                    'total_no_of_records_executed' => $countOfProcessedRecord,
+                    'status' => $status
+                ];
+
+                event(new JobWorkflowUpdated($jobWorkflowId, $payload));
             }
-            //\Log::info($response);
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());
         }

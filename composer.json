@@ -13,13 +13,15 @@
     }
   ],
   "require": {
+    "spatie/laravel-data": "^4.14",
     "illuminate/support": "^11.0",
     "aws/aws-sdk-php": "^3.342"
   },
   "extra": {
     "laravel": {
       "providers": [
-        "Taurus\\Workflow\\Providers\\WorkflowProvider"
+        "Taurus\\Workflow\\Providers\\WorkflowProvider",
+        "Taurus\\Workflow\\Providers\\EventServiceProvider"
       ]
     }
   }

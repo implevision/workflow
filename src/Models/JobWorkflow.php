@@ -2,11 +2,13 @@
 
 namespace Taurus\Workflow\Models;
 
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Database\Eloquent\Model;
 
 class JobWorkflow extends Model
 {
-    protected $table = 'tbl_job_workflow_table';
+    use SerializesModels;
+    protected $table = 'tbl_job_workflow';
 
     public const STATUS_CREATED = 'CREATED';
     public const STATUS_IN_PROGRESS = 'IN_PROGRESS';

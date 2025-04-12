@@ -60,7 +60,7 @@ class WorkflowService
                     // Save workflow actions related to the condition
                     if (!empty($instanceActions)) {
                         foreach ($instanceActions as $action) {
-                            $action = $action->toArray();
+                            $action = is_array($action) ? $action : $action->toArray();
                             unset($action['id']);
                             $this->workflowActionRepo->create([
                                 'condition_id' => $conditionEntry->id,
@@ -187,7 +187,7 @@ class WorkflowService
                     // Update or Create Actions
                     if (!empty($instanceActions)) {
                         foreach ($instanceActions as $action) {
-                            $action = $action->toArray();
+                            $action = is_array($action) ? $action : $action->toArray();
                             $actionId = $action['id'] ?? null;
                             unset($action['id']); // unset if exist
 

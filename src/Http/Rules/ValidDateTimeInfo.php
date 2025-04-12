@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Rules;
+namespace Taurus\Workflow\Http\Rules;
 
 use Closure;
 use DateTime;
@@ -17,6 +17,8 @@ class ValidDateTimeInfo implements ValidationRule
     {
         $effectiveAction = request()->input('when.effectiveActionToExecuteWorkflow');
 
+        $isValid = true;
+
         if ($effectiveAction === 'ON_DATE_TIME') {
             $allowedValues = [
                 'executionFrequencyType' => ['DAY', 'MONTH', 'YEAR'],
@@ -26,28 +28,34 @@ class ValidDateTimeInfo implements ValidationRule
             ];
 
             if (!is_int($value['executionFrequency'])) {
-                $fail("Each executionFrequency must be an integer.");
+                $isValid = false;
+                // $fail("Each executionFrequency must be an integer.");
             }
 
             foreach ($allowedValues as $key => $validOptions) {
                 if (!in_array($value[$key], $validOptions, true)) {
-                    $fail("$key must be one of [" . implode(', ', $validOptions) . "].");
+                    $isValid = false;
+                    // $fail("$key must be one of [" . implode(', ', $validOptions) . "].");
                 }
             }
-        }
 
-        if ($effectiveAction === 'ON_RECORD_ACTION') {
             // Validate executionEffectiveDate (must be a real date)
             $date = DateTime::createFromFormat('m/d/Y', $value['executionEffectiveDate']);
             if (!$date || $date->format('m/d/Y') !== $value['executionEffectiveDate']) {
-                $fail("executionEffectiveDate must be a valid date in MM/DD/YYYY format.");
+                $isValid = false;
+                // $fail("executionEffectiveDate must be a valid date in MM/DD/YYYY format.");
             }
 
             // Validate executionEffectiveTime (must be a real time in 24-hour format)
             $time = DateTime::createFromFormat('H:i', $value['executionEffectiveTime']);
             if (!$time || $time->format('H:i') !== $value['executionEffectiveTime']) {
-                $fail("executionEffectiveTime must be a valid time in HH:MM 24-hour format.");
+                $isValid = false;
+                // $fail("executionEffectiveTime must be a valid time in HH:MM 24-hour format.");
             }
+        }
+
+        if (!$isValid) {
+            $fail("There are errors in the date and time information.");
         }
     }
 }

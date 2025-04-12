@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Rules;
+namespace Taurus\Workflow\Http\Rules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;

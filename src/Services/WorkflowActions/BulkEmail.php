@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Services\WorkflowActions;
 
+use Taurus\Workflow\Events\JobWorkflowUpdated;
 use Taurus\Workflow\Jobs\BulkEmailJob;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
@@ -39,14 +40,21 @@ class BulkEmail
             if (($handle = fopen($csvFile, "r")) !== false) {
                 while (!feof($handle)) {
                     $data = fgetcsv($handle);
-                    if (!$data) {
+                    if (!$data || !is_array($data)) {
                         continue;
                     }
+
                     if ($rowCount == 0) {
                         $placeholder = $data;
                         $rowCount++;
                         continue;
                     }
+
+                    if (count($placeholder) != count($data)) {
+                        \Log::error('CSV file has different number of columns in row ' . $rowCount);
+                        continue;
+                    }
+
                     $data = array_combine($placeholder, $data);
 
                     $leftover = ($rowCount - 1) / 50;
@@ -68,16 +76,9 @@ class BulkEmail
 
         //Update count of workflow
         if ($jobWorkflowId) {
-            $jobWorkflowRepo = app(JobWorkflowRepository::class);
-            try {
-                $jobWorkflow = [
-                    'total_no_of_records_to_execute' => $rowCount - 1
-                ];
-                $jobWorkflowRepo->updateData($jobWorkflowId, $jobWorkflow);
-            } catch (\Exception $e) {
-                \Log::error($e->getMessage());
-                return false;
-            }
+            event(new JobWorkflowUpdated($jobWorkflowId, [
+                'total_no_of_records_to_execute' => $rowCount - 1
+            ]));
         }
     }
 }

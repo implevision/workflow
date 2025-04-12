@@ -3,12 +3,12 @@
 namespace Taurus\Workflow\Http\Requests;
 
 use Illuminate\Http\Response;
-use Taurus\Workflow\Rules\ValidDateTimeInfo;
-use Taurus\Workflow\Rules\ValidRecordAction;
-use Taurus\Workflow\Rules\ValidApplyConditionRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Taurus\Workflow\Http\Rules\ValidDateTimeInfo;
+use Taurus\Workflow\Http\Rules\ValidRecordAction;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Taurus\Workflow\Http\Rules\ValidApplyConditionRules;
 
 class WorkflowRequest extends FormRequest
 {
@@ -30,7 +30,7 @@ class WorkflowRequest extends FormRequest
     public function rules()
     {
         return [
-            'id' => 'sometimes|nullable|exists:tbl_workflow,id',
+            'id' => 'sometimes|nullable|exists:tbl_workflows,id',
             'detail.module' => 'required|string',
             'detail.name' => 'required|string',
             'detail.description' => 'nullable|string',
@@ -40,7 +40,7 @@ class WorkflowRequest extends FormRequest
             'workFlowConditions' => 'required|array',
             'workFlowConditions.*.id' => 'sometimes|nullable|exists:tbl_workflow_conditions,id',
             'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN',
-            'workFlowConditions.*.instanceActions' => 'required_unless:workFlowConditions.*.applyRuleTo,ALL|array',
+            'workFlowConditions.*.instanceActions' => 'required|array',
             'workFlowConditions.*.instanceActions.*.id' => 'sometimes|nullable|exists:tbl_workflow_actions,id',
             'workFlowConditions.*.instanceActions.*.actionType' => 'required|string|in:EMAIL',
             'workFlowConditions.*.instanceActions.*.payload' => 'required|array',
