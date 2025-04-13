@@ -21,6 +21,8 @@ return [
 
     'required_actions' => [
         'sns:CreateTopic',
-        'iam:CreateRole'
+        'iam:CreateRole',
+        'scheduler:ListScheduleGroups',
+        'scheduler:CreateScheduleGroup'
     ],
 ];
