@@ -77,6 +77,41 @@ class Workflow
             $subject = 'The NFIP Direct Flood Experience';
         }
 
+        if ($this->workflowId == 4) {
+            $csvFile = storage_path('app/nfip_14_april.csv');
+            $emailTemplate = storage_path('app/nfip_14_april.html');
+            $plainEmailTemplate = storage_path('app/nfip_14_april.txt');
+            $subject = 'NFIP Direct System: Simplifying the Flood Experience';
+        }
+
+        if ($this->workflowId == 5) {
+            $csvFile = storage_path('app/nfip_21_april.csv');
+            $emailTemplate = storage_path('app/nfip_21_april.html');
+            $plainEmailTemplate = storage_path('app/nfip_21_april.txt');
+            $subject = 'Endorsement Transactions and Policy Search';
+        }
+
+        if ($this->workflowId == 6) {
+            $csvFile = storage_path('app/nfip_28_april.csv');
+            $emailTemplate = storage_path('app/nfip_28_april.html');
+            $plainEmailTemplate = storage_path('app/nfip_28_april.txt');
+            $subject = 'The Flood Revolution!';
+        }
+
+        if ($this->workflowId == 7) {
+            $csvFile = storage_path('app/nfip_05_may.csv');
+            $emailTemplate = storage_path('app/nfip_05_may.html');
+            $plainEmailTemplate = storage_path('app/nfip_05_may.txt');
+            $subject = 'Action Required: FIRA Certification Needed for NFIP Direct System';
+        }
+
+        if ($this->workflowId == 8) {
+            $csvFile = storage_path('app/nfip_12_may.csv');
+            $emailTemplate = storage_path('app/nfip_12_may.html');
+            $plainEmailTemplate = storage_path('app/nfip_12_may.txt');
+            $subject = 'Flood Marketing & Training Resources';
+        }
+
         $actionPayload = [
             'workflowId' => $this->workflowId,
             'jobWorkflowId' => $jobWorkflowId,

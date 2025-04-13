@@ -15,13 +15,16 @@ class HandleJobWorkflowUpdate
     {
         $jobWorkflowRepo = app(JobWorkflowRepository::class);
         try {
-            $jobWorkflowInfo = $jobWorkflowRepo->getInfo($event->jobWorkflowId);
-            $countOfProcessedRecord = $jobWorkflowInfo['total_no_of_records_executed'] + count($event->payload);
-            $status = $countOfProcessedRecord == $jobWorkflowInfo['total_no_of_records_to_execute'] ? 'COMPLETED' : $jobWorkflowInfo['status'];
-            $jobWorkflow = [
-                'total_no_of_records_executed' => $countOfProcessedRecord,
-                'status' => $status
-            ];
+            $jobWorkflow = $event->jobWorkflowData;
+            if (array_key_exists('total_no_of_records_executed', $event->jobWorkflowData)) {
+                $jobWorkflowInfo = $jobWorkflowRepo->getInfo($event->jobWorkflowId);
+                $countOfProcessedRecord = $jobWorkflowInfo['total_no_of_records_executed'] + $event->jobWorkflowData['total_no_of_records_executed'];
+                $status = $countOfProcessedRecord == $jobWorkflowInfo['total_no_of_records_to_execute'] ? 'COMPLETED' : $jobWorkflowInfo['status'];
+                $jobWorkflow = [
+                    'total_no_of_records_executed' => $countOfProcessedRecord,
+                    'status' => $status
+                ];
+            }
             $jobWorkflowRepo->updateData($event->jobWorkflowId, $jobWorkflow);
         } catch (\Exception $e) {
             \Log::error($e->getMessage());

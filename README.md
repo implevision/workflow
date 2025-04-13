@@ -1,6 +1,6 @@
 # Prerequisites
 
-- Create a lambda function to execute command
+- Create a lambda function to execute command.
 - Create a ROLE in AWS which has a permission to invoke lambda function
 
 ```json
@@ -28,9 +28,32 @@
     "Statement": [
         {
             "Action": "lambda:InvokeFunction",
-            "Resource": "arn:aws:lambda:us-east-1:358884819536:function:refreshReports",
+            "Resource": "ARM_FOR_LAMBDA FUNCTION",
             "Effect": "Allow"
         }
     ]
 }
+```
+
+- Update `.env`
+
+```
+AWS_PROFILE
+AWS_DEFAULT_REGION
+WORKFLOW_TABLE_PREFIX
+WORKFLOW_TIMEZONE
+WORKFLOW_ROLE_ARN_TO_INVOKE_LAMBDA_BY_EVENT_BRIDGE
+```
+
+- Update `config/workflow.php`
+
+```
+
+```
+
+- Run `php artisan` and make sure the following commands appear
+
+```
+taurus:dispatch-workflow
+taurus:health-check
 ```
