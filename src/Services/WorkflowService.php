@@ -24,6 +24,11 @@ class WorkflowService
         $this->workflowActionRepo = $workflowActionRepo;
     }
 
+    public function getAllWorkflows()
+    {
+        return $this->workflowRepo->all();
+    }
+
     /**
      * Create a new workflow resource.
      *
