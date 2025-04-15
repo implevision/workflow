@@ -40,6 +40,17 @@ class WorkflowService
     {
         DB::beginTransaction();
         try {
+            $workflowNextDateToExecute = null;
+            $workflowExecutionFrequency = 'ONCE';
+            if ($data['when']['effectiveActionToExecuteWorkflow'] == 'ON_DATE_TIME') {
+                if (!empty($data['when']['dateTimeInfoToExecuteWorkflow']['recurringFrequency'])) {
+                    $workflowNextDateToExecute = date('Y-m-d', strtotime('+1 day'));
+                    $workflowExecutionFrequency = 'RECURRING';
+                } else if (!empty($data['when']['dateTimeInfoToExecuteWorkflow']['executionEffectiveDate'])) {
+                    $workflowNextDateToExecute = date('Y-m-d', strtotime($data['when']['dateTimeInfoToExecuteWorkflow']['executionEffectiveDate']));
+                }
+            }
+
             $data = $data->toArray();
             $workflow = $this->workflowRepo->create([
                 'module' => $data['detail']['module'],
@@ -48,7 +59,8 @@ class WorkflowService
                 'effective_action_to_execute_workflow' => $data['when']['effectiveActionToExecuteWorkflow'] ?? null,
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
-                'workflow_execution_frequency' => 'ONCE',
+                'workflow_execution_frequency' => $workflowExecutionFrequency,
+                'workflow_next_date_to_execute' => $workflowNextDateToExecute
             ]);
 
             if (!empty($data['workFlowConditions'])) {
@@ -155,7 +167,7 @@ class WorkflowService
                 'effective_action_to_execute_workflow' => $data['when']['effectiveActionToExecuteWorkflow'] ?? null,
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
-                'workflow_execution_frequency' => 'ONCE',
+                // TODO: UPDATE workflow_execution_frequency & workflow_next_date_to_execute
             ]);
 
             // get existing condition IDs

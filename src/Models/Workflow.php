@@ -18,7 +18,9 @@ class Workflow extends Model
         'effective_action_to_execute_workflow',
         'record_action_to_execute_workflow',
         'date_time_info_to_execute_workflow',
-        'workflow_execution_frequency'
+        'workflow_execution_frequency',
+        'workflow_next_date_to_execute',
+        'is_active'
     ];
 
     protected $casts = [

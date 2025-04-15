@@ -20,8 +20,9 @@ return new class extends Migration
             $table->string('effective_action_to_execute_workflow')->comment('ON_RECORD_ACTION/ ON_DATE_TIME');
             $table->string('record_action_to_execute_workflow')->nullable()->comment('CREATE/ EDIT/ CREATE_OR_EDIT/ FIELD_UPDATE/ DELETE');
             $table->json('date_time_info_to_execute_workflow')->nullable();
-            $table->string('workflow_execution_frequency')->nullable()->comment('ONCE /MONTHLY /YEARLY');
+            $table->string('workflow_execution_frequency')->nullable()->default('ONCE')->comment('ONCE / RECURRING');
             $table->timestamp('workflow_next_date_to_execute')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes(); // deleted_at
         });

@@ -19,7 +19,7 @@ class HealthCheck extends Command
      *
      * @var string
      */
-    protected $description = 'Dispatch workflow';
+    protected $description = 'Health Check';
 
     /**
      * The console command description.

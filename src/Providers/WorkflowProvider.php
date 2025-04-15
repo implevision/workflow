@@ -16,6 +16,8 @@ use Taurus\Workflow\Repositories\Contracts\JobWorkflowRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
 use Taurus\Workflow\Console\Commands\DispatchWorkflow;
 use Taurus\Workflow\Console\Commands\HealthCheck;
+use Taurus\Workflow\Console\Commands\InvokeUpcomingWorkflow;
+
 
 class WorkflowProvider extends ServiceProvider
 {
@@ -46,7 +48,8 @@ class WorkflowProvider extends ServiceProvider
 
         $this->commands([
             DispatchWorkflow::class,
-            HealthCheck::class
+            HealthCheck::class,
+            InvokeUpcomingWorkflow::class
         ]);
 
         $repositories = [
