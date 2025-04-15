@@ -3,6 +3,7 @@
 namespace Taurus\Workflow\Repositories\Eloquent;
 
 use Taurus\Workflow\Models\Workflow;
+use Illuminate\Database\Eloquent\Collection;
 use Taurus\Workflow\Repositories\Contracts\WorkflowRepositoryInterface;
 
 class WorkflowRepository implements WorkflowRepositoryInterface
@@ -12,6 +13,11 @@ class WorkflowRepository implements WorkflowRepositoryInterface
     public function __construct(Workflow $model)
     {
         $this->model = $model;
+    }
+
+    public function all(): ?Collection
+    {
+        return $this->model->all(['id', 'module', 'name', 'description']);
     }
 
     public function create(array $data): Workflow
