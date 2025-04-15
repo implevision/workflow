@@ -50,7 +50,7 @@ class CheckUserCapabilities
 
             $result = $iamClient->simulatePrincipalPolicy([
                 'PolicySourceArn' => $roleArn,
-                'ActionNames' => $requiredActions,
+                'ActionNames' => array_keys($requiredActions),
             ]);
 
             $actionAllowed = [];
