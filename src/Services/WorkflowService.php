@@ -339,4 +339,15 @@ class WorkflowService
             throw new \Exception('Failed to restore workflow: ' . $e->getMessage());
         }
     }
+
+    public function calculateAndUpdateNextExecution(int $workflowId): ?string
+    {
+        $workflow = $this->workflowRepo->getById($workflowId);
+        return $workflow->calculateAndUpdateNextExecution()->toDateTimeString();
+    }
+
+    public function getWorkflowsExecutingToday(): array
+    {
+        return $this->workflowRepo->getScheduledForToday();
+    }
 }

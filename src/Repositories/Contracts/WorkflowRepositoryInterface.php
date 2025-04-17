@@ -13,4 +13,5 @@ interface WorkflowRepositoryInterface
     public function update(int $workflowId, array $data): ?Workflow;
     public function delete(int $workflowId): bool;
     public function restore(int $workflowId): bool;
+    public function getScheduledForToday(): ?array;
 }
