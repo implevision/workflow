@@ -40,6 +40,7 @@ class WorkflowService
     {
         DB::beginTransaction();
         try {
+            $data = $data->toArray();
             $workflowNextDateToExecute = null;
             $workflowExecutionFrequency = 'ONCE';
             if ($data['when']['effectiveActionToExecuteWorkflow'] == 'ON_DATE_TIME') {
@@ -51,7 +52,6 @@ class WorkflowService
                 }
             }
 
-            $data = $data->toArray();
             $workflow = $this->workflowRepo->create([
                 'module' => $data['detail']['module'],
                 'name' => $data['detail']['name'],
@@ -118,6 +118,7 @@ class WorkflowService
             $workflowConditions[] = [
                 'id' => $condition->id,
                 'applyRuleTo' => $applyRuleTo,
+                's3FilePath' => $conditions['s3FilePath'] ?? null,
                 'applyConditionRules' => $conditions['applyConditionRules'] ?? [],
                 'instanceActions' => $condition->actions->map(function ($action) {
                     $payload = $action->payload ?? [];
