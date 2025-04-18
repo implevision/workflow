@@ -54,9 +54,11 @@ class S3
             $s3Client = self::initializeS3Client();
             $extension = pathinfo($fileName, PATHINFO_EXTENSION);
 
+            $filePath = self::getPath() . $fileName;
+
             $cmd = $s3Client->getCommand('PutObject', [
-                'Bucket' => env('workflow.aws_bucket'),
-                'Key'    => self::getPath() . $fileName,
+                'Bucket' => config('workflow.aws_bucket'),
+                'Key'    => $filePath,
                 'ACL'    => 'private',
                 'ContentType' => self::getMIMEType($extension),
             ]);
@@ -75,6 +77,8 @@ class S3
 
         if (!$tenant && function_exists('tenant')) {
             $tenant = tenant('id');
+        } else {
+            $tenant = 'misc';
         }
 
         return $tenant . '/';
