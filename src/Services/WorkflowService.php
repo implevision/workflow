@@ -243,7 +243,7 @@ class WorkflowService
             return $workflow;
         } catch (\Exception $e) {
             DB::rollback();
-            throw new \Exception('Failed to save workflow: ' . $e->getMessage());
+            ExceptionHandler::handle($e);
         }
     }
 

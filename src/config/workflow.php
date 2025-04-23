@@ -36,4 +36,6 @@ return [
         'ses:SendEmail' => "Allows sending single emails.",
         'ses:SendBulkEmail' => "Allows sending bulk emails (via SendBulkEmail API).",
     ],
+
+    'log_channel' => 'workflow',
 ];

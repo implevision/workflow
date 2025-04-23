@@ -17,7 +17,9 @@ use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
 use Taurus\Workflow\Console\Commands\DispatchWorkflow;
 use Taurus\Workflow\Console\Commands\HealthCheck;
 use Taurus\Workflow\Console\Commands\InvokeUpcomingWorkflow;
-
+use Taurus\Workflow\Logging\WorkflowLogger;
+use Illuminate\Support\Arr;
+use Taurus\Workflow\Exceptions\ExceptionHandler;
 
 class WorkflowProvider extends ServiceProvider
 {
@@ -32,7 +34,9 @@ class WorkflowProvider extends ServiceProvider
             __DIR__ . '/../config/workflow.php' => config_path('workflow.php'),
         ]);
 
-
+        class_alias(WorkflowLogger::class, 'WorkflowLogger');
+        class_alias(ExceptionHandler::class, 'ExceptionHandler');
+        
         // PUT this file manually in the database/migrations folder of INFRASTRUCTURE
         /*$this->publishesMigrations([
             __DIR__ . '/../database/migrations' => database_path('migrations'),
@@ -45,6 +49,8 @@ class WorkflowProvider extends ServiceProvider
             __DIR__ . '/../config/workflow.php',
             'workflow'
         );
+
+        $this->mergeLoggingConfig();
 
         $this->commands([
             DispatchWorkflow::class,
@@ -68,6 +74,23 @@ class WorkflowProvider extends ServiceProvider
                     'trace' => $e->getTraceAsString()
                 ]);
             }
+        }
+    }
+
+    /**
+     * Merge our logging channels into Laravel's logging config
+     *
+     * @return void
+     */
+    private function mergeLoggingConfig()
+    {
+        $packageLogging = require __DIR__ . '/../config/logging.php';
+        $packageChannels = Arr::get($packageLogging, 'channels', []);
+
+        if (!empty($packageChannels)) {
+            $currentChannels = config('logging.channels', []);
+            $mergedChannels = array_merge($currentChannels, $packageChannels);
+            config(['logging.channels' => $mergedChannels]);
         }
     }
 }
