@@ -17,7 +17,7 @@ use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
 use Taurus\Workflow\Console\Commands\DispatchWorkflow;
 use Taurus\Workflow\Console\Commands\HealthCheck;
 use Taurus\Workflow\Console\Commands\InvokeUpcomingWorkflow;
-
+use Taurus\Workflow\Console\Commands\SetupAWSPlatform;
 
 class WorkflowProvider extends ServiceProvider
 {
@@ -31,7 +31,6 @@ class WorkflowProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../config/workflow.php' => config_path('workflow.php'),
         ]);
-
 
         // PUT this file manually in the database/migrations folder of INFRASTRUCTURE
         /*$this->publishesMigrations([
@@ -49,7 +48,8 @@ class WorkflowProvider extends ServiceProvider
         $this->commands([
             DispatchWorkflow::class,
             HealthCheck::class,
-            InvokeUpcomingWorkflow::class
+            InvokeUpcomingWorkflow::class,
+            SetupAWSPlatform::class
         ]);
 
         $repositories = [

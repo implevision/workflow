@@ -38,7 +38,7 @@ class BulkEmail
         $placeholder = [];
         if (file_exists($csvFile)) {
             if (($handle = fopen($csvFile, "r")) !== false) {
-                while (!feof($handle)) {
+                while (!feof(stream: $handle)) {
                     $data = fgetcsv($handle);
                     if (!$data || !is_array($data)) {
                         continue;

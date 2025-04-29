@@ -25,6 +25,10 @@ return [
 
     'aws_iam_role_arn_to_invoke_lambda_from_event_bridge' => env('AWS_IAM_ROLE_ARN_TO_INVOKE_LAMBDA_FROM_EVENT_BRIDGE'),
 
+    'is_workflow_live' => false,
+
+    'single_tenant' => env('WORKFLOW_SINGLE_TENANT'),
+
     'required_actions' => [
         'sns:CreateTopic' => "To create a new SNS topic, the user must have permission to create it.",
         'iam:CreateRole' => "To create a new IAM role, the user must have permission to create it.",
