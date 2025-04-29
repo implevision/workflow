@@ -17,6 +17,8 @@ return [
 
     'aws_region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
 
+    'aws_bucket' => env('WORKFLOW_AWS_BUCKET', env('AWS_BUCKET')),
+
     'table_prefix' => env('WORKFLOW_TABLE_PREFIX', 'tb_taurus'),
 
     'timezone' => env('WORKFLOW_TIMEZONE_TO_USE', 'America/New_York'),

@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -25,10 +26,31 @@ class Workflow extends Model
 
     protected $casts = [
         'date_time_info_to_execute_workflow' => 'json',
+        'workflow_next_date_to_execute' => 'datetime',
     ];
 
     public function conditions()
     {
         return $this->hasMany(WorkflowCondition::class, 'workflow_id');
+    }
+
+    public function calculateAndUpdateNextExecution(): Carbon
+    {
+        $lastRun = $this->workflow_next_date_to_execute ?? Carbon::now();
+        $next = $this->getNextExecution($lastRun, $this->workflow_execution_frequency);
+
+        $this->update(['workflow_next_date_to_execute' => $next]);
+
+        return $next;
+    }
+
+    public function getNextExecution(Carbon $lastRun, string $frequency): Carbon
+    {
+        return match (strtoupper(trim($frequency))) {
+            'ONCE'  => $lastRun->addDay(),
+            'MONTH' => $lastRun->addMonth()->startOfMonth(),
+            'YEAR'  => $lastRun->addYear()->startOfYear(),
+            default => throw new \InvalidArgumentException("Unknown schedule type: {$frequency}"),
+        };
     }
 }

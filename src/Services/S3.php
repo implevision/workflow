@@ -8,7 +8,7 @@ use Aws\Exception\AwsException;
 
 class S3
 {
-    public static function getInfo($bucketName, $templateKey)
+    public static function initializeS3Client()
     {
         $awsProfile = config('workflow.aws_profile');
         $awsRegion = config('workflow.aws_region');
@@ -27,9 +27,14 @@ class S3
             'version' => 'latest'
         ];
 
+        return new S3Client($awsConfig);
+    }
+
+    public static function getInfo($bucketName, $templateKey)
+    {
         try {
             // Initialize S3 client
-            $s3Client = new S3Client($awsConfig);
+            $s3Client = self::initializeS3Client();
 
             $result = $s3Client->getObject([
                 'Bucket' => $bucketName,
@@ -41,5 +46,53 @@ class S3
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());
         }
+    }
+
+    public static function getPresignedUploadUrl(string $fileName): string
+    {
+        try {
+            $s3Client = self::initializeS3Client();
+            $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+
+            $filePath = self::getPath() . $fileName;
+
+            $cmd = $s3Client->getCommand('PutObject', [
+                'Bucket' => config('workflow.aws_bucket'),
+                'Key'    => $filePath,
+                'ACL'    => 'private',
+                'ContentType' => self::getMIMEType($extension),
+            ]);
+
+            $request = $s3Client->createPresignedRequest($cmd, '+10 minutes');
+
+            return (string) $request->getUri();
+        } catch (AwsException $e) {
+            throw new \Exception($e->getAwsErrorMessage());
+        }
+    }
+
+    private static function getPath()
+    {
+        $tenant = config('workflow.single_tenant');
+
+        if (!$tenant && function_exists('tenant')) {
+            $tenant = tenant('id');
+        } else {
+            $tenant = 'misc';
+        }
+
+        return $tenant . '/';
+    }
+
+    private static function getMIMEType($extension)
+    {
+        // Common mapping of extensions to MIME types
+        $mimeTypes = [
+            'csv' => 'text/csv',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ];
+
+        return $mimeTypes[strtolower($extension)] ?? 'application/octet-stream';
     }
 }

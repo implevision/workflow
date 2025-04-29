@@ -40,6 +40,7 @@ class WorkflowRequest extends FormRequest
             'workFlowConditions' => 'required|array',
             'workFlowConditions.*.id' => 'sometimes|nullable|exists:tbl_workflow_conditions,id',
             'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN',
+            'workFlowConditions.*.s3FilePath' => 'sometimes|string',
             'workFlowConditions.*.instanceActions' => 'required|array',
             'workFlowConditions.*.instanceActions.*.id' => 'sometimes|nullable|exists:tbl_workflow_actions,id',
             'workFlowConditions.*.instanceActions.*.actionType' => 'required|string|in:EMAIL',
