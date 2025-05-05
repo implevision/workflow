@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $tablePrefix = config('workflow.table_prefix', 'tbl_taurus');
+        $tablePrefix = config('workflow.table_prefix', 'tb_taurus');
         Schema::create("{$tablePrefix}_workflow_conditions", function (Blueprint $table) use ($tablePrefix) {
             $table->id();
             $table->json('conditions')->nullable();
@@ -29,7 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        $tablePrefix = config('workflow.table_prefix', 'tbl_taurus');
+        $tablePrefix = config('workflow.table_prefix', 'tb_taurus');
         Schema::table("{$tablePrefix}_workflow_conditions", function ($table) use ($tablePrefix) {
             $table->dropForeign("{$tablePrefix}_workflow_conditions_workflow_id_foreign");
             $table->dropIndex("{$tablePrefix}_workflow_conditions_workflow_id_index");

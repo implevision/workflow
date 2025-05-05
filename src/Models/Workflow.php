@@ -10,7 +10,9 @@ class Workflow extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'tbl_workflows';
+    protected $tablePrefix = config('workflow.table_prefix', 'tb_taurus');
+
+    protected $table = $tablePrefix . '_workflows';
 
     protected $fillable = [
         'module',

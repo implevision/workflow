@@ -9,7 +9,8 @@ class WorkflowAction extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'tbl_workflow_actions';
+    protected $tablePrefix = config('workflow.table_prefix', 'tb_taurus');
+    protected $table = $tablePrefix . '_workflow_actions';
 
     protected $fillable = [
         'condition_id',
