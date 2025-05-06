@@ -8,9 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class JobWorkflow extends Model
 {
     use SerializesModels;
-    protected $tablePrefix = config('workflow.table_prefix', 'tb_taurus');
-    protected $table = $tablePrefix . '_job_workflow';
-
+    protected $table;
     public const STATUS_CREATED = 'CREATED';
     public const STATUS_IN_PROGRESS = 'IN_PROGRESS';
     public const STATUS_COMPLETED = 'COMPLETED';
@@ -28,6 +26,14 @@ class JobWorkflow extends Model
     protected $casts = [
         'response' => 'array',
     ];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $prefix = config('workflow.table_prefix', 'tb_taurus');
+        $this->table = $prefix . '_job_workflow';
+    }
 
     public function workflow()
     {

@@ -10,9 +10,8 @@ class Workflow extends Model
 {
     use SoftDeletes;
 
-    protected $tablePrefix = config('workflow.table_prefix', 'tb_taurus');
 
-    protected $table = $tablePrefix . '_workflows';
+    protected $table;
 
     protected $fillable = [
         'module',
@@ -30,6 +29,14 @@ class Workflow extends Model
         'date_time_info_to_execute_workflow' => 'json',
         'workflow_next_date_to_execute' => 'datetime',
     ];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $prefix = config('workflow.table_prefix', 'tb_taurus');
+        $this->table = $prefix . '_workflows';
+    }
 
     public function conditions()
     {

@@ -29,8 +29,9 @@ class WorkflowRequest extends FormRequest
      */
     public function rules()
     {
+        $workflowTable = config('workflow.table_prefix', 'tb_taurus') . '_workflows';
         return [
-            'id' => 'sometimes|nullable|exists:tbl_workflows,id',
+            'id' => 'sometimes|nullable|exists:' . $workflowTable . ',id',
             'detail.module' => 'required|string',
             'detail.name' => 'required|string',
             'detail.description' => 'nullable|string',

@@ -8,9 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class WorkflowAction extends Model
 {
     use SoftDeletes;
-
-    protected $tablePrefix = config('workflow.table_prefix', 'tb_taurus');
-    protected $table = $tablePrefix . '_workflow_actions';
+    protected $table;
 
     protected $fillable = [
         'condition_id',
@@ -20,6 +18,14 @@ class WorkflowAction extends Model
     protected $casts = [
         'payload' => 'json',
     ];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $prefix = config('workflow.table_prefix', 'tb_taurus');
+        $this->table = $prefix . '_workflow_actions';
+    }
 
     public function condition()
     {
