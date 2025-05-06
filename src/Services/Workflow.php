@@ -139,6 +139,13 @@ class Workflow
                 $subject = 'Flood Marketing & Training Resources';
             }
 
+            if ($this->workflowId == 9) {
+                $csvFile = storage_path('app/nfip_01_may.csv');
+                $emailTemplate = storage_path('app/nfip_01_may.html');
+                $plainEmailTemplate = storage_path('app/nfip_01_may.txt');
+                $subject = 'Sign Up for New NFIP Direct System Trainings';
+            }
+
             $actionPayload = [
                 'workflowId' => $this->workflowId,
                 'jobWorkflowId' => $jobWorkflowId,
