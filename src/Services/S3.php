@@ -22,13 +22,11 @@ class S3
         }
 
         $awsConfig = [
-            //...($awsProfile ? ['profile' => $awsProfile] : []),
+            ...($awsProfile ? ['profile' => $awsProfile] : []),
             'credentials' => false,
             'region' => $awsRegion,
             'version' => 'latest'
         ];
-
-        print_r($awsConfig);
 
         return new S3Client($awsConfig);
     }
