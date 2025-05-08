@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'aws_profile' => env('AWS_PROFILE', 'default'),
+    'aws_profile' => env('AWS_PROFILE'),
 
     'aws_region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
 
