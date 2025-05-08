@@ -23,6 +23,7 @@ class S3
 
         $awsConfig = [
             ...($awsProfile ? ['profile' => $awsProfile] : []),
+            'credentials' => false,
             'region' => $awsRegion,
             'version' => 'latest'
         ];
