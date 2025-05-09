@@ -15,9 +15,9 @@ class CheckUserCapabilities
         $awsRegion = config('workflow.aws_region');
         $requiredActions = config('workflow.required_actions');
 
-        if (!$awsProfile) {
-            throw new \Exception('AWS Profile not found in config/workflow.php');
-        }
+        // if (!$awsProfile) {
+        //     throw new \Exception('AWS Profile not found in config/workflow.php');
+        // }
 
         if (!$awsRegion) {
             throw new \Exception('AWS Region not found in config/workflow.php');
@@ -40,7 +40,7 @@ class CheckUserCapabilities
         }
 
         $awsConfig = [
-            'profile' => $awsProfile,
+            ...($awsProfile ? ['profile' => $awsProfile] : []),
             'region' => $awsRegion,
             'version' => 'latest'
         ];

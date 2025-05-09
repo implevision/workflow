@@ -14,16 +14,16 @@ class EventBridgeScheduler
         $awsProfile = config('workflow.aws_profile');
         $awsRegion = config('workflow.aws_region');
 
-        if (!$awsProfile) {
-            throw new \Exception('AWS Profile not found in config/workflow.php');
-        }
+        // if (!$awsProfile) {
+        //     throw new \Exception('AWS Profile not found in config/workflow.php');
+        // }
 
         if (!$awsRegion) {
             throw new \Exception('AWS Region not found in config/workflow.php');
         }
 
         return [
-            'profile' => $awsProfile,
+            ...($awsProfile ? ['profile' => $awsProfile] : []),
             'region' => $awsRegion,
             'version' => 'latest'
         ];
