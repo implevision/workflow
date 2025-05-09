@@ -40,7 +40,7 @@ class WorkflowRequest extends FormRequest
             'when.dateTimeInfoToExecuteWorkflow' => ['nullable', new ValidDateTimeInfo()],
             'workFlowConditions' => 'required|array',
             'workFlowConditions.*.id' => 'sometimes|nullable|exists:tbl_workflow_conditions,id',
-            'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN',
+            'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN,CUSTOM_FEED',
             'workFlowConditions.*.s3FilePath' => 'sometimes|string',
             'workFlowConditions.*.instanceActions' => 'required|array',
             'workFlowConditions.*.instanceActions.*.id' => 'sometimes|nullable|exists:tbl_workflow_actions,id',
