@@ -29,13 +29,13 @@ class ValidDateTimeInfo implements ValidationRule
 
             if (!is_int($value['executionFrequency'] * 1)) {
                 $isValid = false;
-                // $fail("Each executionFrequency must be an integer.");
+                $fail("Each executionFrequency must be an integer.");
             }
 
             foreach ($allowedValues as $key => $validOptions) {
                 if (!in_array($value[$key], $validOptions, true)) {
                     $isValid = false;
-                    // $fail("$key must be one of [" . implode(', ', $validOptions) . "].");
+                    $fail("$key must be one of [" . implode(', ', $validOptions) . "].");
                 }
             }
 
@@ -43,14 +43,14 @@ class ValidDateTimeInfo implements ValidationRule
             $date = DateTime::createFromFormat('m/d/Y', $value['executionEffectiveDate']);
             if (!$date || $date->format('m/d/Y') !== $value['executionEffectiveDate']) {
                 $isValid = false;
-                // $fail("executionEffectiveDate must be a valid date in MM/DD/YYYY format.");
+                $fail("executionEffectiveDate must be a valid date in MM/DD/YYYY format.");
             }
 
             // Validate executionEffectiveTime (must be a real time in 24-hour format)
             $time = DateTime::createFromFormat('H:i', $value['executionEffectiveTime']);
             if (!$time || $time->format('H:i') !== $value['executionEffectiveTime']) {
                 $isValid = false;
-                // $fail("executionEffectiveTime must be a valid time in HH:MM 24-hour format.");
+                $fail("executionEffectiveTime must be a valid time in HH:MM 24-hour format.");
             }
         }
 
