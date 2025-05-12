@@ -81,7 +81,7 @@ class S3
             $tenant = 'misc';
         }
 
-        return $tenant . '/';
+        return $tenant . '/workflow/';
     }
 
     private static function getMIMEType($extension)
