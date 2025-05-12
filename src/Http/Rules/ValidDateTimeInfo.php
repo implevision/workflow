@@ -27,7 +27,7 @@ class ValidDateTimeInfo implements ValidationRule
                 'recurringFrequency' => ['ONCE', 'MONTH', 'YEAR'],
             ];
 
-            if (!is_int($value['executionFrequency'])) {
+            if (!is_int($value['executionFrequency'] * 1)) {
                 $isValid = false;
                 // $fail("Each executionFrequency must be an integer.");
             }
