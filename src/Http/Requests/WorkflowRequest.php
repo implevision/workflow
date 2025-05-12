@@ -29,7 +29,10 @@ class WorkflowRequest extends FormRequest
      */
     public function rules()
     {
-        $workflowTable = config('workflow.table_prefix', 'tb_taurus') . '_workflows';
+        $tablePrefix = config('workflow.table_prefix', 'tb_taurus');
+        $workflowTable = $tablePrefix . '_workflows';
+        $workflowActionTable = $tablePrefix . '_workflow_actions';
+        $workflowConditionTable =  $tablePrefix . '_workflow_conditions';
         return [
             'id' => 'sometimes|nullable|exists:' . $workflowTable . ',id',
             'detail.module' => 'required|string',
@@ -39,11 +42,11 @@ class WorkflowRequest extends FormRequest
             'when.recordActionToExecuteWorkflow' => ['nullable', new ValidRecordAction()],
             'when.dateTimeInfoToExecuteWorkflow' => ['nullable', new ValidDateTimeInfo()],
             'workFlowConditions' => 'required|array',
-            'workFlowConditions.*.id' => 'sometimes|nullable|exists:tbl_workflow_conditions,id',
+            'workFlowConditions.*.id' => 'sometimes|nullable|exists:' . $workflowConditionTable . ',id',
             'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN,CUSTOM_FEED',
-            'workFlowConditions.*.s3FilePath' => 'sometimes|string',
+            'workFlowConditions.*.s3FilePath' => 'exclude_unless:applyRuleTo,CUSTOM_FEED|sometimes|string',
             'workFlowConditions.*.instanceActions' => 'required|array',
-            'workFlowConditions.*.instanceActions.*.id' => 'sometimes|nullable|exists:tbl_workflow_actions,id',
+            'workFlowConditions.*.instanceActions.*.id' => 'sometimes|nullable|exists:' . $workflowActionTable . ',id',
             'workFlowConditions.*.instanceActions.*.actionType' => 'required|string|in:EMAIL',
             'workFlowConditions.*.instanceActions.*.payload' => 'required|array',
             'workFlowConditions.*.applyConditionRules' => [
