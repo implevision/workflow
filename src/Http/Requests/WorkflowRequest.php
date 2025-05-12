@@ -50,7 +50,7 @@ class WorkflowRequest extends FormRequest
             'workFlowConditions.*.instanceActions.*.actionType' => 'required|string|in:EMAIL',
             'workFlowConditions.*.instanceActions.*.payload' => 'required|array',
             'workFlowConditions.*.applyConditionRules' => [
-                'required_if:workFlowConditions.*.applyRuleTo,!=,ALL',
+                'required_if:workFlowConditions.*.applyRuleTo,CERTAIN',
                 'array',
                 new ValidApplyConditionRules(),
             ]
