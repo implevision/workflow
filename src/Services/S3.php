@@ -5,6 +5,8 @@ namespace Taurus\Workflow\Services;
 
 use Aws\S3\S3Client;
 use Aws\Exception\AwsException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class S3
 {
@@ -69,6 +71,36 @@ class S3
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());
         }
+    }
+    public static function generateTemporaryFileUrl(string $filePath, int $expiresInMinutes = 5): string
+    {
+        if (empty($filePath)) {
+            return '';
+        }
+
+        $disk = config('workflow.aws_bucket');
+
+        if(empty($disk)) {
+            throw new \Exception('AWS Bucket not found in config/workflow.php');
+        }
+
+        try {
+            $storage = Storage::disk($disk);
+
+            if ($storage->exists($filePath)) {
+                return $storage->temporaryUrl($filePath, Carbon::now()->addMinutes($expiresInMinutes));
+            }
+        } catch (\Throwable $e) {
+            $msg = 'Failed to generate temporary URL: ' . $e->getMessage();
+            Log::error($msg, [
+                'filePath' => $filePath,
+                'disk' => $disk,
+                'exception' => $e->getMessage(),
+            ]);
+            throw new \Exception($msg);
+        }
+
+        return '';
     }
 
     private static function getPath()
