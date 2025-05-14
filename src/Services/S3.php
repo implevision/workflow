@@ -72,14 +72,16 @@ class S3
             throw new \Exception($e->getAwsErrorMessage());
         }
     }
-    public static function generateTemporaryFileUrl(string $filePath, int $expiresInMinutes = 5, string $disk = 's3'): string
+    public static function generateTemporaryFileUrl(string $filePath, int $expiresInMinutes = 5): string
     {
         if (empty($filePath)) {
             return '';
         }
 
-        if (! $disk) {
-            $disk = config('workflow.aws_bucket');
+        $disk = config('workflow.aws_bucket');
+
+        if(empty($disk)) {
+            throw new \Exception('AWS Bucket not found in config/workflow.php');
         }
 
         try {
@@ -89,11 +91,13 @@ class S3
                 return $storage->temporaryUrl($filePath, Carbon::now()->addMinutes($expiresInMinutes));
             }
         } catch (\Throwable $e) {
-            Log::error('Failed to generate temporary URL: ' . $e->getMessage(), [
+            $msg = 'Failed to generate temporary URL: ' . $e->getMessage();
+            Log::error($msg, [
                 'filePath' => $filePath,
                 'disk' => $disk,
                 'exception' => $e->getMessage(),
             ]);
+            throw new \Exception($msg);
         }
 
         return '';
