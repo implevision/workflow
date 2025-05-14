@@ -5,8 +5,6 @@ namespace Taurus\Workflow\Services;
 
 use Aws\S3\S3Client;
 use Aws\Exception\AwsException;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class S3
 {
@@ -72,7 +70,8 @@ class S3
             throw new \Exception($e->getAwsErrorMessage());
         }
     }
-    public static function generateTemporaryFileUrl(string $filePath, int $expiresInSeconds = 300): string
+
+    public static function generateTemporaryFileUrl(string $filePath, int $expiresInMinutes = 5): string
     {
         if (empty($filePath)) {
             return '';
@@ -92,7 +91,7 @@ class S3
                 'Key' => $filePath,
             ]);
 
-            $request = $s3Client->createPresignedRequest($cmd, '+' . $expiresInSeconds . ' seconds');
+            $request = $s3Client->createPresignedRequest($cmd, "+{$expiresInMinutes} minutes");
 
             return (string) $request->getUri();
         } catch (\AwsException $e) {
