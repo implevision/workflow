@@ -72,35 +72,32 @@ class S3
             throw new \Exception($e->getAwsErrorMessage());
         }
     }
-    public static function generateTemporaryFileUrl(string $filePath, int $expiresInMinutes = 5): string
+    public static function generateTemporaryFileUrl(string $filePath, int $expiresInSeconds = 300): string
     {
         if (empty($filePath)) {
             return '';
         }
 
-        $disk = config('workflow.aws_bucket');
+        $s3Client = self::initializeS3Client();
 
-        if(empty($disk)) {
+        $bucket = config('workflow.aws_bucket');
+
+        if (empty($bucket)) {
             throw new \Exception('AWS Bucket not found in config/workflow.php');
         }
 
         try {
-            $storage = Storage::disk($disk);
-
-            if ($storage->exists($filePath)) {
-                return $storage->temporaryUrl($filePath, Carbon::now()->addMinutes($expiresInMinutes));
-            }
-        } catch (\Throwable $e) {
-            $msg = 'Failed to generate temporary URL: ' . $e->getMessage();
-            Log::error($msg, [
-                'filePath' => $filePath,
-                'disk' => $disk,
-                'exception' => $e->getMessage(),
+            $cmd = $s3Client->getCommand('GetObject', [
+                'Bucket' => $bucket,
+                'Key' => $filePath,
             ]);
-            throw new \Exception($msg);
-        }
 
-        return '';
+            $request = $s3Client->createPresignedRequest($cmd, '+' . $expiresInSeconds . ' seconds');
+
+            return (string) $request->getUri();
+        } catch (\AwsException $e) {
+            throw new \Exception($e->getAwsErrorMessage());
+        }
     }
 
     private static function getPath()
