@@ -48,7 +48,7 @@ class S3
         }
     }
 
-    public static function getPresignedUploadUrl(string $fileName): string
+    public static function getPresignedUploadUrl(string $fileName, string $bucketName): string
     {
         try {
             $s3Client = self::initializeS3Client();
@@ -57,7 +57,7 @@ class S3
             $filePath = self::getPath() . $fileName;
 
             $cmd = $s3Client->getCommand('PutObject', [
-                'Bucket' => config('workflow.aws_bucket'),
+                'Bucket' => $bucketName,
                 'Key'    => $filePath,
                 'ACL'    => 'private',
                 'ContentType' => self::getMIMEType($extension),
@@ -71,23 +71,13 @@ class S3
         }
     }
 
-    public static function generateTemporaryFileUrl(string $filePath, int $expiresInMinutes = 5): string
+    public static function generateTemporaryFileUrl(string $filePath, string $bucketName, int $expiresInMinutes = 5): string
     {
-        if (empty($filePath)) {
-            return '';
-        }
-
         $s3Client = self::initializeS3Client();
-
-        $bucket = config('workflow.aws_bucket');
-
-        if (empty($bucket)) {
-            throw new \Exception('AWS Bucket not found in config/workflow.php');
-        }
 
         try {
             $cmd = $s3Client->getCommand('GetObject', [
-                'Bucket' => $bucket,
+                'Bucket' => $bucketName,
                 'Key' => $filePath,
             ]);
 
