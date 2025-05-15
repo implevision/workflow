@@ -5,8 +5,6 @@ namespace Taurus\Workflow\Services;
 
 use Aws\S3\S3Client;
 use Aws\Exception\AwsException;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class S3
 {
@@ -50,7 +48,7 @@ class S3
         }
     }
 
-    public static function getPresignedUploadUrl(string $fileName): string
+    public static function getPresignedUploadUrl(string $fileName, string $bucketName): string
     {
         try {
             $s3Client = self::initializeS3Client();
@@ -59,7 +57,7 @@ class S3
             $filePath = self::getPath() . $fileName;
 
             $cmd = $s3Client->getCommand('PutObject', [
-                'Bucket' => config('workflow.aws_bucket'),
+                'Bucket' => $bucketName,
                 'Key'    => $filePath,
                 'ACL'    => 'private',
                 'ContentType' => self::getMIMEType($extension),
@@ -72,35 +70,23 @@ class S3
             throw new \Exception($e->getAwsErrorMessage());
         }
     }
-    public static function generateTemporaryFileUrl(string $filePath, int $expiresInMinutes = 5): string
+
+    public static function generateTemporaryFileUrl(string $filePath, string $bucketName, int $expiresInMinutes = 5): string
     {
-        if (empty($filePath)) {
-            return '';
-        }
-
-        $disk = config('workflow.aws_bucket');
-
-        if(empty($disk)) {
-            throw new \Exception('AWS Bucket not found in config/workflow.php');
-        }
+        $s3Client = self::initializeS3Client();
 
         try {
-            $storage = Storage::disk($disk);
-
-            if ($storage->exists($filePath)) {
-                return $storage->temporaryUrl($filePath, Carbon::now()->addMinutes($expiresInMinutes));
-            }
-        } catch (\Throwable $e) {
-            $msg = 'Failed to generate temporary URL: ' . $e->getMessage();
-            Log::error($msg, [
-                'filePath' => $filePath,
-                'disk' => $disk,
-                'exception' => $e->getMessage(),
+            $cmd = $s3Client->getCommand('GetObject', [
+                'Bucket' => $bucketName,
+                'Key' => $filePath,
             ]);
-            throw new \Exception($msg);
-        }
 
-        return '';
+            $request = $s3Client->createPresignedRequest($cmd, "+{$expiresInMinutes} minutes");
+
+            return (string) $request->getUri();
+        } catch (\AwsException $e) {
+            throw new \Exception($e->getAwsErrorMessage());
+        }
     }
 
     private static function getPath()
