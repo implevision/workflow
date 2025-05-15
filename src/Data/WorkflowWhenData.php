@@ -8,7 +8,7 @@ class WorkflowWhenData extends Data
 {
     public function __construct(
         public string $effectiveActionToExecuteWorkflow,
-        public string $recordActionToExecuteWorkflow,
+        public ?string $recordActionToExecuteWorkflow,
         public WorkflowDateTimeInfoData $dateTimeInfoToExecuteWorkflow
     ) {}
 
