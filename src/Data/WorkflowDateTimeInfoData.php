@@ -7,6 +7,7 @@ use Spatie\LaravelData\Data;
 class WorkflowDateTimeInfoData extends Data
 {
     public function __construct(
+        public bool $certainDateTime,
         public ?string $executionFrequency,
         public ?string $executionFrequencyType,
         public ?string $executionEventIncident,
@@ -19,6 +20,7 @@ class WorkflowDateTimeInfoData extends Data
     public static function fromArray(array $data): self
     {
         return new self(
+            certainDateTime: $data['certainDateTime'] ?? false,
             executionFrequency: $data['executionFrequency'] ?? null,
             executionFrequencyType: $data['executionFrequencyType'] ?? null,
             executionEventIncident: $data['executionEventIncident'] ?? null,

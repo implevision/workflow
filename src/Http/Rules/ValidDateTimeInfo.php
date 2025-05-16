@@ -17,7 +17,7 @@ class ValidDateTimeInfo implements ValidationRule
     {
         $effectiveAction = request()->input('when.effectiveActionToExecuteWorkflow');
 
-        $certainDateTime = request()->input('when.certainDateTime') ?? false;
+        $certainDateTime = request()->input('when.dateTimeInfoToExecuteWorkflow.certainDateTime') ?? false;
 
         $isValid = true;
 
