@@ -44,7 +44,7 @@ class WorkflowRequest extends FormRequest
             'workFlowConditions' => 'required|array',
             'workFlowConditions.*.id' => 'sometimes|nullable|exists:' . $workflowConditionTable . ',id',
             'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN,CUSTOM_FEED',
-            'workFlowConditions.*.s3FilePath' => 'exclude_unless:applyRuleTo,CUSTOM_FEED|sometimes|string',
+            'workFlowConditions.*.s3FilePath' => 'exclude_unless:workFlowConditions.*.applyRuleTo,CUSTOM_FEED|sometimes|string',
             'workFlowConditions.*.instanceActions' => 'required|array',
             'workFlowConditions.*.instanceActions.*.id' => 'sometimes|nullable|exists:' . $workflowActionTable . ',id',
             'workFlowConditions.*.instanceActions.*.actionType' => 'required|string|in:EMAIL',
