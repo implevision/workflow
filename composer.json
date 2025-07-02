@@ -1,0 +1,31 @@
+{
+  "name": "taurus/workflow",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Taurus\\Workflow\\": "src/"
+    },
+    "files": [
+      "src/Foundation/Helpers.php"
+    ]
+  },
+  "authors": [
+    {
+      "name": "Jimish Gamit",
+      "email": "unique.jimish@gmail.com"
+    }
+  ],
+  "require": {
+    "spatie/laravel-data": "^4.14",
+    "illuminate/support": "^11.0",
+    "aws/aws-sdk-php": "^3.342"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Taurus\\Workflow\\Providers\\WorkflowProvider",
+        "Taurus\\Workflow\\Providers\\EventServiceProvider"
+      ]
+    }
+  }
+}
