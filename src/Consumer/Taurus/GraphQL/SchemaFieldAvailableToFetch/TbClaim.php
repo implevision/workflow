@@ -97,7 +97,7 @@ class TbClaim
             'secondaryEmail' => null
           ]
         ],
-        'jqFilter' => '.claim.claimCommunication.primaryEmail',
+        'jqFilter' => '.claim.claimCommunication',
         'parseResultCallback' => 'parseClaimCommunication'
       ],
     ];
@@ -128,7 +128,7 @@ class TbClaim
 
     $fieldMapping['insuredMailingAddress'] = [
       'GraphQLschemaToReplace' => $fieldMapping['insuredPropertyAddress']['GraphQLschemaToReplace'],
-      'jqFilter' => '.claim.insuredPerson.TbPersonaddress[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Mailing")',
+      'jqFilter' => '.claim.insuredPerson.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
       'parseResultCallback' => 'parseMailingAddress'
     ];
 
@@ -154,7 +154,7 @@ class TbClaim
           ]
         ]
       ],
-      'jqFilter' => '.claim.adjustingFirm.personInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+      'jqFilter' => '.claim.adjustingFirm[].personInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
       'parseResultCallback' => 'parseAdjustingFirmAddress'
     ];
 
@@ -169,7 +169,7 @@ class TbClaim
           ]
         ]
       ],
-      'jqFilter' => '.claim.adjustingFirm.personInfo.emailInfo[] | select(isDefault == "Y")',
+      'jqFilter' => '[.claim.adjustingFirm[].personInfo.emailInfo[] | select(.isDefault == "Y")]',
       'parseResultCallback' => 'parseAdjustingFirmEmail'
     ];
 
@@ -184,10 +184,70 @@ class TbClaim
           ]
         ]
       ],
-      'jqFilter' => '.claim.adjustingFirm.personInfo.phoneInfo[] | select(isDefault == "Y")',
+      'jqFilter' => '[.claim.adjustingFirm[].personInfo.phoneInfo[] | select(.isDefault == "Y")]',
       'parseResultCallback' => 'parseAdjustingFirmPhone'
     ];
 
     return $fieldMapping;
+  }
+
+
+  private function parseAddress($addressArr)
+  {
+    if (empty($addressArr)) {
+      return null;
+    }
+
+    $address = [
+      'addressLine1' => ($addressArr['houseNo'] ?? "") . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? "")),
+      'city' => $addressArr['city'] ?? null,
+      'state' => $addressArr['state'] ?? null,
+      'postalCode' => $addressArr['postalCode'] ?? null,
+    ];
+
+    $address = array_filter(array_map('trim', $address), function ($item) {
+      return !empty($item);
+    });
+
+    return implode(', ', $address);
+  }
+
+  public function parseAdjustingFirmAddress($addressArr)
+  {
+    return $this->parseAddress($addressArr);
+  }
+
+  public function parseMailingAddress($addressArr)
+  {
+    return $this->parseAddress($addressArr);
+  }
+
+  public function parsePropertyAddress($addressArr)
+  {
+    return $this->parseAddress($addressArr);
+  }
+
+  public function parseAdjustingFirmEmail($emailArr)
+  {
+    return $emailArr[0]['email'] ?? null;
+  }
+
+  public function parseAdjustingFirmPhone($phoneArr)
+  {
+    return $phoneArr[0]['phoneNumber'] ?? null;
+  }
+
+  public function parseClaimCommunication($claimCommunication)
+  {
+    if (empty($claimCommunication)) {
+      return null;
+    }
+
+    $email = $claimCommunication['primaryEmail'] ?? null;
+    if (empty($email)) {
+      $email = $claimCommunication['secondaryEmail'] ?? null;
+    }
+
+    return $email;
   }
 }

@@ -118,7 +118,11 @@ class WorkflowService
      */
     public function getWorkflowDetailsById(int $workflowId, bool $withDeleted = false): WorkflowData
     {
-        $workflow = $this->workflowRepo->getById($workflowId, $withDeleted);
+        try {
+            $workflow = $this->workflowRepo->getById($workflowId, $withDeleted);
+        } catch (\Exception $e) {
+            throw new \Exception('No data found for the provided workflow ID: ' . $workflowId);
+        }
 
         $workflowConditions = [];
 

@@ -163,13 +163,15 @@ class GraphQLSchemaBuilderService
         }
 
         // Use jq to filter the JSON data
-        $command = 'echo ' . escapeshellarg($json) . ' | jq ' . escapeshellarg($jqFilter);
-        $result = shell_exec($command);
+        $command = 'echo ' . escapeshellarg($json) . ' | jq -r ' . escapeshellarg($jqFilter);
+        exec($command . " 2>&1", $result, $returnCode);
 
-        if ($result !== null) {
-            return trim($result); // Remove leading/trailing whitespace
+        if ($returnCode !== 0) {
+            //echo "Command failed with return code: " . $returnCode;
+            //echo "Error output: " . implode("\n", $result);
+            return false;
         } else {
-            throw new \Exception("Error executing jq command.");
+            return implode("\n", $result);
         }
     }
 }

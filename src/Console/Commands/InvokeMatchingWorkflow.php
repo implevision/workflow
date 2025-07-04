@@ -53,7 +53,8 @@ class InvokeMatchingWorkflow extends Command
         foreach ($matchedWorkflow as $workflowId) {
             try {
                 Artisan::call('taurus:dispatch-workflow', [
-                    '--workflowId' => $workflowId
+                    '--workflowId' => $workflowId,
+                    '--recordIdentifier' => $entity,
                 ]);
             } catch (\Exception $e) {
                 //TODO: WORKFLOW - Notify for errors

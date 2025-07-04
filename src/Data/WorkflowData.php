@@ -9,7 +9,7 @@ class WorkflowData extends Data
 {
     public function __construct(
         public ?int $id,
-        public string $awsEventBridgeArn,
+        public ?string $awsEventBridgeArn,
         public WorkflowDetailData $detail,
         public WorkflowWhenData $when,
         /** @var WorkflowConditionData[] */

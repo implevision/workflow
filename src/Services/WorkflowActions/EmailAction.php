@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Services\WorkflowActions;
 use Taurus\Workflow\Services\WorkflowEmailService;
 use Taurus\Workflow\Services\WorkflowActions\PrepareBulkEmailData;
 
+
 class EmailAction extends AbstractWorkflowAction
 {
 
@@ -15,13 +16,24 @@ class EmailAction extends AbstractWorkflowAction
         $payload = $this->getPayload();
 
         try {
-            /*$emailInformation = [];
+            $emailInformation = [];
             $emailInformation['html'] = "<h1>test</h1>";
             $emailInformation['subject'] = "hello";
-            $emailInformation['placeHolder'] = ['insuredName', 'PolicyNumber', 'insuredMailingAddress'];
+            $emailInformation['placeHolder'] = [
+                'insuredName',
+                'PolicyNumber',
+                'insuredMailingAddress',
+                'claimId',
+                'policyId',
+                'insuredEmail',
+                'insuredPropertyAddress',
+                'adjustingFirmAddress',
+                'adjustingFirmEmail',
+                'adjustingFirmPhone'
+            ];
             $emailInformation['mandatoryFields'] = ['insuredName', 'PolicyNumber', 'insuredMailingAddress'];
 
-            $this->emailInformation = $emailInformation;*/
+            $this->emailInformation = $emailInformation;
             //$this->emailInformation = WorkflowEmailService::getEmailInformation($payload['id']);
         } catch (\Exception $e) {
             \Log::error('Error fetching email information: ' . $e->getMessage());

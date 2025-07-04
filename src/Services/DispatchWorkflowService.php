@@ -34,7 +34,12 @@ class DispatchWorkflowService
 
     public function getInfo()
     {
-        $workflowInfo = $this->workflowService->getWorkflowDetailsById($this->workflowId);
+        try {
+            $workflowInfo = $this->workflowService->getWorkflowDetailsById($this->workflowId);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching workflow details: ' . $e->getMessage());
+            return false;
+        }
 
         if (!$workflowInfo) {
             return false;
@@ -54,8 +59,8 @@ class DispatchWorkflowService
 
     public function dispatch()
     {
-        if (!$this->workflowId) {
-            return false; // Return a non-zero status code to indicate failure
+        if (!$this->workflowId || !is_array($this->workflowInfo)) {
+            return false;
         }
 
         if ($this->workflowInfo['detail']['isActive'] == false) {
@@ -78,15 +83,16 @@ class DispatchWorkflowService
             return false;
         }
 
-        //\Log::info($this->workflowInfo);
         \Log::info(message: 'Executing workflow with ID: ' . $this->workflowId);
         \Log::info('Workflow Name: ' . $this->workflowInfo['detail']['name']);
+
         $allConditions = $this->workflowInfo['workFlowConditions'];
 
         $graphQLQuery = [];
         // NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
         // Example: After/Before X day(s)/month(s)/year(s) of the event
-        if ($this->workflowInfo['when']['effectiveActionToExecuteWorkflow'] = 'ON_DATE_TIME' &&
+        if (
+            $this->workflowInfo['when']['effectiveActionToExecuteWorkflow'] == 'ON_DATE_TIME' &&
             !$this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['certainDateTime']
         ) {
             $graphQLQuery[] = $this->workflowService->getQueryForEffectiveAction(
@@ -100,14 +106,11 @@ class DispatchWorkflowService
 
         $graphQLQuery = [];
         if ($this->recordIdentifier) {
-            \Log::info($this->recordIdentifier);
             $graphQLQuery[] = $this->workflowService->getQueryForRecordIdentifier(
                 $this->workflowInfo['detail']['module'],
                 $this->recordIdentifier
             );
         }
-
-        \Log::info($graphQLQuery);
 
         foreach ($allConditions as $condition) {
             $feedFile = "";
@@ -140,6 +143,7 @@ class DispatchWorkflowService
                 }
 
                 $requireData = $actionToExecute->getRequiredData();
+
                 if (count($graphQLQuery) || count($requireData)) {
                     //Build GraphQL query
                     $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->workflowInfo['detail']['module']);
@@ -162,17 +166,22 @@ class DispatchWorkflowService
                         $parseResultCallback = !empty($fieldMapping[$placeHolder]['parseResultCallback']) ? $fieldMapping[$placeHolder]['parseResultCallback'] : null;
                         $placeHolderValue = $graphQLSchemaBuilder->extractValue($response, $jqFilter);
 
-                        if ($parseResultCallback) {
-                            if (method_exists($graphQLSchemaBuilder, $parseResultCallback)) {
-                                return $placeHolderValue = $this->$parseResultCallback($placeHolderValue);
+                        if ($placeHolderValue) {
+                            $parsedValue = json_decode($placeHolderValue, true);
+                            $placeHolderValue = json_last_error() === JSON_ERROR_NONE ? $parsedValue : $placeHolderValue;
+
+                            if ($parseResultCallback) {
+                                if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
+                                    $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback($placeHolderValue);
+                                }
                             }
                         }
-
-                        $parsedData[$placeHolderValue] = is_string($placeHolderValue) ? $placeHolderValue : json_encode($placeHolderValue);
+                        $parsedData[$placeHolder] = $placeHolderValue;
                     }
 
                     //SET DATA FOP ACTION
                     $data[] = $parsedData;
+                    \Log::info($data);
                 }
 
                 $actionToExecute->setWorkflowData($this->workflowId, $jobWorkflowId);
