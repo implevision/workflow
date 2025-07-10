@@ -27,5 +27,9 @@
         "Taurus\\Workflow\\Providers\\EventServiceProvider"
       ]
     }
+  },
+  "require-dev": {
+    "orchestra/testbench": "^9.14",
+    "phpunit/phpunit": "^12.1"
   }
 }
