@@ -124,4 +124,23 @@ class S3
             throw new \Exception($e->getAwsErrorMessage());
         }
     }
+
+    public static function uploadFile($bucketName, $filePath, $fileContent)
+    {
+        try {
+            $s3Client = self::initializeS3Client();
+
+            $s3Client->putObject([
+                'Bucket' => $bucketName,
+                'Key'    => trim($filePath, "/"),
+                'Body'   => $fileContent,
+                'ACL'    => 'private',
+            ]);
+
+            return true;
+        } catch (AwsException $e) {
+            \Log::info($e);
+            throw new \Exception($e->getAwsErrorMessage());
+        }
+    }
 }

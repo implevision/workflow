@@ -2,7 +2,7 @@
 
 namespace Taurus\Workflow\Services\WorkflowActions;
 
-use Taurus\Workflow\Events\JobWorkflowUpdated;
+use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Jobs\BulkEmailJob;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
@@ -18,12 +18,17 @@ class BulkEmail
 
     public function setPayload($payload)
     {
+        $payload['module'] = getModuleForCurrentWorkflow();
         $this->payload = $payload;
     }
 
     public function execute()
     {
-        $this->sendEmails();
+        try {
+            $this->sendEmails();
+        } catch (\Exception $e) {
+            throw $e; // Re-throw the exception to be handled by the queue system
+        }
     }
 
     private function sendEmails()
@@ -47,7 +52,7 @@ class BulkEmail
 
         //Update count of workflow
         if ($jobWorkflowId) {
-            event(new JobWorkflowUpdated($jobWorkflowId, [
+            event(new JobWorkflowUpdatedEvent($jobWorkflowId, [
                 'total_no_of_records_to_execute' => $totalNoOfRecordsToExecute
             ]));
         }

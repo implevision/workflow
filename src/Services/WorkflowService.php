@@ -593,6 +593,20 @@ class WorkflowService
         }
     }
 
+    public function getPostActionService()
+    {
+        try {
+            $consumerService = $this->getConsumerService();
+            if ($consumerService instanceof \stdClass) {
+                return new stdClass();
+            }
+            return $consumerService->getPostActionService();
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+            return new stdClass();
+        }
+    }
+
     private function getConsumerService()
     {
         try {

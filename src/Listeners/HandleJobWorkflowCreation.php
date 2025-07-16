@@ -3,12 +3,12 @@
 namespace Taurus\Workflow\Listeners;
 
 use Illuminate\Support\Facades\Log;
-use Taurus\Workflow\Events\JobWorkflowCreated;
+use Taurus\Workflow\Events\JobWorkflowCreatedEvent;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
 class HandleJobWorkflowCreation
 {
-    public function handle(JobWorkflowCreated $event): int
+    public function handle(JobWorkflowCreatedEvent $event): int
     {
         try {
             $jobWorkflow = [

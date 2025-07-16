@@ -37,15 +37,20 @@ class DispatchWorkflow extends Command
 
         $this->info("Workflow Id provided: $workflowId");
 
-        $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier);
+        setRunningWorkflowId($workflowId);
+        setRunningJobWorkflowId($recordIdentifier);
 
-        /*$strategy = $workflow->getExecutionStrategy();
+        try {
+            \Log::info('WORKFLOW - Dispatching workflow with ID ' . $workflowId);
+            $recordIdentifier ? \Log::info('WORKFLOW - Dispatching workflow with record identifier ' . $workflowId) : null;
 
-        if ($strategy == 'batch') {
-            $this->info("Executing workflow in batch mode");
-        } else {
-            $this->info("Executing workflow in sequential mode");
-        }*/
-        $workflow->dispatch();
+            $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier);
+            $workflow->dispatch();
+        } catch (\Exception $e) {
+            $errorMessage = "WORKFLOW - Error dispatching workflow with ID $workflowId: " . $e->getMessage();
+            \Log::error($errorMessage);
+            $this->error($errorMessage);
+            return 1; // Return a non-zero status code to indicate failure
+        }
     }
 }

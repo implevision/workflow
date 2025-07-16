@@ -51,4 +51,16 @@ class InitInstance
     {
         return last(explode('\\', $module));
     }
+
+
+    public function getPostActionService()
+    {
+        $postActionServiceClass = "Taurus\\Workflow\\Consumer\\Taurus\\PostAction\\PostActionService";
+
+        if (class_exists($postActionServiceClass)) {
+            return new $postActionServiceClass();
+        } else {
+            throw new \Exception("Post action service class '$postActionServiceClass' does not exist.");
+        }
+    }
 }

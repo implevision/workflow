@@ -10,19 +10,23 @@ class PrepareBulkEmailData
 
     protected $jobWorkflowId;
 
+    protected $recordIdentifier;
+
     protected $emailTemplateId;
 
     protected $payload;
 
     protected $emailInformation;
 
-    public function prepare($workflowId, $jobWorkflowId, $emailTemplateId, $payload, $emailInformation)
+    public function prepare($workflowId, $jobWorkflowId, $recordIdentifier, $emailTemplateId, $payload, $emailInformation)
     {
         $this->workflowId = $workflowId;
         $this->jobWorkflowId = $jobWorkflowId;
+        $this->recordIdentifier = $recordIdentifier;
         $this->emailTemplateId = $emailTemplateId;
         $this->payload = $payload;
         $this->emailInformation = $emailInformation;
+
 
         return $this;
     }
@@ -33,6 +37,7 @@ class PrepareBulkEmailData
         $actionPayload = [
             'workflowId' => $this->workflowId,
             'jobWorkflowId' => $this->jobWorkflowId,
+            'recordIdentifier' => $this->recordIdentifier,
             'actionType' => 'BulkEmail',
             'csvFile' => $this->payload['csvFile'] ?? null,
             'data' => $this->payload['data'] ?? [],
@@ -40,11 +45,16 @@ class PrepareBulkEmailData
             'plainEmailTemplate' => "",
             'subject' => $this->emailInformation['subject'],
             'payload' => [],
-            'from' => $from
+            'from' => $from,
+            'postAction' => $this->payload['postAction'] ?? [],
         ];
 
-        $action = new BulkEmail();
-        $action->setPayload($actionPayload);
-        $action->execute();
+        try {
+            $action = new BulkEmail();
+            $action->setPayload($actionPayload);
+            $action->execute();
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 }

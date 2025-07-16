@@ -5,19 +5,19 @@ namespace Taurus\Workflow\Events;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class JobWorkflowUpdated
+class JobWorkflowCreatedEvent
 {
     use Dispatchable, SerializesModels;
 
-    public int $jobWorkflowId;
+    public int $workFlowId;
     public array $jobWorkflowData;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(int $jobWorkflowId, array $jobWorkflowData)
+    public function __construct(int $workFlowId, array $jobWorkflowData)
     {
-        $this->jobWorkflowId = $jobWorkflowId;
+        $this->workFlowId = $workFlowId;
         $this->jobWorkflowData = $jobWorkflowData;
     }
 }

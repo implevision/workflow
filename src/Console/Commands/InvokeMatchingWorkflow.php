@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Console\Commands;
 use Illuminate\Console\Command;
 use Taurus\Workflow\Services\WorkflowService;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 
 class InvokeMatchingWorkflow extends Command
 {
@@ -39,14 +40,18 @@ class InvokeMatchingWorkflow extends Command
         $entityAction = $this->option('EntityAction');
 
         if (empty($entity) || empty($entityAction) || empty($entityType)) {
-            $this->error('Entity and EntityAction  and EntityType options are required.');
+            $errorMessage = 'WORKFLOW - Entity, EntityAction and EntityType are required.';
+            Log::error($errorMessage);
+            $this->error($errorMessage);
             return 1;
         }
 
         $matchedWorkflow = $this->workflowService->getMatchingWorkflow($entityType, $entityAction, $entity);
 
         if (empty($matchedWorkflow)) {
-            $this->info('No matching workflow found.');
+            $message = 'WORKFLOW - No matching workflow found for EntityType: ' . $entityType . ', EntityAction: ' . $entityAction . ', Entity: ' . $entity;
+            Log::info($message);
+            $this->info($message);
             return 0;
         }
 
@@ -57,14 +62,16 @@ class InvokeMatchingWorkflow extends Command
                     '--recordIdentifier' => $entity,
                 ]);
             } catch (\Exception $e) {
-                //TODO: WORKFLOW - Notify for errors
-                $this->error('Error dispatching workflow: ' . $e->getMessage());
-                $this->error('Error dispatching workflow: ' . $e->getFile());
-                $this->error('Error dispatching workflow: ' . $e->getLine());
+                $errorMessage = 'WORKFLOW - Error dispatching workflow with ID ' . $workflowId . ': ' . $e->getMessage();
+                Log::error($errorMessage);
+                $this->error($errorMessage);
                 return 1;
             }
         }
-        $this->info('Matching workflow dispatched successfully.');
+
+        $message = 'WORKFLOW - Matching workflow dispatched successfully. for EntityType: ' . $entityType . ', EntityAction: ' . $entityAction . ', Entity: ' . $entity;
+        Log::info($message);
+        $this->info($message);
         return 0;
     }
 }

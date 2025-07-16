@@ -36,7 +36,7 @@ class EmailAction extends AbstractWorkflowAction
             $this->emailInformation = $emailInformation;
             //$this->emailInformation = WorkflowEmailService::getEmailInformation($payload['id']);
         } catch (\Exception $e) {
-            \Log::error('Error fetching email information: ' . $e->getMessage());
+            throw $e;
         }
     }
     public function getRequiredData()
@@ -48,14 +48,20 @@ class EmailAction extends AbstractWorkflowAction
     {
         $workflowId = $this->getWorkflowId();
         $jobWorkflowId = $this->getJobWorkflowId();
+        $recordIdentifier = $this->getRecordIdentifier();
         $feedFile = $this->getFeedFile();
         $data = $this->getData();
         $payload = $this->getPayload();
 
-        new PrepareBulkEmailData()
-            ->prepare($workflowId, $jobWorkflowId, $payload['id'], [
-                'csvFile' => $feedFile,
-                'data' => $data
-            ], $this->emailInformation)->execute();
+        try {
+            new PrepareBulkEmailData()
+                ->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
+                    'csvFile' => $feedFile,
+                    'data' => $data,
+                    'postAction' => $payload['postAction'],
+                ], $this->emailInformation)->execute();
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 }

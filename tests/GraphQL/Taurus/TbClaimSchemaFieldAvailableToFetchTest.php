@@ -10,6 +10,7 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
 {
     public function testQueryName()
     {
+
         $tbClaim = new TbClaim();
         $this->assertEquals('claim', $tbClaim->getQueryName(), "Query name should be 'claim'");
     }
@@ -17,7 +18,18 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
     public function testFieldMapping()
     {
         $tbClaim = new TbClaim();
-        $this->assertEquals(1, 1);
+        $filedMapping = $tbClaim->getFieldMapping();
+
+        //For claim ID
+        $expectedArray = [
+            'GraphQLschemaToReplace' => [
+                'claimId' => null,
+                'claimNumber' => null
+            ],
+            'jqFilter' => '.claim.claimId'
+        ];
+
+        $this->assertEquals($filedMapping['claimId'], $expectedArray);
         //print_r($tbClaim->getFieldMapping());
     }
 }

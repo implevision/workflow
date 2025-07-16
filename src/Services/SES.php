@@ -5,7 +5,7 @@ namespace Taurus\Workflow\Services;
 
 use Aws\SesV2\SesV2Client;
 use Aws\Exception\AwsException;
-use Taurus\Workflow\Events\JobWorkflowUpdated;
+use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
 class SES
@@ -98,7 +98,7 @@ class SES
                     'status' => $status
                 ];
 
-                event(new JobWorkflowUpdated($jobWorkflowId, $payload));
+                event(new JobWorkflowUpdatedEvent($jobWorkflowId, $payload));
             }
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());

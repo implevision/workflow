@@ -124,3 +124,43 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
         ];
     }
 }
+
+function setRunningWorkflowId($workflowId)
+{
+    app()->instance('workflowID', $workflowId);
+}
+
+function getRunningWorkflowId()
+{
+    return app('workflowID');
+}
+
+function setRunningJobWorkflowId($jobWorkflowId)
+{
+    app()->instance('jobWorkflowId', $jobWorkflowId);
+}
+
+function setModuleForCurrentWorkflow($module)
+{
+    app()->instance('moduleForWhichWorkflowRunning', $module);
+}
+
+function getRunningJobWorkflowId()
+{
+    return app('jobWorkflowId');
+}
+
+function setRecordIdentifierForRunningWorkflow($recordIdentifier)
+{
+    app()->instance('recordIdentifier', $recordIdentifier);
+}
+
+function getRecordIdentifierForRunningWorkflow()
+{
+    return app('jobWorkflowId');
+}
+
+function getModuleForCurrentWorkflow()
+{
+    return app('moduleForWhichWorkflowRunning');
+}

@@ -67,7 +67,8 @@ class TbClaim
     $fieldMapping = [
       'claimId' => [
         'GraphQLschemaToReplace' => [
-          'claimId' => null
+          'claimId' => null,
+          'claimNumber' => null,
         ],
         'jqFilter' => '.claim.claimId'
       ],
@@ -171,6 +172,21 @@ class TbClaim
       ],
       'jqFilter' => '[.claim.adjustingFirm[].personInfo.emailInfo[] | select(.isDefault == "Y")]',
       'parseResultCallback' => 'parseAdjustingFirmEmail'
+    ];
+
+    $fieldMapping['adjustingFirmPhone'] = [
+      'GraphQLschemaToReplace' => [
+        'adjustingFirm' => [
+          'personInfo' => [
+            'phoneInfo' => [
+              'phoneNumber' => null,
+              'isDefault' => null,
+            ]
+          ]
+        ]
+      ],
+      'jqFilter' => '[.claim.adjustingFirm[].personInfo.phoneInfo[] | select(.isDefault == "Y")]',
+      'parseResultCallback' => 'parseAdjustingFirmPhone'
     ];
 
     $fieldMapping['adjustingFirmPhone'] = [
