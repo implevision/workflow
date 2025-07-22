@@ -16,8 +16,6 @@
     }
   ],
   "require": {
-    "spatie/laravel-data": "^4.14",
-    "illuminate/support": "^11.0",
     "aws/aws-sdk-php": "^3.342"
   },
   "extra": {
