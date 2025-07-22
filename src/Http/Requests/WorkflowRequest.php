@@ -7,6 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Taurus\Workflow\Http\Rules\ValidDateTimeInfo;
 use Taurus\Workflow\Http\Rules\ValidRecordAction;
+use Taurus\Workflow\Http\Rules\ValidInstanceActions;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Taurus\Workflow\Http\Rules\ValidApplyConditionRules;
 
@@ -33,7 +34,10 @@ class WorkflowRequest extends FormRequest
         $workflowTable = $tablePrefix . '_workflows';
         $workflowActionTable = $tablePrefix . '_workflow_actions';
         $workflowConditionTable =  $tablePrefix . '_workflow_conditions';
-        return [
+
+        $actionTypes = ['EMAIL', 'CREATE_TASK', 'CREATE_RECORD', 'WEB_HOOK'];
+
+        $rules = [
             'id' => 'sometimes|nullable|exists:' . $workflowTable . ',id',
             'detail.module' => 'required|string',
             'detail.name' => 'required|string',
@@ -45,16 +49,25 @@ class WorkflowRequest extends FormRequest
             'workFlowConditions.*.id' => 'sometimes|nullable|exists:' . $workflowConditionTable . ',id',
             'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN,CUSTOM_FEED',
             'workFlowConditions.*.s3FilePath' => 'exclude_unless:workFlowConditions.*.applyRuleTo,CUSTOM_FEED|sometimes|string',
-            'workFlowConditions.*.instanceActions' => 'required|array',
-            'workFlowConditions.*.instanceActions.*.id' => 'sometimes|nullable|exists:' . $workflowActionTable . ',id',
-            'workFlowConditions.*.instanceActions.*.actionType' => 'required|string|in:EMAIL',
-            'workFlowConditions.*.instanceActions.*.payload' => 'required|array',
+            // 'workFlowConditions.*.instanceActions' => 'required|array',
+            // 'workFlowConditions.*.instanceActions.*.id' => 'sometimes|nullable|exists:' . $workflowActionTable . ',id',
+            // 'workFlowConditions.*.instanceActions.*.actionType' => 'required|string|in:EMAIL',
+            // 'workFlowConditions.*.instanceActions.*.payload' => 'required|array',
+            'workFlowConditions.*.instanceActions' => ['required', 'array', new ValidInstanceActions()],
             'workFlowConditions.*.applyConditionRules' => [
                 'required_if:workFlowConditions.*.applyRuleTo,CERTAIN',
                 'array',
                 new ValidApplyConditionRules(),
             ]
         ];
+
+        foreach ($actionTypes as $type) {
+            $rules["workFlowConditions.*.instanceActions.$type.id"] = 'sometimes|nullable|exists:' . $workflowActionTable . ',id';
+            $rules["workFlowConditions.*.instanceActions.$type.actionType"] = "required_with:workFlowConditions.*.instanceActions.$type|string|in:$type";
+            $rules["workFlowConditions.*.instanceActions.$type.payload"] = "required_with:workFlowConditions.*.instanceActions.$type|array";
+        }
+
+        return $rules;
     }
 
     /**

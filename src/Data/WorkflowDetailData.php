@@ -19,7 +19,7 @@ class WorkflowDetailData extends Data
             module: $data['module'],
             name: $data['name'],
             description: $data['description'] ?? null,
-            isActive: $data['isActive']
+            isActive: $data['isActive'] ?? true
         );
     }
 }

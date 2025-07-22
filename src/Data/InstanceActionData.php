@@ -20,4 +20,17 @@ class InstanceActionData extends Data
             payload: $data['payload']
         );
     }
+
+    public static function mapByActionType(array $actions): array
+    {
+        $mapped = [];
+
+        foreach ($actions as $action) {
+            if (isset($action['actionType'])) {
+                $mapped[$action['actionType']] = self::fromArray($action);
+            }
+        }
+
+        return $mapped;
+    }
 }
