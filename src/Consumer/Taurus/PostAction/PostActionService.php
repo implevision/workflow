@@ -41,7 +41,7 @@ class PostActionService
             throw new \InvalidArgumentException('Post action is required for execution.');
         }
 
-        if ($postAction == 'UploadAsDocument') {
+        if ($postAction == 'uploadAsDocument') {
             return \Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument::execute($module, $payload, $preparedData);
         }
 

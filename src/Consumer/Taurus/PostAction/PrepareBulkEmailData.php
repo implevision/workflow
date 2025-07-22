@@ -42,7 +42,7 @@ class PrepareBulkEmailData
             throw $e;
         }
 
-        $filename = preg_replace('/[^A-Za-z0-9 ]/', '', $payload['subject']) . " - {$payload['document_name']}.pdf";
+        $filename = preg_replace('/[^A-Za-z0-9 ]/', '', $payload['subject']) . " - {$payload['documentName']}.pdf";
         $docPath = sprintf('%s/%s/%s/%s/emailLetters/%s', getTenant(), date('Y'),  date('m'), date('d'), $filename);
         $bucketName = config('workflow.bucket_to_save_email_letters', config('filesystems.disks.s3.bucket'));
 
@@ -53,14 +53,14 @@ class PrepareBulkEmailData
         }
 
         return [
-            'docTypeValue' => $payload['document_id'],
-            'docName' =>  $payload['document_name'],
+            'docTypeValue' => $payload['documentId'],
+            'docName' =>  $payload['documentName'],
             'originalFileName' => $filename,
             'fileType' => 'application/pdf',
             'docPath' => $docPath,
             'docUrl' => $docUrl,
             'insertedByFlag' => 'System',
-            'activityLogText' => 'Email letter for \''.$payload['document_name'].'\' generated and uploaded. Message ID - '.$messageId;
+            'activityLogText' => "Email letter for '" . $payload['document_name'] . "' generated and uploaded. Message ID - " . $messageId;
         ];
 
     }
