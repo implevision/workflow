@@ -90,13 +90,32 @@ function isTenantBaseSystem()
     return true;
 }
 
-function getCommandToDispatchWorkflow($workflowId)
+function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
+{
+    $command = gitCommandToDispatchWorkflow($workflowId, $recordIdentifier);
+    return sprintf("%s %s %s", "php artisan ", $command['command'], implode(", ", $command['options']));
+}
+
+function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
 {
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
-        return 'php artisan tenants:run taurus:dispatch-workflow --option=workflowId=' . $workflowId . ' --tenants=' . $tenant;
+        return [
+            'command' => 'tenants:run taurus:dispatch-workflow',
+            'options' => [
+                '--option=workflowId' => $workflowId,
+                '--option=recordIdentifier' => $recordIdentifier,
+                '--tenants' => $tenant,
+            ]
+        ];
     } else {
-        return 'php artisan taurus:dispatch-workflow --workflowId=' . $workflowId;
+        return [
+            'command' => 'taurus:dispatch-workflow',
+            'options' => [
+                '--workflowId' => $workflowId,
+                '--recordIdentifier' => $recordIdentifier
+            ]
+        ];
     }
 }
 

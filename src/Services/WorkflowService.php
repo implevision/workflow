@@ -426,7 +426,8 @@ class WorkflowService
 
     public function createScheduleToExecuteWorkflow($groupName, $workflowId, $scheduleExpression)
     {
-        $commandToRunWorkflow = getCommandToDispatchWorkflow($workflowId);
+        //TODO: pass record identifier if any
+        $commandToRunWorkflow = getCliCommandToDispatchWorkflow($workflowId);
 
         try {
             $target = [

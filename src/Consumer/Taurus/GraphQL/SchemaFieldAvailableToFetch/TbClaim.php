@@ -67,8 +67,7 @@ class TbClaim
     $fieldMapping = [
       'claimId' => [
         'GraphQLschemaToReplace' => [
-          'claimId' => null,
-          'claimNumber' => null,
+          'claimId' => null
         ],
         'jqFilter' => '.claim.claimId'
       ],

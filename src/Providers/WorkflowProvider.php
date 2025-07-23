@@ -36,7 +36,7 @@ class WorkflowProvider extends ServiceProvider
         ]);
 
         $this->publishes([
-            __DIR__ . '/../config/workflowModule.php' => config_path('workflowModule.php'),
+            __DIR__ . '/../config/workflowBaseData.php' => config_path('workflowBaseData.php'),
         ]);
 
         // PUT this file manually in the database/migrations folder of INFRASTRUCTURE

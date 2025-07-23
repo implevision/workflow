@@ -34,7 +34,6 @@ class InvokeMatchingWorkflow extends Command
      */
     public function handle()
     {
-
         $entityType = $this->option('EntityType');
         $entity = $this->option('Entity');
         $entityAction = $this->option('EntityAction');
@@ -46,7 +45,14 @@ class InvokeMatchingWorkflow extends Command
             return 1;
         }
 
-        $matchedWorkflow = $this->workflowService->getMatchingWorkflow($entityType, $entityAction, $entity);
+        try {
+            $matchedWorkflow = $this->workflowService->getMatchingWorkflow($entityType, $entityAction, $entity);
+        } catch (\Exception $e) {
+            $errorMessage = 'WORKFLOW - Error finding match workflow for EntityType: ' . $entityType . ', EntityAction: ' . $entityAction . ', Entity: ' . $entity . ': ' . $e->getMessage();
+            Log::error($errorMessage);
+            $this->error($errorMessage);
+            return 1;
+        }
 
         if (empty($matchedWorkflow)) {
             $message = 'WORKFLOW - No matching workflow found for EntityType: ' . $entityType . ', EntityAction: ' . $entityAction . ', Entity: ' . $entity;
@@ -56,11 +62,13 @@ class InvokeMatchingWorkflow extends Command
         }
 
         foreach ($matchedWorkflow as $workflowId) {
+            $message = 'WORKFLOW - Matched Workflow found with ID: ' . $workflowId . ' for EntityType: ' . $entityType . ', EntityAction: ' . $entityAction . ', Entity: ' . $entity;
+            Log::info($message);
+            $this->info($message);
+
             try {
-                Artisan::call('taurus:dispatch-workflow', [
-                    '--workflowId' => $workflowId,
-                    '--recordIdentifier' => $entity,
-                ]);
+                $command = gitCommandToDispatchWorkflow($workflowId, $entity);
+                Artisan::call($command['command'], $command['options']);
             } catch (\Exception $e) {
                 $errorMessage = 'WORKFLOW - Error dispatching workflow with ID ' . $workflowId . ': ' . $e->getMessage();
                 Log::error($errorMessage);

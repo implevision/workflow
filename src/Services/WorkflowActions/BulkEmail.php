@@ -11,6 +11,9 @@ class BulkEmail
     public $payload;
 
     public $emailClient = null;
+
+    public $batchToCreate = 50;
+
     public function __construct($emailClient = 'SES_BULK_EMAIL')
     {
         $this->emailClient = $emailClient;
@@ -46,7 +49,6 @@ class BulkEmail
         }
 
         if (is_array($data) && count($data)) {
-            $totalNoOfRecordsToExecute = count($data);
             $totalNoOfRecordsToExecute = $this->processData($data, $jobPayload);
         }
 
@@ -77,13 +79,13 @@ class BulkEmail
                     }
 
                     if (count($placeholder) != count($data)) {
-                        \Log::error('CSV file has different number of columns in row ' . $rowCount);
+                        \Log::error('WORKFLOW - CSV file has different number of columns in row ' . $rowCount);
                         continue;
                     }
 
                     $data = array_combine($placeholder, $data);
 
-                    $leftover = ($rowCount - 1) / 50;
+                    $leftover = ($rowCount - 1) / $this->batchToCreate;
                     $leftover = $leftover - floor($leftover);
 
                     if (($rowCount - 1) && $leftover == 0) {
@@ -103,9 +105,25 @@ class BulkEmail
         return $rowCount - 1; // Return total number of records to execute
     }
 
-    public function processData($data, $jobPayload)
+    public function processData($jobData, $jobPayload)
     {
+        $rowCount = 0;
+        $leftover = $rowCount / $this->batchToCreate;
+        $leftover = $leftover - floor($leftover);
 
-        return true;
+        foreach ($jobData as $data) {
+            if ($rowCount && $leftover == 0) {
+                BulkEmailJob::dispatch($this->emailClient, $jobPayload);
+                $jobPayload['payload'] = [];
+            }
+            $jobPayload['payload'][] = $data;
+            $rowCount++;
+        }
+
+        if (count($jobPayload['payload'])) {
+            BulkEmailJob::dispatch($this->emailClient, $jobPayload);
+        }
+
+        return count($jobData);
     }
 }

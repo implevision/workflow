@@ -254,6 +254,7 @@ class DispatchWorkflowService
                 }
 
                 try {
+                    \Log::info($data);
                     $actionToExecute->setWorkflowData($this->workflowId, $jobWorkflowId, $this->recordIdentifier);
                     $actionToExecute->setDataForAction($feedFile, $data);
                     $actionToExecute->execute();

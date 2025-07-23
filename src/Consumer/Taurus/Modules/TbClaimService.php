@@ -45,7 +45,6 @@ class TbClaimService
 
     public function getQueryForRecordIdentifier($module, $recordIdentifier)
     {
-        \Log::info($module);
         $moduleClass = app($module);
 
         try {
