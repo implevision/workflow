@@ -42,7 +42,7 @@ class DispatchWorkflow extends Command
 
         try {
             \Log::info('WORKFLOW - Dispatching workflow with ID ' . $workflowId);
-            $recordIdentifier ? \Log::info('WORKFLOW - Dispatching workflow with record identifier ' . $workflowId) : null;
+            $recordIdentifier ? \Log::info('WORKFLOW - Dispatching workflow with record identifier ' . $recordIdentifier) : null;
 
             $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier);
             $workflow->dispatch();
