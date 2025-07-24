@@ -146,12 +146,12 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
 
 function setRunningWorkflowId($workflowId)
 {
-    app()->instance('workflowID', $workflowId);
+    app()->instance('workflowId', $workflowId);
 }
 
 function getRunningWorkflowId()
 {
-    return app('workflowID');
+    return app()->bound('workflowId') ? app('workflowId') : 0;
 }
 
 function setRunningJobWorkflowId($jobWorkflowId)
@@ -159,14 +159,19 @@ function setRunningJobWorkflowId($jobWorkflowId)
     app()->instance('jobWorkflowId', $jobWorkflowId);
 }
 
+function getRunningJobWorkflowId()
+{
+    return app()->bound('jobWorkflowId') ? app('jobWorkflowId') : 0;
+}
+
 function setModuleForCurrentWorkflow($module)
 {
     app()->instance('moduleForWhichWorkflowRunning', $module);
 }
 
-function getRunningJobWorkflowId()
+function getModuleForCurrentWorkflow()
 {
-    return app('jobWorkflowId');
+    return app()->bound('moduleForWhichWorkflowRunning') ? app('moduleForWhichWorkflowRunning') : "";
 }
 
 function setRecordIdentifierForRunningWorkflow($recordIdentifier)
@@ -176,10 +181,5 @@ function setRecordIdentifierForRunningWorkflow($recordIdentifier)
 
 function getRecordIdentifierForRunningWorkflow()
 {
-    return app('jobWorkflowId');
-}
-
-function getModuleForCurrentWorkflow()
-{
-    return app('moduleForWhichWorkflowRunning');
+    return app()->bound('recordIdentifier') ? app('recordIdentifier') : 0;
 }

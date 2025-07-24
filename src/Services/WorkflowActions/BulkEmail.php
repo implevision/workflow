@@ -34,6 +34,11 @@ class BulkEmail
         }
     }
 
+    private function dispatchBulkEmail($payload)
+    {
+        BulkEmailJob::dispatch($this->emailClient, $payload);
+    }
+
     private function sendEmails()
     {
         $jobPayload = $this->payload;
@@ -89,7 +94,7 @@ class BulkEmail
                     $leftover = $leftover - floor($leftover);
 
                     if (($rowCount - 1) && $leftover == 0) {
-                        BulkEmailJob::dispatch($this->emailClient, $jobPayload);
+                        $this->dispatchBulkEmail($jobPayload);
                         $jobPayload['payload'] = [];
                     }
                     $jobPayload['payload'][] = $data;
@@ -97,7 +102,7 @@ class BulkEmail
                 }
 
                 if (count($jobPayload['payload'])) {
-                    BulkEmailJob::dispatch($this->emailClient, $jobPayload);
+                    $this->dispatchBulkEmail($jobPayload);
                 }
             }
         }
@@ -113,7 +118,7 @@ class BulkEmail
 
         foreach ($jobData as $data) {
             if ($rowCount && $leftover == 0) {
-                BulkEmailJob::dispatch($this->emailClient, $jobPayload);
+                $this->dispatchBulkEmail($jobPayload);
                 $jobPayload['payload'] = [];
             }
             $jobPayload['payload'][] = $data;
@@ -121,7 +126,7 @@ class BulkEmail
         }
 
         if (count($jobPayload['payload'])) {
-            BulkEmailJob::dispatch($this->emailClient, $jobPayload);
+            $this->dispatchBulkEmail($jobPayload);
         }
 
         return count($jobData);
