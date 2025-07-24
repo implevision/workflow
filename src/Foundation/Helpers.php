@@ -124,7 +124,7 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
         return [
-            'command' => 'tenants:run taurus:invoke-matching-workflow',
+            'command' => 'tenants:run',
             'options' => [
                 'commandName' => 'taurus:invoke-matching-workflow',
                 '--tenants' => [$tenant],
