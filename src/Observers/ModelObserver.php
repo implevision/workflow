@@ -17,7 +17,7 @@ class ModelObserver implements ShouldHandleEventsAfterCommit
         try {
             Artisan::call($command['command'], $command['options']);
         } catch (\Exception $e) {
-            \Log::info('Error dispatching matching workflow: ' . $e->getMessage());
+            \Log::info('WORKFLOW - Error dispatching matching workflow: ' . $e->getMessage());
         }
     }
 

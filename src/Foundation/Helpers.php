@@ -101,11 +101,11 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
         return [
-            'command' => 'tenants:run taurus:dispatch-workflow',
+            'command' => 'tenants:run',
             'options' => [
-                '--option=workflowId' => $workflowId,
-                '--option=recordIdentifier' => $recordIdentifier,
-                '--tenants' => $tenant,
+                'commandName' => 'taurus:dispatch-workflow',
+                '--tenants' => [$tenant],
+                '--option' => ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier"]
             ]
         ];
     } else {
@@ -126,10 +126,9 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
         return [
             'command' => 'tenants:run taurus:invoke-matching-workflow',
             'options' => [
-                '--option=EntityAction' => $entityAction,
-                '--option=Entity' => $entity,
-                '--option=EntityType' => $entityType,
-                '--tenants' => $tenant,
+                'commandName' => 'taurus:invoke-matching-workflow',
+                '--tenants' => [$tenant],
+                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType"]
             ]
         ];
     } else {
