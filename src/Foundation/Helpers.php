@@ -103,7 +103,7 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
         return [
             'command' => 'tenants:run',
             'options' => [
-                'commandName' => 'taurus:dispatch-workflow',
+                'commandname' => 'taurus:dispatch-workflow',
                 '--tenants' => [$tenant],
                 '--option' => ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier"]
             ]
@@ -126,7 +126,7 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
         return [
             'command' => 'tenants:run',
             'options' => [
-                'commandName' => 'taurus:invoke-matching-workflow',
+                'commandname' => 'taurus:invoke-matching-workflow',
                 '--tenants' => [$tenant],
                 '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType"]
             ]
