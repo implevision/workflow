@@ -183,3 +183,8 @@ function getRecordIdentifierForRunningWorkflow()
 {
     return app()->bound('recordIdentifier') ? app('recordIdentifier') : 0;
 }
+
+function isBound($parameter)
+{
+    return app()->bound($parameter);
+}
