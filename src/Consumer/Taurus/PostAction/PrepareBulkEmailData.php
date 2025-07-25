@@ -49,8 +49,20 @@ class PrepareBulkEmailData
         try {
             $docUrl = S3::uploadFile($bucketName, $docPath, $pdfBuffer);
         } catch (\Exception $e) {
-            throw $e;
+            $docUrl = "abc.pdf";
+            //throw $e;
         }
+
+        \Log::info([
+            'docTypeValue' => $payload['documentId'],
+            'docName' =>  $payload['documentName'],
+            'originalFileName' => $filename,
+            'fileType' => 'application/pdf',
+            'docPath' => $docPath,
+            'docUrl' => $docUrl,
+            'insertedByFlag' => 'System',
+            'activityLogText' => "Email letter for '" . $payload['documentName'] . "' generated and uploaded. Message ID - " . $messageId
+        ]);
 
         return [
             'docTypeValue' => $payload['documentId'],
@@ -60,9 +72,8 @@ class PrepareBulkEmailData
             'docPath' => $docPath,
             'docUrl' => $docUrl,
             'insertedByFlag' => 'System',
-            'activityLogText' => "Email letter for '" . $payload['document_name'] . "' generated and uploaded. Message ID - " . $messageId;
+            'activityLogText' => "Email letter for '" . $payload['documentName'] . "' generated and uploaded. Message ID - " . $messageId
         ];
-
     }
 
     /**

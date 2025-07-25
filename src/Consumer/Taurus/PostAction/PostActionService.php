@@ -4,13 +4,13 @@ namespace Taurus\Workflow\Consumer\Taurus\PostAction;
 
 class PostActionService
 {
-    public function execute($module, $payload)
+    public function execute($module, $payload, $messageId)
     {
         try {
             $data = $payload['payload'];
             unset($payload['payload']);
             foreach ($data as $placeholders) {
-                $preparedData = $this->prepareData($payload, $placeholders);
+                $preparedData = $this->prepareData($payload, $placeholders, $messageId);
                 $this->executePostAction($module, $payload, $preparedData);
             }
         } catch (\Exception $e) {
@@ -18,7 +18,7 @@ class PostActionService
         }
     }
 
-    private function prepareData($payload)
+    private function prepareData($payload, $placeholders, $messageId)
     {
         $actionType = $payload['actionType'] ?? null;
 
@@ -27,7 +27,7 @@ class PostActionService
         }
 
         if ($actionType == 'BulkEmail') {
-            return \Taurus\Workflow\Consumer\Taurus\PostAction\PrepareBulkEmailData::prepare($payload);
+            return \Taurus\Workflow\Consumer\Taurus\PostAction\PrepareBulkEmailData::prepare($payload, $placeholders, $messageId);
         }
 
         return [];

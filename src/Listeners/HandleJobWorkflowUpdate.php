@@ -3,7 +3,7 @@
 namespace Taurus\Workflow\Listeners;
 
 use Illuminate\Support\Facades\Log;
-use Taurus\Workflow\Events\JobWorkflowUpdated;
+use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
 class HandleJobWorkflowUpdate
@@ -11,7 +11,7 @@ class HandleJobWorkflowUpdate
     /**
      * Handle the event.
      */
-    public function handle(JobWorkflowUpdated $event): void
+    public function handle(JobWorkflowUpdatedEvent $event): void
     {
         $jobWorkflowRepo = app(JobWorkflowRepository::class);
         try {

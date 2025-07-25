@@ -65,7 +65,8 @@ class BulkEmailJob implements ShouldQueue
         //SEND EMAIL
         try {
             \Log::info('WORKFLOW - Creating SES Bulk Request');
-            $messageId = SES::sendEmail($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId);
+            //$messageId = SES::sendEmail($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId);
+            $messageId = 99;
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error creating SES Bulk Request: ' . $e->getMessage());
             throw $e; // Re-throw the exception to be handled by the queue system
@@ -75,6 +76,8 @@ class BulkEmailJob implements ShouldQueue
 
         //EVENT
         try {
+            $this->payload['documentId'] = 23;
+            $this->payload['documentName'] = "FNOL Email";
             event(new PostActionEvent($module, $this->payload, $messageId));
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error executing post action: ' . $e->getMessage());

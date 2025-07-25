@@ -11,6 +11,13 @@ class UploadAsDocument
     public static function execute($module, $payload, $preparedData)
     {
         $recordIdentifier = $payload['recordIdentifier'] ?? null;
+        $referenceNo = 0;
+
+        if (str_ends_with($module, 'TbClaim')) {
+            $recordInfo = $module::find($recordIdentifier);
+            $referenceNo = $recordInfo->Claim_No ?? '';
+            $module = 'Claim';
+        }
 
         $docTypeValue = $preparedData['docTypeValue'];
         $docName = $preparedData['docName'];
@@ -33,7 +40,7 @@ class UploadAsDocument
                 'docUrl' => $docUrl,
                 'docPath' => $docPath,
             ],
-            'referenceNo' => $recordIdentifier,
+            'referenceNo' => $referenceNo,
         ];
 
         try {
@@ -42,7 +49,7 @@ class UploadAsDocument
             throw $e;
         }
 
-        if ($isDocumentUploaded && str_ends_with($module, 'TbClaim')) {
+        if ($isDocumentUploaded && $module == 'Claim') {
             $insertedByFlag = $preparedData['insertedByFlag'];
             $activityLogText = $preparedData['activityLogText'];
             $claimLog = [

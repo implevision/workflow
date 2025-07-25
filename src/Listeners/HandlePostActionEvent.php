@@ -33,7 +33,7 @@ class HandlePostActionEvent
             $workflowService->getPostActionService()->execute($module, $payload, $messageId);
         } catch (\Throwable $e) {
             // Log the error or handle it as needed
-            \Log::error('WORKFLOW - Error to execute post action ' . $e->getMessage());
+            \Log::error('WORKFLOW - Error to execute post action ' . $e->getMessage() . $e->getFile() . $e->getLine());
             return;
         }
     }

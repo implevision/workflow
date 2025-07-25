@@ -58,7 +58,7 @@ class EmailAction extends AbstractWorkflowAction
             $prepareBulkEmailData->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
                 'csvFile' => $feedFile,
                 'data' => $data,
-                'postAction' => !empty($payload['postAction']) ? $payload['postAction'] : '',
+                'postAction' => !empty($payload['postAction']) ? $payload['postAction'] : 'uploadAsDocument',
             ], $this->emailInformation)->execute();
         } catch (\Exception $e) {
             throw $e;
