@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
-class HandleJobWorkflowUpdate
+class HandleJobWorkflowUpdatedEvent
 {
     /**
      * Handle the event.

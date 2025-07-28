@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Taurus\Workflow\Events\JobWorkflowCreatedEvent;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
-class HandleJobWorkflowCreation
+class HandleJobWorkflowCreatedEvent
 {
     public function handle(JobWorkflowCreatedEvent $event): int
     {
