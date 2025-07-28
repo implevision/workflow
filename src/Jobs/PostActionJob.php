@@ -5,8 +5,6 @@ namespace Taurus\Workflow\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
-use Taurus\Workflow\Services\SES;
-
 class PostAction implements ShouldQueue
 {
     use Queueable;
@@ -19,7 +17,9 @@ class PostAction implements ShouldQueue
     public function __construct($payload = [])
     {
         $this->payload = $payload;
-        $this->onQueue('workflow-post-action');
+        $queue = config('workflow.post_action_queue');
+        $defaultQueue = getDefaultQueue();
+        $this->onQueue($queue ?? $defaultQueue);
     }
 
     /**

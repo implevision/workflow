@@ -4,8 +4,6 @@ namespace Taurus\Workflow\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-
-use Taurus\Workflow\Services\SES;
 use Taurus\Workflow\Events\PostActionEvent;
 
 class BulkEmailJob implements ShouldQueue
@@ -22,7 +20,9 @@ class BulkEmailJob implements ShouldQueue
     {
         $this->emailClient = $emailClient;
         $this->payload = $payload;
-        $this->onQueue('workflow-bulk-email');
+        $queue = config('workflow.bulk_email_queue');
+        $defaultQueue = getDefaultQueue();
+        $this->onQueue($queue ?? $defaultQueue);
     }
 
     /**
