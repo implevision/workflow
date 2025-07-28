@@ -2,11 +2,9 @@
 
 namespace Taurus\Workflow\Providers;
 
-use Taurus\Workflow\Events\InvokeMatchingWorkflowEvent;
 use Taurus\Workflow\Events\JobWorkflowCreatedEvent;
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Events\PostActionEvent;
-use Taurus\Workflow\Listeners\HandleInvokeMatchingWorkflowEvent;
 use Taurus\Workflow\Listeners\HandleJobWorkflowUpdatedEvent;
 use Taurus\Workflow\Listeners\HandleJobWorkflowCreatedEvent;
 use Taurus\Workflow\Listeners\HandlePostActionEvent;
@@ -23,9 +21,6 @@ class EventServiceProvider extends ServiceProvider
         ],
         PostActionEvent::class => [
             HandlePostActionEvent::class,
-        ],
-        InvokeMatchingWorkflowEvent::class => [
-            HandleInvokeMatchingWorkflowEvent::class,
-        ],
+        ]
     ];
 }

@@ -4,9 +4,7 @@ namespace Taurus\Workflow\Observers;
 
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Artisan;
-use Taurus\Workflow\Events\InvokeMatchingWorkflowEvent;
-
+use Taurus\Workflow\Jobs\InvokeMatchingWorkflowJob;
 
 class ModelObserver implements ShouldHandleEventsAfterCommit
 
@@ -18,9 +16,14 @@ class ModelObserver implements ShouldHandleEventsAfterCommit
             $entity = $model->getKey();
             $entityAction = $method;
             $entityType =  get_class($model);
-            event(new InvokeMatchingWorkflowEvent($entity, $entityAction, $entityType));
+            Log::info('WORKFLOW - Creating job for invoke matching workflow', [
+                'entity' => $entity,
+                'action' => $entityAction,
+                'type' => $entityType,
+            ]);
+            InvokeMatchingWorkflowJob::dispatch($entity, $entityAction, $entityType);
         } catch (\Exception $e) {
-            \Log::info('WORKFLOW - Error dispatching matching workflow: ' . $e->getMessage());
+            Log::info('WORKFLOW - Error dispatching matching workflow: ' . $e->getMessage());
         }
     }
 
