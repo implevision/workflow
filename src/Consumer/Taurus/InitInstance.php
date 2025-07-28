@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Taurus;
 
+use Illuminate\Support\Facades\Config;
+
 class InitInstance
 {
     /**
@@ -58,6 +60,7 @@ class InitInstance
         $postActionServiceClass = "Taurus\\Workflow\\Consumer\\Taurus\\PostAction\\PostActionService";
 
         if (class_exists($postActionServiceClass)) {
+            gfsSaasUserdata(Config::get('workflow.default_system_user_id'));
             return new $postActionServiceClass();
         } else {
             throw new \Exception("Post action service class '$postActionServiceClass' does not exist.");

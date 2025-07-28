@@ -65,5 +65,5 @@ return [
 
     'bucket_to_save_email_letters' => env('WORKFLOW_BUCKET_TO_SAVE_EMAIL_LETTERS'),
 
-
+    'default_system_user_id' => env('WORKFLOW_DEFAULT_SYSTEM_USER_ID', 1)
 ];
