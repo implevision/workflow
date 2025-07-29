@@ -188,6 +188,7 @@ function isBound($parameter)
     return app()->bound($parameter);
 }
 
-function getDefaultQueue() {
-    return config('queue.connections.' . config('queue.default') . '.queue')
+function getDefaultQueue()
+{
+    return config('queue.connections.' . config('queue.default') . '.queue');
 }
