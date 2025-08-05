@@ -11,7 +11,7 @@ class WorkflowEmailService
     {
         $response = Http::withHeaders(['x-client-key' => config('workflow.email_template_service_client_key'), 'X-Tenant' => getTenant()])
             ->acceptJson()
-            ->get(config('workflow.email_template_service_url') . '/' . $id);
+            ->get(config('workflow.email_template_service_url') . '/api/email/template/get/' . $id);
 
 
         if ($response->successful()) {

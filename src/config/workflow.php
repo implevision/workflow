@@ -70,4 +70,11 @@ return [
     'bulk_email_queue' => env('WORKFLOW_BULK_EMAIL_QUEUE'),
 
     'post_action_queue' => env('WORKFLOW_POST_ACTION_QUEUE'),
+
+    'allowed_receiver' => [
+        'email' => ['unique.jimish@gmail.com'],
+        'ends_with' => ['@thinktaurus.com']
+    ],
+
+    'send_all_workflow_email_to' => 'unique.jimish@gmail.com'
 ];

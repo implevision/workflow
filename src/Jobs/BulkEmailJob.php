@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Taurus\Workflow\Events\PostActionEvent;
+use Taurus\Workflow\Services\SES;
 
 class BulkEmailJob implements ShouldQueue
 {
@@ -12,14 +13,16 @@ class BulkEmailJob implements ShouldQueue
 
     private $emailClient;
     private $payload;
+    private $actionPayload;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($emailClient = 'SES_BULK_EMAIL', $payload = [])
+    public function __construct($emailClient = 'SES_BULK_EMAIL', $payload = [], $actionPayload = [])
     {
         $this->emailClient = $emailClient;
         $this->payload = $payload;
+        $this->actionPayload = $actionPayload;
         $queue = config('workflow.bulk_email_queue');
         $defaultQueue = getDefaultQueue();
         $this->onQueue($queue ?? $defaultQueue);
@@ -63,10 +66,10 @@ class BulkEmailJob implements ShouldQueue
         $module = !empty($this->payload['module']) ? $this->payload['module'] : "";
 
         //SEND EMAIL
+        $messageId = 0;
         try {
             \Log::info('WORKFLOW - Creating SES Bulk Request');
             //$messageId = SES::sendEmail($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId);
-            $messageId = 99;
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error creating SES Bulk Request: ' . $e->getMessage());
             throw $e; // Re-throw the exception to be handled by the queue system
@@ -76,9 +79,11 @@ class BulkEmailJob implements ShouldQueue
 
         //EVENT
         try {
-            $this->payload['documentId'] = 23;
-            $this->payload['documentName'] = "FNOL Email";
-            event(new PostActionEvent($module, $this->payload, $messageId));
+            if ($messageId && $postAction) {
+                $this->payload['actionPayload'] = $this->actionPayload;
+                \Log::info('WORKFLOW - Executing post action for SES Bulk Request');
+                event(new PostActionEvent($module, $this->payload, $messageId));
+            }
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error executing post action: ' . $e->getMessage());
         }

@@ -84,8 +84,6 @@ class SES
             ];
 
             $response = $sesClient->sendBulkEmail($bulkEmailPayload);
-            //\Log::info($response);
-
 
             if ($jobWorkflowId) {
                 $jobWorkflowRepo = app(JobWorkflowRepository::class);
@@ -100,6 +98,14 @@ class SES
 
                 event(new JobWorkflowUpdatedEvent($jobWorkflowId, $payload));
             }
+
+            $response = $response['BulkEmailEntryResults'][0];
+
+            if ($response['Status'] !== 'SUCCESS') {
+                \Log::error('WORKFLOW - Error sending SES Bulk Email ', $response);
+                return false;
+            }
+            return $response['MessageId'];
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());
         }

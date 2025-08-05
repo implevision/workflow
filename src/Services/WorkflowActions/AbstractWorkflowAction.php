@@ -74,10 +74,16 @@ class AbstractWorkflowAction
         $this->data = $data;
     }
 
-    public function getRequiredData()
+    public function getListOfRequiredData()
     {
         // This method should be overridden in subclasses to return the required data for the action
-        throw new \Exception("getRequiredData method must be implemented in the subclass.");
+        throw new \Exception("getListOfRequiredData method must be implemented in the subclass.");
+    }
+
+    public function getListOfMandateData()
+    {
+        // This method should be overridden in subclasses to return the required data for the action
+        throw new \Exception("getListOfMandateData method must be implemented in the subclass.");
     }
 
     public function handle()

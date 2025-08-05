@@ -27,7 +27,6 @@ class PrepareBulkEmailData
         $this->payload = $payload;
         $this->emailInformation = $emailInformation;
 
-
         return $this;
     }
 
@@ -46,7 +45,8 @@ class PrepareBulkEmailData
             'subject' => $this->emailInformation['subject'],
             'payload' => [],
             'from' => $from,
-            'postAction' => $this->payload['postAction'] ?? [],
+            'postAction' => $this->payload['postAction'] ?? '',
+            'actionPayload' => $this->payload['actionPayload'] ?? [],
         ];
 
         try {

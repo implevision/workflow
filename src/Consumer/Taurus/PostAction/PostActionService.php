@@ -35,7 +35,7 @@ class PostActionService
 
     private function executePostAction($module, $payload, $preparedData)
     {
-        $postAction = $payload['postAction'] ?? [];
+        $postAction = $payload['postAction'] ?? '';
 
         if (empty($postAction)) {
             throw new \InvalidArgumentException('Post action is required for execution.');

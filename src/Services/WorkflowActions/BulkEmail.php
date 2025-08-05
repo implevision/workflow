@@ -36,7 +36,8 @@ class BulkEmail
 
     private function dispatchBulkEmail($payload)
     {
-        BulkEmailJob::dispatch($this->emailClient, $payload);
+        \Log::info('WORKFLOW - Dispatching bulk email job for ' . $this->emailClient);
+        BulkEmailJob::dispatch($this->emailClient, $payload, $this->payload['actionPayload']);
     }
 
     private function sendEmails()

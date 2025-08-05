@@ -14,7 +14,9 @@ class EmailAction extends AbstractWorkflowAction
     public function handle()
     {
         $payload = $this->getPayload();
-
+        if (empty($payload['id'])) {
+            throw new \Exception("Email template ID is required.");
+        }
         try {
             $emailInformation = [];
             $emailInformation['html'] = "<h1>test</h1>";
@@ -39,9 +41,14 @@ class EmailAction extends AbstractWorkflowAction
             throw $e;
         }
     }
-    public function getRequiredData()
+    public function getListOfRequiredData()
     {
         return !empty($this->emailInformation['placeHolder']) ? $this->emailInformation['placeHolder'] : [];
+    }
+
+    public function getListOfMandateData()
+    {
+        return !empty($this->emailInformation['mandatoryFields']) ? $this->emailInformation['mandatoryFields'] : [];
     }
 
     public function execute()
@@ -53,12 +60,15 @@ class EmailAction extends AbstractWorkflowAction
         $data = $this->getData();
         $payload = $this->getPayload();
 
+        \Log::info($payload);
         try {
+            \Log::info("WORKFLOW - Preparing bulk email data");
             $prepareBulkEmailData = new PrepareBulkEmailData();
             $prepareBulkEmailData->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
                 'csvFile' => $feedFile,
                 'data' => $data,
-                'postAction' => !empty($payload['postAction']) ? $payload['postAction'] : 'uploadAsDocument',
+                'postAction' => !empty($payload['postAction']) ? $payload['postAction'] : '',
+                'actionPayload' => $payload ?? []
             ], $this->emailInformation)->execute();
         } catch (\Exception $e) {
             throw $e;
