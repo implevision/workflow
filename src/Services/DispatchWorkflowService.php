@@ -168,7 +168,7 @@ class DispatchWorkflowService
 
             if ($condition['applyRuleTo'] == 'CERTAIN') {
                 //GET DATA BASED ON CERTAIN CONDITION
-                //APPEND IN $graphQLQuery               
+                //APPEND IN $graphQLQuery
             }
 
             foreach ($condition['instanceActions'] as $action) {
@@ -194,7 +194,7 @@ class DispatchWorkflowService
                     $listOfMandateData = $actionToExecute ? $actionToExecute->getListOfMandateData() : [];
 
                     if ($action['actionType'] == 'EMAIL') {
-                        $listOfRequiredData[] = $listOfMandateData[] = $action['payload']['emailRecipient'];
+                        $listOfRequiredData[] = $listOfMandateData[] = ucfirst($action['payload']['emailRecipient']);
                     }
                 } catch (\Exception $e) {
                     \Log::error('WORKFLOW - Error while getting required data for action - ' . $action['actionType'] . " : " . $e->getMessage());
@@ -233,6 +233,12 @@ class DispatchWorkflowService
 
                     try {
                         foreach ($listOfRequiredData as $placeHolder) {
+                            if (!array_key_exists($placeHolder, $fieldMapping)) {
+                                \Log::error("WORKFLOW - Field mapping not found for placeholder: " . $placeHolder);
+                                $parsedData[$placeHolder] = "";
+                                continue;
+                            }
+
                             $jqFilter = $fieldMapping[$placeHolder]['jqFilter'];
                             $parseResultCallback = !empty($fieldMapping[$placeHolder]['parseResultCallback']) ? $fieldMapping[$placeHolder]['parseResultCallback'] : null;
                             $placeHolderValue = $graphQLSchemaBuilder->extractValue($response, $jqFilter);
@@ -249,7 +255,6 @@ class DispatchWorkflowService
                             }
                             $parsedData[$placeHolder] = $placeHolderValue;
                         }
-
                         //SET DATA FOP ACTION
                         $data[] = $parsedData;
                     } catch (\Exception $e) {
@@ -275,13 +280,16 @@ class DispatchWorkflowService
                         if ($data[$index]['hasPriorDataForWorkflow']) {
                             $hasPriorDataForWorkflow = true;
                         } else {
+                            \Log::error('WORKFLOW - Missing mandate data', ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]);
                             unset($data[$index]);
                             continue;
                         }
 
                         if (config('app.env') != 'production' && $action['actionType'] == 'EMAIL') {
-                            $emailPlaceHolder = $action['payload']['emailRecipient'];
+                            $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
                             $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
+
+                            \Log::error('WORKFLOW - Actual email address: ' . $emailPlaceHolderValue);
 
                             $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
@@ -304,7 +312,7 @@ class DispatchWorkflowService
                             if ($executeEmailAction) {
                                 $data[$index]['email'] = $emailPlaceHolderValue;
                             } else {
-                                \Log::error('WORKFLOW - Missing mandate data - Email');
+                                \Log::error('WORKFLOW - Email address not allowed in non-production env: ' . $emailPlaceHolderValue);
                                 $hasPriorDataForWorkflow = false;
                                 unset($data[$index]);
                                 continue;
@@ -313,9 +321,9 @@ class DispatchWorkflowService
                     }
 
                     if ($hasPriorDataForWorkflow === false) {
-                        \Log::error('WORKFLOW - Missing mandate data', ['data' => $data, 'listOfMandateData' => $listOfMandateData]);
                         continue;
                     }
+
                     $actionToExecute->setWorkflowData($this->workflowId, $jobWorkflowId, $this->recordIdentifier);
                     $actionToExecute->setDataForAction($feedFile, $data);
                     $actionToExecute->execute();

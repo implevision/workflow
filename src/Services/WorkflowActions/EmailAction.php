@@ -18,37 +18,26 @@ class EmailAction extends AbstractWorkflowAction
             throw new \Exception("Email template ID is required.");
         }
         try {
-            $emailInformation = [];
-            $emailInformation['html'] = "<h1>test</h1>";
-            $emailInformation['subject'] = "hello";
-            $emailInformation['placeHolder'] = [
-                'insuredName',
-                'PolicyNumber',
-                'insuredMailingAddress',
-                'claimId',
-                'policyId',
-                'insuredEmail',
-                'insuredPropertyAddress',
-                'adjustingFirmAddress',
-                'adjustingFirmEmail',
-                'adjustingFirmPhone'
-            ];
-            $emailInformation['mandatoryFields'] = ['insuredName', 'PolicyNumber', 'insuredMailingAddress'];
+            $response = WorkflowEmailService::getEmailInformation($payload['id']);
 
-            $this->emailInformation = $emailInformation;
-            //$this->emailInformation = WorkflowEmailService::getEmailInformation($payload['id']);
+            if (empty($response) || empty($response['data']) || !$response['status']) {
+                throw new \Exception("No email template found for the given ID.");
+            }
+
+            $this->emailInformation = $response['data'];
         } catch (\Exception $e) {
             throw $e;
         }
     }
     public function getListOfRequiredData()
     {
-        return !empty($this->emailInformation['placeHolder']) ? $this->emailInformation['placeHolder'] : [];
+        return !empty($this->emailInformation['extractedPlaceholders']) ? $this->emailInformation['extractedPlaceholders'] : [];
     }
 
     public function getListOfMandateData()
     {
-        return !empty($this->emailInformation['mandatoryFields']) ? $this->emailInformation['mandatoryFields'] : [];
+        $payload = $this->getPayload();
+        return !empty($payload['mandatoryPlaceholders']) ? $payload['mandatoryPlaceholders'] : [];
     }
 
     public function execute()
@@ -60,7 +49,6 @@ class EmailAction extends AbstractWorkflowAction
         $data = $this->getData();
         $payload = $this->getPayload();
 
-        \Log::info($payload);
         try {
             \Log::info("WORKFLOW - Preparing bulk email data");
             $prepareBulkEmailData = new PrepareBulkEmailData();

@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Taurus\Workflow\Consumer\Taurus\Helper;
+
 class TbClaim
 {
   /**
@@ -65,11 +67,11 @@ class TbClaim
   private function initializeFieldMapping()
   {
     $fieldMapping = [
-      'claimId' => [
+      'ClaimId' => [
         'GraphQLschemaToReplace' => [
           'claimId' => null
         ],
-        'jqFilter' => '.claim.claimId'
+        'jqFilter' => '.claim.ClaimId'
       ],
       'PolicyNumber' => [
         'GraphQLschemaToReplace' => [
@@ -77,19 +79,26 @@ class TbClaim
         ],
         'jqFilter' => '.claim.riskId'
       ],
-      'policyId' => [
+      'PolicyId' => [
         'GraphQLschemaToReplace' => [
           'policyId' => null
         ],
         'jqFilter' => '.claim.policyId'
       ],
-      'insuredName' => [
+      'DateOfLoss' => [
+        'GraphQLschemaToReplace' => [
+          'dateOfLoss' => null
+        ],
+        'jqFilter' => '.claim.dateOfLoss',
+        'parseResultCallback' => 'formatDate'
+      ],
+      'InsuredName' => [
         'GraphQLschemaToReplace' => [
           'insuredName' => null
         ],
         'jqFilter' => '.claim.insuredName'
       ],
-      'insuredEmail' => [
+      'InsuredEmail' => [
         'GraphQLschemaToReplace' => [
           'claimCommunication' => [
             'isAcceptEmail' => null,
@@ -102,7 +111,7 @@ class TbClaim
       ],
     ];
 
-    $fieldMapping['insuredPropertyAddress'] = [
+    $fieldMapping['InsuredPropertyAddress'] = [
       'GraphQLschemaToReplace' => [
         'insuredPerson' => [
           'TbPersonaddress' => [
@@ -115,8 +124,15 @@ class TbClaim
             'addressLine4' => null,
             'postalCode' => null,
             'postalCodeSuffix' => null,
-            'city' => null,
-            'state' => null,
+            'tbCity' => [
+              'name' => null
+            ],
+            'tbState' => [
+              'name' => null
+            ],
+            'tbCountry' => [
+              'name' => null
+            ],
             'isDefaultAddress' => null,
           ]
         ]
@@ -126,14 +142,25 @@ class TbClaim
     ];
 
 
-    $fieldMapping['insuredMailingAddress'] = [
-      'GraphQLschemaToReplace' => $fieldMapping['insuredPropertyAddress']['GraphQLschemaToReplace'],
+    $fieldMapping['InsuredMailingAddress'] = [
+      'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
       'jqFilter' => '.claim.insuredPerson.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
       'parseResultCallback' => 'parseMailingAddress'
     ];
 
+    $fieldMapping['AdjustingFirmName'] = [
+      'GraphQLschemaToReplace' => [
+        'adjustingFirm' => [
+          'personInfo' => [
+            'fullName' => null
+          ],
+        ]
+      ],
+      'jqFilter' => '[.claim.adjustingFirm[].personInfo.fullName]',
+      'parseResultCallback' => 'parseAdjustingFirmName'
+    ];
 
-    $fieldMapping['adjustingFirmAddress'] = [
+    $fieldMapping['AdjustingFirmAddress'] = [
       'GraphQLschemaToReplace' => [
         'adjustingFirm' => [
           'personInfo' => [
@@ -147,18 +174,25 @@ class TbClaim
               'addressLine4' => null,
               'postalCode' => null,
               'postalCodeSuffix' => null,
-              'city' => null,
-              'state' => null,
+              'tbCity' => [
+                'name' => null
+              ],
+              'tbState' => [
+                'name' => null
+              ],
+              'tbCountry' => [
+                'name' => null
+              ],
               'isDefaultAddress' => null,
             ]
           ]
         ]
       ],
-      'jqFilter' => '.claim.adjustingFirm[].personInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+      'jqFilter' => '[.claim.adjustingFirm[].personInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")]',
       'parseResultCallback' => 'parseAdjustingFirmAddress'
     ];
 
-    $fieldMapping['adjustingFirmEmail'] = [
+    $fieldMapping['AdjustingFirmEmail'] = [
       'GraphQLschemaToReplace' => [
         'adjustingFirm' => [
           'personInfo' => [
@@ -169,11 +203,11 @@ class TbClaim
           ]
         ]
       ],
-      'jqFilter' => '[.claim.adjustingFirm[].personInfo.emailInfo[] | select(.isDefault == "Y")]',
+      'jqFilter' => '[.claim.adjustingFirm[].personInfo.emailInfo[0] | select(.isDefault == "Y")]',
       'parseResultCallback' => 'parseAdjustingFirmEmail'
     ];
 
-    $fieldMapping['adjustingFirmPhone'] = [
+    $fieldMapping['AdjustingFirmPhone'] = [
       'GraphQLschemaToReplace' => [
         'adjustingFirm' => [
           'personInfo' => [
@@ -184,28 +218,70 @@ class TbClaim
           ]
         ]
       ],
-      'jqFilter' => '[.claim.adjustingFirm[].personInfo.phoneInfo[] | select(.isDefault == "Y")]',
+      'jqFilter' => '[.claim.adjustingFirm[].personInfo.phoneInfo[0] | select(.isDefault == "Y")]',
       'parseResultCallback' => 'parseAdjustingFirmPhone'
     ];
 
-    $fieldMapping['adjustingFirmPhone'] = [
+    $fieldMapping['ExaminerName'] = [
       'GraphQLschemaToReplace' => [
-        'adjustingFirm' => [
-          'personInfo' => [
-            'phoneInfo' => [
-              'phoneNumber' => null,
-              'isDefault' => null,
+        'serviceRepresentative' => [
+          'screenName' => null
+        ]
+      ],
+      'jqFilter' => '.claim.serviceRepresentative.screenName'
+    ];
+
+    $fieldMapping['ExaminerEmail'] = [
+      'GraphQLschemaToReplace' => [
+        'serviceRepresentative' => [
+          'TbPersonInfo' => [
+            'emailInfo' => [
+              'email' => null
             ]
           ]
         ]
       ],
-      'jqFilter' => '[.claim.adjustingFirm[].personInfo.phoneInfo[] | select(.isDefault == "Y")]',
-      'parseResultCallback' => 'parseAdjustingFirmPhone'
+      'jqFilter' => '[.claim.serviceRepresentative.TbPersonInfo.emailInfo[]]',
+      'parseResultCallback' => 'parseExaminerEmail'
     ];
+
+    $fieldMapping['CompanyLogo'] = [
+      'GraphQLschemaToReplace' => [
+        'agency' => [
+          'brandedCompany' => [
+            'company' => [
+              'logo' => null
+            ]
+          ]
+        ]
+      ],
+      'jqFilter' => '.claim.agency.brandedCompany[]',
+      'parseResultCallback' => 'parseCompanyLogo'
+    ];
+
+    $fieldMapping['WYOCompanyName'] = [
+      'GraphQLschemaToReplace' => [
+        'agency' => [
+          'brandedCompany' => [
+            'company' => [
+              'companyName' => null
+            ]
+          ]
+        ]
+      ],
+      'jqFilter' => '.claim.agency.brandedCompany[]',
+      'parseResultCallback' => 'parseCompanyName'
+    ];
+
+
 
     return $fieldMapping;
   }
 
+  public function formatDate($dateToFormat)
+  {
+    return Helper::formatDate($dateToFormat);
+  }
 
   private function parseAddress($addressArr)
   {
@@ -215,10 +291,15 @@ class TbClaim
 
     $address = [
       'addressLine1' => ($addressArr['houseNo'] ?? "") . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? "")),
-      'city' => $addressArr['city'] ?? null,
-      'state' => $addressArr['state'] ?? null,
+      'city' => $addressArr['tbCity']['name'] ?? null,
+      'city' => $addressArr['tbCounty']['name'] ?? null,
+      'state' => $addressArr['tbState']['name'] ?? null,
       'postalCode' => $addressArr['postalCode'] ?? null,
     ];
+
+    if (!empty($address['postalCode']) && !empty($addressArr['postalCodeSuffix'])) {
+      $address['postalCode'] .= ' - ' . $addressArr['postalCodeSuffix'];
+    }
 
     $address = array_filter(array_map('trim', $address), function ($item) {
       return !empty($item);
@@ -227,9 +308,14 @@ class TbClaim
     return implode(', ', $address);
   }
 
+  public function parseAdjustingFirmName($nameArr)
+  {
+    return last($nameArr);
+  }
+
   public function parseAdjustingFirmAddress($addressArr)
   {
-    return $this->parseAddress($addressArr);
+    return $this->parseAddress(last($addressArr));
   }
 
   public function parseMailingAddress($addressArr)
@@ -244,12 +330,12 @@ class TbClaim
 
   public function parseAdjustingFirmEmail($emailArr)
   {
-    return $emailArr[0]['email'] ?? null;
+    return is_array($emailArr) && count($emailArr) ? (last($emailArr)['email'] ?? null) : null;
   }
 
   public function parseAdjustingFirmPhone($phoneArr)
   {
-    return $phoneArr[0]['phoneNumber'] ?? null;
+    return is_array($phoneArr) && count($phoneArr) ? (last($phoneArr)['phoneNumber'] ?? null) : null;
   }
 
   public function parseClaimCommunication($claimCommunication)
@@ -264,5 +350,29 @@ class TbClaim
     }
 
     return $email;
+  }
+
+  public function parseExaminerEmail($emailArr)
+  {
+    return is_array($emailArr) && count($emailArr) ? ($emailArr[0]['email'] ?? null) : null;
+  }
+
+  public function parseCompanyLogo($brandedCompanyArr)
+  {
+    if (is_array($brandedCompanyArr) && !empty($brandedCompanyArr['company']['logo'])) {
+      return $brandedCompanyArr['company']['logo'];
+    }
+
+    $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+    return $holdingCompanyDetail['logo'] ?? null;
+  }
+
+  public function parseCompanyName($brandedCompanyArr)
+  {
+    if (is_array($brandedCompanyArr) && !empty($brandedCompanyArr['company']['companyName'])) {
+      return $brandedCompanyArr['company']['companyName'];
+    }
+
+    return null;
   }
 }
