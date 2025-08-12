@@ -2,7 +2,6 @@
 
 namespace Taurus\Workflow\Consumer;
 
-
 class ConsumerService
 {
     /**
@@ -20,7 +19,7 @@ class ConsumerService
         $consumerServiceClass = "Taurus\\Workflow\\Consumer\\{$workflowConsumer}\\InitInstance";
 
         if (class_exists($consumerServiceClass)) {
-            return new $consumerServiceClass();
+            return new $consumerServiceClass;
         } else {
             throw new \Exception("Consumer service class '$consumerServiceClass' does not exist.");
         }

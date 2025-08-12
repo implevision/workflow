@@ -2,9 +2,8 @@
 
 namespace Taurus\Workflow\Services;
 
-
-use Aws\Sts\StsClient;
 use Aws\Exception\AwsException;
+use Aws\Sts\StsClient;
 
 class AWSUserInfo
 {
@@ -17,14 +16,14 @@ class AWSUserInfo
         //     throw new \Exception('AWS Profile not found in config/workflow.php');
         // }
 
-        if (!$awsRegion) {
+        if (! $awsRegion) {
             throw new \Exception('AWS Region not found in config/workflow.php');
         }
 
         $stsClient = new StsClient([
             ...($awsProfile ? ['profile' => $awsProfile] : []),
             'region' => $awsRegion,
-            'version' => 'latest'
+            'version' => 'latest',
         ]);
 
         try {

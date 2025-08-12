@@ -4,7 +4,6 @@ namespace Taurus\Workflow\Console\Commands;
 
 use Illuminate\Console\Command;
 use Taurus\Workflow\Services\DispatchWorkflowService;
-use Taurus\Workflow\Repositories\Contracts\JobWorkflowRepository;
 
 class DispatchWorkflow extends Command
 {
@@ -30,8 +29,9 @@ class DispatchWorkflow extends Command
         $workflowId = $this->option('workflowId');
         $recordIdentifier = $this->option('recordIdentifier', 0);
 
-        if (!$workflowId) {
-            $this->error("The --workflowId option is required.");
+        if (! $workflowId) {
+            $this->error('The --workflowId option is required.');
+
             return 1; // Return a non-zero status code to indicate failure
         }
 
@@ -41,15 +41,16 @@ class DispatchWorkflow extends Command
         setRunningJobWorkflowId($recordIdentifier);
 
         try {
-            \Log::info('WORKFLOW - Dispatching workflow with ID ' . $workflowId);
-            $recordIdentifier ? \Log::info('WORKFLOW - Dispatching workflow with record identifier ' . $recordIdentifier) : null;
+            \Log::info('WORKFLOW - Dispatching workflow with ID '.$workflowId);
+            $recordIdentifier ? \Log::info('WORKFLOW - Dispatching workflow with record identifier '.$recordIdentifier) : null;
 
             $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier);
             $workflow->dispatch();
         } catch (\Exception $e) {
-            $errorMessage = "WORKFLOW - Error dispatching workflow with ID $workflowId: " . $e->getMessage();
+            $errorMessage = "WORKFLOW - Error dispatching workflow with ID $workflowId: ".$e->getMessage();
             \Log::error($errorMessage);
             $this->error($errorMessage);
+
             return 1; // Return a non-zero status code to indicate failure
         }
     }

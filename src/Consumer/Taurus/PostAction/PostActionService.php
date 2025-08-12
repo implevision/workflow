@@ -22,7 +22,7 @@ class PostActionService
     {
         $actionType = $payload['actionType'] ?? null;
 
-        if (!$actionType) {
+        if (! $actionType) {
             throw new \InvalidArgumentException('Action type is required for post action execution.');
         }
 

@@ -3,25 +3,22 @@
 namespace Taurus\Workflow\Services\WorkflowActions;
 
 use Taurus\Workflow\Services\WorkflowEmailService;
-use Taurus\Workflow\Services\WorkflowActions\PrepareBulkEmailData;
-
 
 class EmailAction extends AbstractWorkflowAction
 {
-
     protected $emailInformation = [];
 
     public function handle()
     {
         $payload = $this->getPayload();
         if (empty($payload['id'])) {
-            throw new \Exception("Email template ID is required.");
+            throw new \Exception('Email template ID is required.');
         }
         try {
             $response = WorkflowEmailService::getEmailInformation($payload['id']);
 
-            if (empty($response) || empty($response['data']) || !$response['status']) {
-                throw new \Exception("No email template found for the given ID.");
+            if (empty($response) || empty($response['data']) || ! $response['status']) {
+                throw new \Exception('No email template found for the given ID.');
             }
 
             $this->emailInformation = $response['data'];
@@ -29,15 +26,17 @@ class EmailAction extends AbstractWorkflowAction
             throw $e;
         }
     }
+
     public function getListOfRequiredData()
     {
-        return !empty($this->emailInformation['extractedPlaceholders']) ? $this->emailInformation['extractedPlaceholders'] : [];
+        return ! empty($this->emailInformation['extractedPlaceholders']) ? $this->emailInformation['extractedPlaceholders'] : [];
     }
 
     public function getListOfMandateData()
     {
         $payload = $this->getPayload();
-        return !empty($payload['mandatoryPlaceholders']) ? $payload['mandatoryPlaceholders'] : [];
+
+        return ! empty($payload['mandatoryPlaceholders']) ? $payload['mandatoryPlaceholders'] : [];
     }
 
     public function execute()
@@ -50,13 +49,13 @@ class EmailAction extends AbstractWorkflowAction
         $payload = $this->getPayload();
 
         try {
-            \Log::info("WORKFLOW - Preparing bulk email data");
-            $prepareBulkEmailData = new PrepareBulkEmailData();
+            \Log::info('WORKFLOW - Preparing bulk email data');
+            $prepareBulkEmailData = new PrepareBulkEmailData;
             $prepareBulkEmailData->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
                 'csvFile' => $feedFile,
                 'data' => $data,
-                'postAction' => !empty($payload['postAction']) ? $payload['postAction'] : '',
-                'actionPayload' => $payload ?? []
+                'postAction' => ! empty($payload['postAction']) ? $payload['postAction'] : '',
+                'actionPayload' => $payload ?? [],
             ], $this->emailInformation)->execute();
         } catch (\Exception $e) {
             throw $e;

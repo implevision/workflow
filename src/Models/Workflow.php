@@ -10,7 +10,6 @@ class Workflow extends Model
 {
     use SoftDeletes;
 
-
     protected $table;
 
     protected $fillable = [
@@ -23,7 +22,7 @@ class Workflow extends Model
         'workflow_execution_frequency',
         'workflow_next_date_to_execute',
         'is_active',
-        'aws_event_bridge_arn'
+        'aws_event_bridge_arn',
     ];
 
     protected $casts = [
@@ -36,7 +35,7 @@ class Workflow extends Model
         parent::__construct($attributes);
 
         $prefix = getTablePrefix();
-        $this->table = $prefix . '_workflows';
+        $this->table = $prefix.'_workflows';
     }
 
     public function conditions()
@@ -50,7 +49,7 @@ class Workflow extends Model
         if ($this->date_time_info_to_execute_workflow['recurringFrequency']) {
             $frequency = $this->date_time_info_to_execute_workflow['recurringFrequency'];
             $next = $this->getNextExecution($frequency);
-        } else if ($this->date_time_info_to_execute_workflow['executionEffectiveDate']) {
+        } elseif ($this->date_time_info_to_execute_workflow['executionEffectiveDate']) {
             $next = $this->date_time_info_to_execute_workflow['executionEffectiveDate'];
         }
 
@@ -62,10 +61,10 @@ class Workflow extends Model
     public function getNextExecution(string $frequency): string
     {
         return match (strtoupper(trim($frequency))) {
-            'ONCE'  => Carbon::now()->modify('next day')->format('Y-m-d'),
+            'ONCE' => Carbon::now()->modify('next day')->format('Y-m-d'),
             'MONTH' => Carbon::now()->modify('next Month')->startOfMonth()->format('Y-m-d'),
-            'YEAR'  => Carbon::now()->modify('first day of January next year')->format('Y-m-d'),
-            'WEEK'  => Carbon::now()->modify('next Monday')->format('Y-m-d '),
+            'YEAR' => Carbon::now()->modify('first day of January next year')->format('Y-m-d'),
+            'WEEK' => Carbon::now()->modify('next Monday')->format('Y-m-d '),
             default => throw new \InvalidArgumentException("Unknown schedule type: {$frequency}"),
         };
     }

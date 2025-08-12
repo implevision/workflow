@@ -2,8 +2,8 @@
 
 namespace Taurus\Workflow\Repositories\Eloquent;
 
-use Taurus\Workflow\Models\WorkflowCondition;
 use Illuminate\Support\Collection;
+use Taurus\Workflow\Models\WorkflowCondition;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
 
 class WorkflowConditionRepository implements WorkflowConditionRepositoryInterface
@@ -29,6 +29,7 @@ class WorkflowConditionRepository implements WorkflowConditionRepositoryInterfac
     {
         $condition = $this->model->findOrFail($id);
         $condition->update($data);
+
         return $condition;
     }
 

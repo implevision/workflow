@@ -4,7 +4,6 @@ namespace Taurus\Workflow\Services\WorkflowActions;
 
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Jobs\BulkEmailJob;
-use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
 class BulkEmail
 {
@@ -36,7 +35,7 @@ class BulkEmail
 
     private function dispatchBulkEmail($payload)
     {
-        \Log::info('WORKFLOW - Dispatching bulk email job for ' . $this->emailClient);
+        \Log::info('WORKFLOW - Dispatching bulk email job for '.$this->emailClient);
         BulkEmailJob::dispatch($this->emailClient, $payload, $this->payload['actionPayload']);
     }
 
@@ -47,8 +46,8 @@ class BulkEmail
         $data = $jobPayload['data'] ?? [];
 
         $totalNoOfRecordsToExecute = 0;
-        //$workflowId = !empty($jobPayload['workflowId']) ? $jobPayload['workflowId'] : 0;
-        $jobWorkflowId = !empty($jobPayload['jobWorkflowId']) ? $jobPayload['jobWorkflowId'] : 0;
+        // $workflowId = !empty($jobPayload['workflowId']) ? $jobPayload['workflowId'] : 0;
+        $jobWorkflowId = ! empty($jobPayload['jobWorkflowId']) ? $jobPayload['jobWorkflowId'] : 0;
 
         if ($csvFile) {
             $totalNoOfRecordsToExecute = $this->processCSVFile($csvFile, $jobPayload);
@@ -58,10 +57,10 @@ class BulkEmail
             $totalNoOfRecordsToExecute = $this->processData($data, $jobPayload);
         }
 
-        //Update count of workflow
+        // Update count of workflow
         if ($jobWorkflowId) {
             event(new JobWorkflowUpdatedEvent($jobWorkflowId, [
-                'total_no_of_records_to_execute' => $totalNoOfRecordsToExecute
+                'total_no_of_records_to_execute' => $totalNoOfRecordsToExecute,
             ]));
         }
     }
@@ -71,21 +70,23 @@ class BulkEmail
         $rowCount = 0;
         $placeholder = [];
         if (file_exists($csvFile)) {
-            if (($handle = fopen($csvFile, "r")) !== false) {
-                while (!feof(stream: $handle)) {
+            if (($handle = fopen($csvFile, 'r')) !== false) {
+                while (! feof(stream: $handle)) {
                     $data = fgetcsv($handle);
-                    if (!$data || !is_array($data)) {
+                    if (! $data || ! is_array($data)) {
                         continue;
                     }
 
                     if ($rowCount == 0) {
                         $placeholder = $data;
                         $rowCount++;
+
                         continue;
                     }
 
                     if (count($placeholder) != count($data)) {
-                        \Log::error('WORKFLOW - CSV file has different number of columns in row ' . $rowCount);
+                        \Log::error('WORKFLOW - CSV file has different number of columns in row '.$rowCount);
+
                         continue;
                     }
 

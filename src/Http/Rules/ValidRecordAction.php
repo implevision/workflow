@@ -18,7 +18,7 @@ class ValidRecordAction implements ValidationRule
         $effectiveAction = request()->input('when.effectiveActionToExecuteWorkflow');
         $stringValidAction = implode(', ', $validActions);
 
-        if ($effectiveAction === 'ON_RECORD_ACTION' && !in_array($value, $validActions)) {
+        if ($effectiveAction === 'ON_RECORD_ACTION' && ! in_array($value, $validActions)) {
             $fail("Invalid value for recordActionToExecuteWorkflow. Allowed values: [$stringValidAction].");
         }
     }

@@ -2,9 +2,9 @@
 
 namespace Taurus\Workflow\Repositories\Eloquent;
 
+use Illuminate\Database\Eloquent\Collection;
 use Taurus\Workflow\Models\WorkflowAction;
 use Taurus\Workflow\Repositories\Contracts\WorkflowActionRepositoryInterface;
-use Illuminate\Database\Eloquent\Collection;
 
 class WorkflowActionRepository implements WorkflowActionRepositoryInterface
 {
@@ -29,6 +29,7 @@ class WorkflowActionRepository implements WorkflowActionRepositoryInterface
     {
         $action = $this->model->find($id);
         $action->update($data);
+
         return $action;
     }
 

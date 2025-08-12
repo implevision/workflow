@@ -32,7 +32,7 @@ class HealthCheck extends Command
         'table_prefix',
         'timezone',
         'aws_iam_role_arn_to_invoke_lambda_from_event_bridge',
-        'aws_lambda_function_arn_to_invoke_workflow'
+        'aws_lambda_function_arn_to_invoke_workflow',
     ];
 
     /**
@@ -40,12 +40,13 @@ class HealthCheck extends Command
      */
     public function handle()
     {
-        $this->info("Processing, please wait...");
-        $this->info(string: "Checking for configuration...");
+        $this->info('Processing, please wait...');
+        $this->info(string: 'Checking for configuration...');
         $this->checkForConfig();
 
-        if (!$this->confirm('The configuration that is listed is correct?', true)) {
+        if (! $this->confirm('The configuration that is listed is correct?', true)) {
             $this->info('**** Please update the configuration and try again. **** ');
+
             return 1;
         }
 
@@ -54,7 +55,7 @@ class HealthCheck extends Command
             return 1;
         }*/
 
-        $this->info(string: "Checking for AWS permissions...");
+        $this->info(string: 'Checking for AWS permissions...');
         $this->checkForAwsPermission();
 
         /*$spinner = ['|', '/', '-', '\\'];
@@ -87,11 +88,13 @@ class HealthCheck extends Command
     {
         if (empty(config('workflow.aws_iam_role_arn_to_invoke_lambda_from_event_bridge'))) {
             $this->error('Please set the `aws_iam_role_arn_to_invoke_lambda_from_event_bridge` in the config/workflow.php file.');
+
             return 0;
         }
 
         if (empty(config('workflow.aws_lambda_function_arn_to_invoke_workflow'))) {
             $this->error('Please set the `aws_lambda_function_arn_to_invoke_workflow` in the config/workflow.php file.');
+
             return 0;
         }
 
@@ -104,6 +107,7 @@ class HealthCheck extends Command
             $allowedActions = checkUserCapabilities::check();
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
+
             return 1;
         }
 

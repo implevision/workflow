@@ -2,8 +2,8 @@
 
 namespace Taurus\Workflow\Repositories\Eloquent;
 
-use Taurus\Workflow\Models\Workflow;
 use Illuminate\Database\Eloquent\Collection;
+use Taurus\Workflow\Models\Workflow;
 use Taurus\Workflow\Repositories\Contracts\WorkflowRepositoryInterface;
 
 class WorkflowRepository implements WorkflowRepositoryInterface
@@ -37,7 +37,7 @@ class WorkflowRepository implements WorkflowRepositoryInterface
                 if ($withDeleted) {
                     $query->withTrashed();
                 }
-            }
+            },
         ]);
 
         if ($withDeleted) {
@@ -52,6 +52,7 @@ class WorkflowRepository implements WorkflowRepositoryInterface
         $workflow = $this->model->findOrFail($id);
         $workflow->update($data);
         $workflow->calculateAndUpdateNextExecution();
+
         return $workflow;
     }
 
@@ -86,7 +87,7 @@ class WorkflowRepository implements WorkflowRepositoryInterface
                     if ($withDeleted) {
                         $query->withTrashed();
                     }
-                }
+                },
             ]);
 
         $query = $withDeleted ? $query->withTrashed() : $query;

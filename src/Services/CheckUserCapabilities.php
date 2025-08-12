@@ -2,10 +2,8 @@
 
 namespace Taurus\Workflow\Services;
 
-
-use Aws\Iam\IamClient;
 use Aws\Exception\AwsException;
-use Taurus\Workflow\Services\AWSUserInfo;
+use Aws\Iam\IamClient;
 
 class CheckUserCapabilities
 {
@@ -19,15 +17,15 @@ class CheckUserCapabilities
         //     throw new \Exception('AWS Profile not found in config/workflow.php');
         // }
 
-        if (!$awsRegion) {
+        if (! $awsRegion) {
             throw new \Exception('AWS Region not found in config/workflow.php');
         }
 
-        if (!$requiredActions) {
+        if (! $requiredActions) {
             throw new \Exception('Required Actions not found in config/workflow.php');
         }
 
-        //GET USER ARN
+        // GET USER ARN
         $awsUser = AWSUserInfo::getInfo();
         $roleArn = $awsUser['Arn'];
 
@@ -42,7 +40,7 @@ class CheckUserCapabilities
         $awsConfig = [
             ...($awsProfile ? ['profile' => $awsProfile] : []),
             'region' => $awsRegion,
-            'version' => 'latest'
+            'version' => 'latest',
         ];
 
         try {

@@ -3,7 +3,6 @@
 namespace Taurus\Workflow\Data;
 
 use Spatie\LaravelData\Data;
-use Taurus\Workflow\Data\InstanceActionData;
 
 class WorkflowConditionData extends Data
 {

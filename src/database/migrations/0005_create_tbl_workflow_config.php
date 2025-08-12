@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         $tablePrefix = getTablePrefix();
-        Schema::create("{$tablePrefix}_workflow_config", function (Blueprint $table) use ($tablePrefix) {
+        Schema::create("{$tablePrefix}_workflow_config", function (Blueprint $table) {
             $table->id();
             $table->string('config_key');
             $table->string('config_value');

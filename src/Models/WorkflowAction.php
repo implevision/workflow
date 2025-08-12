@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class WorkflowAction extends Model
 {
     use SoftDeletes;
+
     protected $table;
 
     protected $fillable = [
@@ -24,7 +25,7 @@ class WorkflowAction extends Model
         parent::__construct($attributes);
 
         $prefix = getTablePrefix();
-        $this->table = $prefix . '_workflow_actions';
+        $this->table = $prefix.'_workflow_actions';
     }
 
     public function condition()

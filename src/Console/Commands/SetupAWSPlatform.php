@@ -4,7 +4,6 @@ namespace Taurus\Workflow\Console\Commands;
 
 use Exception;
 use Illuminate\Console\Command;
-
 use Taurus\Workflow\Services\EventBridgeScheduler;
 
 class SetupAWSPlatform extends Command
@@ -28,7 +27,7 @@ class SetupAWSPlatform extends Command
      */
     public function handle()
     {
-        $this->info("Processing, please wait...");
+        $this->info('Processing, please wait...');
         $this->setEventBridgeGroup();
 
         return 0;
@@ -36,39 +35,41 @@ class SetupAWSPlatform extends Command
 
     private function setEventBridgeGroup()
     {
-        $this->info("Setting up Event Bridge Group...");
-        $this->info("Please wait...");
+        $this->info('Setting up Event Bridge Group...');
+        $this->info('Please wait...');
 
         $tenant = config('workflow.single_tenant');
 
-        if (!$tenant && function_exists('tenant')) {
+        if (! $tenant && function_exists('tenant')) {
             $tenant = tenant();
         }
 
-        if (!$tenant) {
-            $this->error("Tenant not found.");
+        if (! $tenant) {
+            $this->error('Tenant not found.');
+
             return;
         }
 
-        $groupName = 'taurus-workflow-' . $tenant;
+        $groupName = 'taurus-workflow-'.$tenant;
         $tags = [
             [
                 'Key' => 'service',
-                'Value' => 'workflow'
+                'Value' => 'workflow',
             ],
             [
                 'Key' => 'tenant',
-                'Value' => $tenant
-            ]
+                'Value' => $tenant,
+            ],
         ];
 
         try {
             EventBridgeScheduler::createScheduleGroup($groupName, $tags);
         } catch (Exception $e) {
-            $this->error("Error creating schedule group: " . $e->getMessage());
+            $this->error('Error creating schedule group: '.$e->getMessage());
+
             return;
         }
 
-        $this->info("Event Bridge Group setup completed.");
+        $this->info('Event Bridge Group setup completed.');
     }
 }

@@ -4,7 +4,6 @@ namespace Taurus\Workflow\Services\WorkflowActions;
 
 class AbstractWorkflowAction
 {
-
     protected $action;
 
     protected $payload;
@@ -77,24 +76,24 @@ class AbstractWorkflowAction
     public function getListOfRequiredData()
     {
         // This method should be overridden in subclasses to return the required data for the action
-        throw new \Exception("getListOfRequiredData method must be implemented in the subclass.");
+        throw new \Exception('getListOfRequiredData method must be implemented in the subclass.');
     }
 
     public function getListOfMandateData()
     {
         // This method should be overridden in subclasses to return the required data for the action
-        throw new \Exception("getListOfMandateData method must be implemented in the subclass.");
+        throw new \Exception('getListOfMandateData method must be implemented in the subclass.');
     }
 
     public function handle()
     {
         // This method should be overridden in subclasses to return the required data for the action
-        throw new \Exception("handle method must be implemented in the subclass.");
+        throw new \Exception('handle method must be implemented in the subclass.');
     }
 
     public function execute()
     {
         // This method should be overridden in subclasses to return the required data for the action
-        throw new \Exception("execute method must be implemented in the subclass.");
+        throw new \Exception('execute method must be implemented in the subclass.');
     }
 }

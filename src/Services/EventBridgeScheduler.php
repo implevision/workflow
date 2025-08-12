@@ -2,13 +2,11 @@
 
 namespace Taurus\Workflow\Services;
 
-
-use Aws\Scheduler\SchedulerClient;
 use Aws\Exception\AwsException;
+use Aws\Scheduler\SchedulerClient;
 
 class EventBridgeScheduler
 {
-
     public static function getAwsConfig()
     {
         $awsProfile = config('workflow.aws_profile');
@@ -18,14 +16,14 @@ class EventBridgeScheduler
         //     throw new \Exception('AWS Profile not found in config/workflow.php');
         // }
 
-        if (!$awsRegion) {
+        if (! $awsRegion) {
             throw new \Exception('AWS Region not found in config/workflow.php');
         }
 
         return [
             ...($awsProfile ? ['profile' => $awsProfile] : []),
             'region' => $awsRegion,
-            'version' => 'latest'
+            'version' => 'latest',
         ];
     }
 
@@ -47,7 +45,7 @@ class EventBridgeScheduler
 
                 $result = $schedulerClient->listScheduleGroups($params);
 
-                $scheduleGroupsArn = "";
+                $scheduleGroupsArn = '';
                 foreach ($result['ScheduleGroups'] as $group) {
                     if ($group['Name'] === $targetGroupName) {
                         $exists = true;
@@ -59,18 +57,18 @@ class EventBridgeScheduler
                 $nextToken = $result['NextToken'] ?? null;
             } while ($nextToken);
 
-
             if ($exists) {
                 \Log::info("Schedule Group '{$targetGroupName}' already exists!");
+
                 return $scheduleGroupsArn;
             }
 
             // Create a new schedule group
             $result = $schedulerClient->createScheduleGroup([
-                'Name' => $targetGroupName
+                'Name' => $targetGroupName,
             ]);
 
-            \Log::info("Schedule Group Created! ARN: " . $result['ScheduleGroupArn']);
+            \Log::info('Schedule Group Created! ARN: '.$result['ScheduleGroupArn']);
 
             if (count($tags)) {
                 $schedulerClient->tagResource([
@@ -78,6 +76,7 @@ class EventBridgeScheduler
                     'Tags' => $tags,
                 ]);
             }
+
             return $result['ScheduleGroupArn'];
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());
@@ -94,11 +93,11 @@ class EventBridgeScheduler
                 $params = [
                     'Name' => $scheduleName,
                     'ScheduleExpression' => $scheduleExpression,
-                    //'ScheduleExpressionTimezone'  => 'UTC',
+                    // 'ScheduleExpressionTimezone'  => 'UTC',
                     'GroupName' => $groupName,
                     'FlexibleTimeWindow' => [
                         'Mode' => $flexibleTimeWindow,
-                    ]
+                    ],
                 ];
 
                 if (count($target)) {
@@ -111,7 +110,7 @@ class EventBridgeScheduler
 
                 return $schedulerClient->createSchedule($params);
             } catch (AwsException $e) {
-                throw new \Exception("Error creating schedule: " . $e->getMessage());
+                throw new \Exception('Error creating schedule: '.$e->getMessage());
             }
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());

@@ -2,8 +2,8 @@
 
 namespace Taurus\Workflow\Repositories\Eloquent;
 
-use Taurus\Workflow\Models\WorkflowConfig;
 use Illuminate\Database\Eloquent\Collection;
+use Taurus\Workflow\Models\WorkflowConfig;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConfigRepositoryInterface;
 
 class WorkflowConfigRepository implements WorkflowConfigRepositoryInterface
@@ -29,6 +29,7 @@ class WorkflowConfigRepository implements WorkflowConfigRepositoryInterface
     {
         $WorkflowConfig = $this->model->findOrFail($id);
         $WorkflowConfig->update($data);
+
         return $WorkflowConfig;
     }
 

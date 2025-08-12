@@ -2,12 +2,13 @@
 
 namespace Taurus\Workflow\Services\GraphQL;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Http;
 
 class Client
 {
     protected string $endpoint;
+
     protected array $headers;
 
     public function __construct(array $headers = [])
@@ -30,7 +31,7 @@ class Client
         $response = Http::withHeaders($this->headers)
             ->post($this->endpoint, [
                 'query' => $query,
-                'variables' => $variables
+                'variables' => $variables,
             ]);
 
         return $this->handleResponse($response);
@@ -43,14 +44,14 @@ class Client
 
     protected function handleResponse(Response $response): array
     {
-        if (!$response->successful()) {
-            throw new \Exception("GraphQL request failed: " . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('GraphQL request failed: '.$response->body());
         }
 
         $data = $response->json();
 
         if (isset($data['errors'])) {
-            throw new \Exception("GraphQL errors: " . json_encode($data['errors']));
+            throw new \Exception('GraphQL errors: '.json_encode($data['errors']));
         }
 
         return $data['data'] ?? [];
@@ -60,6 +61,7 @@ class Client
     public function withToken(string $token): self
     {
         $this->headers['Authorization'] = "Bearer $token";
+
         return $this;
     }
 }

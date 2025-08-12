@@ -2,16 +2,21 @@
 
 namespace Taurus\Workflow\Models;
 
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Queue\SerializesModels;
 
 class JobWorkflow extends Model
 {
     use SerializesModels;
+
     protected $table;
+
     public const STATUS_CREATED = 'CREATED';
+
     public const STATUS_IN_PROGRESS = 'IN_PROGRESS';
+
     public const STATUS_COMPLETED = 'COMPLETED';
+
     public const STATUS_FAILED = 'FAILED';
 
     protected $fillable = [
@@ -32,7 +37,7 @@ class JobWorkflow extends Model
         parent::__construct($attributes);
 
         $prefix = getTablePrefix();
-        $this->table = $prefix . '_job_workflow';
+        $this->table = $prefix.'_job_workflow';
     }
 
     public function workflow()
@@ -46,15 +51,12 @@ class JobWorkflow extends Model
             self::STATUS_CREATED,
             self::STATUS_IN_PROGRESS,
             self::STATUS_COMPLETED,
-            self::STATUS_FAILED
+            self::STATUS_FAILED,
         ];
     }
 
     /**
      * Get the next batch ID for the given workflow ID.
-     *
-     * @param int $workflowId
-     * @return int
      */
     public static function getNextBatchId(int $workflowId): int
     {

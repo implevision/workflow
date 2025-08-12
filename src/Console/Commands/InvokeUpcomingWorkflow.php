@@ -7,17 +7,18 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Taurus\Workflow\Models\Workflow;
-use Taurus\Workflow\Services\CheckUserCapabilities;
 use Taurus\Workflow\Services\WorkflowService;
 
 class InvokeUpcomingWorkflow extends Command
 {
     protected $workflowService;
-    public function __construct(WorkflowService $workflowService,)
+
+    public function __construct(WorkflowService $workflowService)
     {
         $this->workflowService = $workflowService;
         parent::__construct();
     }
+
     /**
      * The name and signature of the console command.
      *
@@ -39,13 +40,14 @@ class InvokeUpcomingWorkflow extends Command
     {
         $selfTest = $this->option('self-test');
         if ($selfTest) {
-            \Log::info("Self test mode enabled. No workflows will be dispatched.");
+            \Log::info('Self test mode enabled. No workflows will be dispatched.');
             $this->selfTest();
         } else {
-            $this->info("Executing workflow...");
+            $this->info('Executing workflow...');
             $workflows = $this->workflowService->getWorkflowsExecutingToday();
             if (empty($workflows)) {
-                $this->info("No workflows to execute today.");
+                $this->info('No workflows to execute today.');
+
                 return 0;
             }
 
@@ -59,17 +61,17 @@ class InvokeUpcomingWorkflow extends Command
     {
         $testDir = base_path('vendor/taurus/workflow/tests/invoke-upcoming-workflow');
         $testJsonFiles = collect(File::files($testDir))
-            ->filter(fn($file) => $file->getExtension() === 'json');
+            ->filter(fn ($file) => $file->getExtension() === 'json');
 
         $testCases = $this->getTestDataWithParams($testJsonFiles, []);
 
         $expectedDates = [
-            'ONCE'  => now()->addDay()->toISOString(),
+            'ONCE' => now()->addDay()->toISOString(),
             'MONTH' => now()->addMonth()->startOfMonth()->toISOString(),
-            'YEAR'  => now()->addYear()->startOfYear()->toISOString(),
+            'YEAR' => now()->addYear()->startOfYear()->toISOString(),
         ];
 
-        $workflow = new Workflow();
+        $workflow = new Workflow;
         $actualDates = [];
 
         foreach ($testCases as $testCase) {
@@ -84,9 +86,9 @@ class InvokeUpcomingWorkflow extends Command
 
             $actualDates[] = [
                 'frequency' => $frequency,
-                'expected'  => $expectedDateObj->toDateString(),
-                'actual'    => $actualDateObj->toDateString(),
-                'is_match'  => $expectedDateObj->isSameDay($actualDateObj),
+                'expected' => $expectedDateObj->toDateString(),
+                'actual' => $actualDateObj->toDateString(),
+                'is_match' => $expectedDateObj->isSameDay($actualDateObj),
             ];
         }
 
@@ -102,7 +104,7 @@ class InvokeUpcomingWorkflow extends Command
 
             // Replace {{param}} with the corresponding value
             foreach ($params as $key => $value) {
-                $jsonContent = str_replace('{{' . $key . '}}', $value, $jsonContent);
+                $jsonContent = str_replace('{{'.$key.'}}', $value, $jsonContent);
             }
 
             // Replace {{now}} with current timestamp

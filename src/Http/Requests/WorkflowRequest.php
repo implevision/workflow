@@ -2,14 +2,14 @@
 
 namespace Taurus\Workflow\Http\Requests;
 
-use Illuminate\Http\Response;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
-use Taurus\Workflow\Http\Rules\ValidDateTimeInfo;
-use Taurus\Workflow\Http\Rules\ValidRecordAction;
-use Taurus\Workflow\Http\Rules\ValidInstanceActions;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Response;
 use Taurus\Workflow\Http\Rules\ValidApplyConditionRules;
+use Taurus\Workflow\Http\Rules\ValidDateTimeInfo;
+use Taurus\Workflow\Http\Rules\ValidInstanceActions;
+use Taurus\Workflow\Http\Rules\ValidRecordAction;
 
 class WorkflowRequest extends FormRequest
 {
@@ -31,38 +31,38 @@ class WorkflowRequest extends FormRequest
     public function rules()
     {
         $tablePrefix = getTablePrefix();
-        $workflowTable = $tablePrefix . '_workflows';
-        $workflowActionTable = $tablePrefix . '_workflow_actions';
-        $workflowConditionTable =  $tablePrefix . '_workflow_conditions';
+        $workflowTable = $tablePrefix.'_workflows';
+        $workflowActionTable = $tablePrefix.'_workflow_actions';
+        $workflowConditionTable = $tablePrefix.'_workflow_conditions';
 
         $actionTypes = ['EMAIL', 'CREATE_TASK', 'CREATE_RECORD', 'WEB_HOOK'];
 
         $rules = [
-            'id' => 'sometimes|nullable|exists:' . $workflowTable . ',id',
+            'id' => 'sometimes|nullable|exists:'.$workflowTable.',id',
             'detail.module' => 'required|string',
             'detail.name' => 'required|string',
             'detail.description' => 'nullable|string',
             'when.effectiveActionToExecuteWorkflow' => 'required|in:ON_RECORD_ACTION,ON_DATE_TIME',
-            'when.recordActionToExecuteWorkflow' => ['nullable', new ValidRecordAction()],
-            'when.dateTimeInfoToExecuteWorkflow' => ['nullable', new ValidDateTimeInfo()],
+            'when.recordActionToExecuteWorkflow' => ['nullable', new ValidRecordAction],
+            'when.dateTimeInfoToExecuteWorkflow' => ['nullable', new ValidDateTimeInfo],
             'workFlowConditions' => 'required|array',
-            'workFlowConditions.*.id' => 'sometimes|nullable|exists:' . $workflowConditionTable . ',id',
+            'workFlowConditions.*.id' => 'sometimes|nullable|exists:'.$workflowConditionTable.',id',
             'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN,CUSTOM_FEED',
             'workFlowConditions.*.s3FilePath' => 'exclude_unless:workFlowConditions.*.applyRuleTo,CUSTOM_FEED|sometimes|string',
             // 'workFlowConditions.*.instanceActions' => 'required|array',
             // 'workFlowConditions.*.instanceActions.*.id' => 'sometimes|nullable|exists:' . $workflowActionTable . ',id',
             // 'workFlowConditions.*.instanceActions.*.actionType' => 'required|string|in:EMAIL',
             // 'workFlowConditions.*.instanceActions.*.payload' => 'required|array',
-            'workFlowConditions.*.instanceActions' => ['required', 'array', new ValidInstanceActions()],
+            'workFlowConditions.*.instanceActions' => ['required', 'array', new ValidInstanceActions],
             'workFlowConditions.*.applyConditionRules' => [
                 'required_if:workFlowConditions.*.applyRuleTo,CERTAIN',
                 'array',
-                new ValidApplyConditionRules(),
-            ]
+                new ValidApplyConditionRules,
+            ],
         ];
 
         foreach ($actionTypes as $type) {
-            $rules["workFlowConditions.*.instanceActions.$type.id"] = 'sometimes|nullable|exists:' . $workflowActionTable . ',id';
+            $rules["workFlowConditions.*.instanceActions.$type.id"] = 'sometimes|nullable|exists:'.$workflowActionTable.',id';
             $rules["workFlowConditions.*.instanceActions.$type.actionType"] = "required_with:workFlowConditions.*.instanceActions.$type|string|in:$type";
             $rules["workFlowConditions.*.instanceActions.$type.payload"] = "required_with:workFlowConditions.*.instanceActions.$type|array";
         }
@@ -88,16 +88,15 @@ class WorkflowRequest extends FormRequest
     /**
      * Handle a failed validation attempt.
      *
-     * @param \Illuminate\Contracts\Validation\Validator $validator
      *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function failedValidation(Validator $validator)
     {
         throw new HttpResponseException(response()->json([
-            'success'   => false,
-            'message'   => 'Validation errors',
-            'errors'    => $validator->errors()
+            'success' => false,
+            'message' => 'Validation errors',
+            'errors' => $validator->errors(),
         ], Response::HTTP_BAD_REQUEST));
     }
 }

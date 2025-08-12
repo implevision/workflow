@@ -2,8 +2,6 @@
 
 namespace Taurus\Workflow\Services\WorkflowActions;
 
-use Taurus\Workflow\Services\WorkflowActions\BulkEmail;
-
 class PrepareBulkEmailData
 {
     protected $workflowId;
@@ -41,7 +39,7 @@ class PrepareBulkEmailData
             'csvFile' => $this->payload['csvFile'] ?? null,
             'data' => $this->payload['data'] ?? [],
             'emailTemplate' => $this->emailInformation['html'],
-            'plainEmailTemplate' => "",
+            'plainEmailTemplate' => '',
             'subject' => $this->emailInformation['subject'],
             'payload' => [],
             'from' => $from,
@@ -50,7 +48,7 @@ class PrepareBulkEmailData
         ];
 
         try {
-            $action = new BulkEmail();
+            $action = new BulkEmail;
             $action->setPayload($actionPayload);
             $action->execute();
         } catch (\Exception $e) {

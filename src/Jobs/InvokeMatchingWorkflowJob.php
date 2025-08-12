@@ -44,10 +44,10 @@ class InvokeMatchingWorkflowJob implements ShouldQueue
             try {
                 Artisan::call($command['command'], $command['options']);
             } catch (\Exception $e) {
-                Log::info('WORKFLOW - Error dispatching matching workflow: ' . $e->getMessage());
+                Log::info('WORKFLOW - Error dispatching matching workflow: '.$e->getMessage());
             }
         } catch (\Exception $e) {
-            Log::error("WORKFLOW - " . $e->getMessage());
+            Log::error('WORKFLOW - '.$e->getMessage());
         }
     }
 }

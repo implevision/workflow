@@ -7,15 +7,14 @@ use Illuminate\Support\Facades\Log;
 use Taurus\Workflow\Jobs\InvokeMatchingWorkflowJob;
 
 class ModelObserver implements ShouldHandleEventsAfterCommit
-
 {
     public function handle($model, $method)
     {
-        //$updatedFields = $model->getDirty();
+        // $updatedFields = $model->getDirty();
         try {
             $entity = $model->getKey();
             $entityAction = $method;
-            $entityType =  get_class($model);
+            $entityType = get_class($model);
             Log::info('WORKFLOW - Creating job for invoke matching workflow', [
                 'entity' => $entity,
                 'action' => $entityAction,
@@ -23,7 +22,7 @@ class ModelObserver implements ShouldHandleEventsAfterCommit
             ]);
             InvokeMatchingWorkflowJob::dispatch($entity, $entityAction, $entityType);
         } catch (\Exception $e) {
-            Log::info('WORKFLOW - Error dispatching matching workflow: ' . $e->getMessage());
+            Log::info('WORKFLOW - Error dispatching matching workflow: '.$e->getMessage());
         }
     }
 

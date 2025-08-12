@@ -2,20 +2,16 @@
 
 namespace Taurus\Workflow\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-
 
 class WorkflowConfig extends Model
 {
-
-
     protected $table;
 
     protected $fillable = [
         'config_key',
         'config_value',
-        'last_checked'
+        'last_checked',
     ];
 
     protected $casts = [
@@ -27,6 +23,6 @@ class WorkflowConfig extends Model
         parent::__construct($attributes);
 
         $prefix = getTablePrefix();
-        $this->table = $prefix . '_workflow_config';
+        $this->table = $prefix.'_workflow_config';
     }
 }

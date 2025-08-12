@@ -27,7 +27,7 @@ class UploadAsDocument
         $docPath = $preparedData['docPath'];
         $docUrl = $preparedData['docUrl'];
 
-        $documentUploadBatchModel = new DocumentUploadBatchModel();
+        $documentUploadBatchModel = new DocumentUploadBatchModel;
         $fileArray = [
             'module' => $module,
             'docName' => $docName,
@@ -56,11 +56,11 @@ class UploadAsDocument
                 'Inserted_UserId_FK' => Auth::check() ? user()->Admin_ID : 0,
                 'InsertedBy_Flag' => $insertedByFlag,
                 'ClaimtId_FK' => $recordIdentifier,
-                'Claim_Activity_Log' => $activityLogText
+                'Claim_Activity_Log' => $activityLogText,
             ];
 
             try {
-                $tbClaimLog = new TbClaimLog();
+                $tbClaimLog = new TbClaimLog;
                 $tbClaimLog->createAndSaveClaimLog($claimLog);
             } catch (\Exception $e) {
                 throw $e;

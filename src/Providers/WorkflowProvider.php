@@ -2,25 +2,24 @@
 
 namespace Taurus\Workflow\Providers;
 
-use Illuminate\Http\Response;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Contracts\Container\BindingResolutionException;
-use Taurus\Workflow\Repositories\Eloquent\WorkflowRepository;
-use Taurus\Workflow\Repositories\Eloquent\WorkflowActionRepository;
-use Taurus\Workflow\Repositories\Eloquent\WorkflowConditionRepository;
-use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
-use Taurus\Workflow\Repositories\Eloquent\WorkflowConfigRepository;
-use Taurus\Workflow\Repositories\Contracts\WorkflowRepositoryInterface;
-use Taurus\Workflow\Repositories\Contracts\WorkflowActionRepositoryInterface;
-use Taurus\Workflow\Repositories\Contracts\JobWorkflowRepositoryInterface;
-use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
-use Taurus\Workflow\Repositories\Contracts\WorkflowConfigRepositoryInterface;
 use Taurus\Workflow\Console\Commands\DispatchWorkflow;
 use Taurus\Workflow\Console\Commands\HealthCheck;
+use Taurus\Workflow\Console\Commands\InvokeMatchingWorkflow;
 use Taurus\Workflow\Console\Commands\InvokeUpcomingWorkflow;
 use Taurus\Workflow\Console\Commands\SetupAWSPlatform;
-use Taurus\Workflow\Console\Commands\InvokeMatchingWorkflow;
+use Taurus\Workflow\Repositories\Contracts\JobWorkflowRepositoryInterface;
+use Taurus\Workflow\Repositories\Contracts\WorkflowActionRepositoryInterface;
+use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
+use Taurus\Workflow\Repositories\Contracts\WorkflowConfigRepositoryInterface;
+use Taurus\Workflow\Repositories\Contracts\WorkflowRepositoryInterface;
+use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
+use Taurus\Workflow\Repositories\Eloquent\WorkflowActionRepository;
+use Taurus\Workflow\Repositories\Eloquent\WorkflowConditionRepository;
+use Taurus\Workflow\Repositories\Eloquent\WorkflowConfigRepository;
+use Taurus\Workflow\Repositories\Eloquent\WorkflowRepository;
 
 class WorkflowProvider extends ServiceProvider
 {
@@ -32,11 +31,11 @@ class WorkflowProvider extends ServiceProvider
     public function boot()
     {
         $this->publishes([
-            __DIR__ . '/../config/workflow.php' => config_path('workflow.php'),
+            __DIR__.'/../config/workflow.php' => config_path('workflow.php'),
         ]);
 
         $this->publishes([
-            __DIR__ . '/../config/workflowBaseData.php' => config_path('workflowBaseData.php'),
+            __DIR__.'/../config/workflowBaseData.php' => config_path('workflowBaseData.php'),
         ]);
 
         // PUT this file manually in the database/migrations folder of INFRASTRUCTURE
@@ -48,7 +47,7 @@ class WorkflowProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/workflow.php',
+            __DIR__.'/../config/workflow.php',
             'workflow'
         );
 
@@ -74,7 +73,7 @@ class WorkflowProvider extends ServiceProvider
             } catch (BindingResolutionException $e) {
                 Log::error('Binding resolution error in RepositoryServiceProvider:', [
                     'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
+                    'trace' => $e->getTraceAsString(),
                 ]);
             }
         }

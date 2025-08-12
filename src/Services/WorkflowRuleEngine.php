@@ -14,9 +14,8 @@ class WorkflowRuleEngine
         'comparison_operator' => '',
         'rule_value' => '',
         'context_value_to_compare' => '',
-        'label' => ''
+        'label' => '',
     ];
-
 
     public function prepare($entityData, $rules)
     {
@@ -43,9 +42,10 @@ class WorkflowRuleEngine
 
         if ($response->successful()) {
             $response = $response->json();
+
             return $response;
         } else {
-            throw new \Exception('Error validating rule: ' . $response->body());
+            throw new \Exception('Error validating rule: '.$response->body());
         }
     }
 

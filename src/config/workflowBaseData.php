@@ -23,7 +23,7 @@ function getComparatorLabel($key)
 
 return [
     'modules' => [
-        /*[
+    /*[
             'label' => "User",
             'model' => "\App\User",
             'fields' => [
@@ -57,6 +57,6 @@ return [
             'isNotEmpty' => getComparatorLabel('isNotEmpty'),
 
         ],
-        'boolean' => ["0" => 'false', "1" => 'true'],
-    ]
+        'boolean' => ['0' => 'false', '1' => 'true'],
+    ],
 ];

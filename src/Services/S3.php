@@ -2,9 +2,8 @@
 
 namespace Taurus\Workflow\Services;
 
-
-use Aws\S3\S3Client;
 use Aws\Exception\AwsException;
+use Aws\S3\S3Client;
 
 class S3
 {
@@ -17,14 +16,14 @@ class S3
             throw new \Exception('AWS Profile not found in config/workflow.php');
         }*/
 
-        if (!$awsRegion) {
+        if (! $awsRegion) {
             throw new \Exception('AWS Region not found in config/workflow.php');
         }
 
         $awsConfig = [
             ...($awsProfile ? ['profile' => $awsProfile] : []),
             'region' => $awsRegion,
-            'version' => 'latest'
+            'version' => 'latest',
         ];
 
         return new S3Client($awsConfig);
@@ -38,7 +37,7 @@ class S3
 
             $result = $s3Client->getObject([
                 'Bucket' => $bucketName,
-                'Key'    => $templateKey,
+                'Key' => $templateKey,
             ]);
 
             return (string) $result['Body']; // Convert stream to string
@@ -54,12 +53,12 @@ class S3
             $s3Client = self::initializeS3Client();
             $extension = pathinfo($fileName, PATHINFO_EXTENSION);
 
-            $filePath = self::getPath() . $fileName;
+            $filePath = self::getPath().$fileName;
 
             $cmd = $s3Client->getCommand('PutObject', [
                 'Bucket' => $bucketName,
-                'Key'    => $filePath,
-                'ACL'    => 'private',
+                'Key' => $filePath,
+                'ACL' => 'private',
                 'ContentType' => self::getMIMEType($extension),
             ]);
 
@@ -91,7 +90,7 @@ class S3
 
     private static function getPath()
     {
-        return getTenant() . '/workflow/';
+        return getTenant().'/workflow/';
     }
 
     private static function getMIMEType($extension)
@@ -113,8 +112,8 @@ class S3
 
             $s3Client->getObject([
                 'Bucket' => $bucketName,
-                'Key'    => trim($filePath, "/"),
-                'SaveAs' => $saveAs
+                'Key' => trim($filePath, '/'),
+                'SaveAs' => $saveAs,
             ]);
 
             return true; // Convert stream to string
@@ -132,9 +131,9 @@ class S3
 
             $s3Client->putObject([
                 'Bucket' => $bucketName,
-                'Key'    => trim($filePath, "/"),
-                'Body'   => $fileContent,
-                'ACL'    => 'private',
+                'Key' => trim($filePath, '/'),
+                'Body' => $fileContent,
+                'ACL' => 'private',
             ]);
 
             return true;

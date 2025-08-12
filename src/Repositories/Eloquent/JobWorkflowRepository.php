@@ -4,8 +4,8 @@ namespace Taurus\Workflow\Repositories\Eloquent;
 
 use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Models\JobWorkflow;
-use Taurus\Workflow\Validators\JobWorkflowValidator;
 use Taurus\Workflow\Repositories\Contracts\JobWorkflowRepositoryInterface;
+use Taurus\Workflow\Validators\JobWorkflowValidator;
 
 class JobWorkflowRepository implements JobWorkflowRepositoryInterface
 {
@@ -32,6 +32,7 @@ class JobWorkflowRepository implements JobWorkflowRepositoryInterface
 
             return $jobWorkflow->id;
         });
+
         return $jobWorkflowId;
     }
 
@@ -72,6 +73,7 @@ class JobWorkflowRepository implements JobWorkflowRepositoryInterface
     public function getInfo(int $id): array
     {
         $workflow = $this->model->findOrFail($id);
+
         return $workflow->toArray();
     }
 }

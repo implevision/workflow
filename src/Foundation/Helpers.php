@@ -21,7 +21,7 @@ function getTenant()
 {
     $tenant = config('workflow.single_tenant');
 
-    if (!$tenant) {
+    if (! $tenant) {
         if (function_exists('tenant')) {
             $tenant = tenant('id');
         } else {
@@ -35,25 +35,25 @@ function getTenant()
 /**
  * Convert a local datetime to UTC datetime based on the given format and timezone.
  *
- * @param string $datetime The local datetime to convert
- * @param string $format The format of the datetime (default is 'm/d/Y H:i:s')
- * @param string $timezone The timezone of the local datetime (default is 'America/New_York')
+ * @param  string  $datetime  The local datetime to convert
+ * @param  string  $format  The format of the datetime (default is 'm/d/Y H:i:s')
+ * @param  string  $timezone  The timezone of the local datetime (default is 'America/New_York')
  * @return string The UTC datetime
  */
 function convertLocalToUTC($datetime, $format = 'm/d/Y H:i:s', $timezone = 'America/New_York')
 {
-    $localDate = Carbon::createFromFormat($format,  $datetime, $timezone);
+    $localDate = Carbon::createFromFormat($format, $datetime, $timezone);
     $timeInUTC = $localDate->copy()->setTimezone('UTC');
+
     return $timeInUTC->format('Y-m-d\TH:i:s');
 }
-
 
 /**
  * Get the no tenant identifier.
  */
 function getNoTenantIdentifier()
 {
-    return "NO_TENANT_FOUND";
+    return 'NO_TENANT_FOUND';
 }
 
 /**
@@ -61,12 +61,12 @@ function getNoTenantIdentifier()
  */
 function getEventSchedulerGroupNameToExecuteWorkflow()
 {
-    return 'workflow-auto-generated-' . getTenant();
+    return 'workflow-auto-generated-'.getTenant();
 }
 
 function getEventSchedulerNameToExecuteWorkflow($identifier)
 {
-    return 'workflow-id-' . $identifier;
+    return 'workflow-id-'.$identifier;
 }
 
 function getScheduleGroupTagsToExecuteWorkflow()
@@ -74,8 +74,8 @@ function getScheduleGroupTagsToExecuteWorkflow()
     return [
         [
             'Key' => 'type',
-            'Value' => 'workflow'
-        ]
+            'Value' => 'workflow',
+        ],
     ];
 }
 
@@ -87,34 +87,37 @@ function isTenantBaseSystem()
     if ($tenant == $noTenantIdentifier) {
         return false;
     }
+
     return true;
 }
 
 function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
 {
     $command = gitCommandToDispatchWorkflow($workflowId, $recordIdentifier);
-    return sprintf("%s %s %s", "php artisan ", $command['command'], implode(", ", $command['options']));
+
+    return sprintf('%s %s %s', 'php artisan ', $command['command'], implode(', ', $command['options']));
 }
 
 function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
 {
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
+
         return [
             'command' => 'tenants:run',
             'options' => [
                 'commandname' => 'taurus:dispatch-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier"]
-            ]
+                '--option' => ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier"],
+            ],
         ];
     } else {
         return [
             'command' => 'taurus:dispatch-workflow',
             'options' => [
                 '--workflowId' => $workflowId,
-                '--recordIdentifier' => $recordIdentifier
-            ]
+                '--recordIdentifier' => $recordIdentifier,
+            ],
         ];
     }
 }
@@ -123,13 +126,14 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
 {
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
+
         return [
             'command' => 'tenants:run',
             'options' => [
                 'commandname' => 'taurus:invoke-matching-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType"]
-            ]
+                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType"],
+            ],
         ];
     } else {
         return [
@@ -137,8 +141,8 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
             'options' => [
                 '--EntityAction' => $entityAction,
                 '--Entity' => $entity,
-                '--EntityType' => $entityType
-            ]
+                '--EntityType' => $entityType,
+            ],
         ];
     }
 }
@@ -170,7 +174,7 @@ function setModuleForCurrentWorkflow($module)
 
 function getModuleForCurrentWorkflow()
 {
-    return app()->bound('moduleForWhichWorkflowRunning') ? app('moduleForWhichWorkflowRunning') : "";
+    return app()->bound('moduleForWhichWorkflowRunning') ? app('moduleForWhichWorkflowRunning') : '';
 }
 
 function setRecordIdentifierForRunningWorkflow($recordIdentifier)
@@ -190,5 +194,5 @@ function isBound($parameter)
 
 function getDefaultQueue()
 {
-    return config('queue.connections.' . config('queue.default') . '.queue');
+    return config('queue.connections.'.config('queue.default').'.queue');
 }

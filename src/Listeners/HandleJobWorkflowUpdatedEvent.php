@@ -2,7 +2,6 @@
 
 namespace Taurus\Workflow\Listeners;
 
-use Illuminate\Support\Facades\Log;
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
@@ -22,7 +21,7 @@ class HandleJobWorkflowUpdatedEvent
                 $status = $countOfProcessedRecord == $jobWorkflowInfo['total_no_of_records_to_execute'] ? 'COMPLETED' : $jobWorkflowInfo['status'];
                 $jobWorkflow = [
                     'total_no_of_records_executed' => $countOfProcessedRecord,
-                    'status' => $status
+                    'status' => $status,
                 ];
             }
             $jobWorkflowRepo->updateData($event->jobWorkflowId, $jobWorkflow);
