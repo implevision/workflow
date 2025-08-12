@@ -2,7 +2,7 @@
 
 namespace Taurus\Workflow\Services\WorkflowActions;
 
-class PrepareBulkEmailData
+class PrepareEmailData
 {
     protected $workflowId;
 
@@ -35,7 +35,7 @@ class PrepareBulkEmailData
             'workflowId' => $this->workflowId,
             'jobWorkflowId' => $this->jobWorkflowId,
             'recordIdentifier' => $this->recordIdentifier,
-            'actionType' => 'BulkEmail',
+            'actionType' => 'Email',
             'csvFile' => $this->payload['csvFile'] ?? null,
             'data' => $this->payload['data'] ?? [],
             'emailTemplate' => $this->emailInformation['html'],
@@ -48,7 +48,7 @@ class PrepareBulkEmailData
         ];
 
         try {
-            $action = new BulkEmail;
+            $action = new Email;
             $action->setPayload($actionPayload);
             $action->execute();
         } catch (\Exception $e) {

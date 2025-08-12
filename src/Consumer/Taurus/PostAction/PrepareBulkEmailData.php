@@ -5,21 +5,21 @@ namespace Taurus\Workflow\Consumer\Taurus\PostAction;
 use Dompdf\Dompdf;
 use Taurus\Workflow\Services\S3;
 
-class PrepareBulkEmailData
+class PrepareEmailData
 /**
- * Class PrepareBulkEmailData
+ * Class PrepareEmailData
  *
- * This class is responsible for preparing bulk email data for processing.
+ * This class is responsible for preparing email data for processing.
  * It handles the necessary transformations and validations required
- * before the bulk email is sent out.
+ * before the email is sent out.
  */
 {
     /**
-     * Prepares the bulk email data based on the provided payload and placeholders.
+     * Prepares the email data based on the provided payload and placeholders.
      *
-     * @param  mixed  $payload  The data to be processed for the bulk email.
+     * @param  mixed  $payload  The data to be processed for the email.
      * @param  array  $placeholders  An associative array of placeholders to be replaced in the email content.
-     * @return mixed The processed bulk email data.
+     * @return mixed The processed email data.
      */
     public static function prepare($payload, $placeholders, $messageId)
     {

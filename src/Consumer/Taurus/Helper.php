@@ -22,7 +22,6 @@ class Helper
     public static function createPortalURL($portal)
     {
         $hostURL = Config::get('app.url');
-        $hostURL = 'https://services.odysseynext.com/claim/';
         $hostedDomain = self::extractDomainSimple($hostURL);
 
         switch ($portal) {
@@ -58,7 +57,7 @@ class Helper
         $domain = implode('.', array_slice($hostArr, -2));
 
         // Use regex to extract the domain pattern
-        if (preg_match('/([^.]*\.)?odysseynext\.com$/', $host, $matches)) {
+        if (preg_match('/([^.]*\.)?'.$domain.'$/', $host, $matches)) {
             if (empty($matches[1])) {
                 return $domain;
             } else {

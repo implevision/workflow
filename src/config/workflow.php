@@ -67,7 +67,7 @@ return [
 
     'default_system_user_id' => env('WORKFLOW_DEFAULT_SYSTEM_USER_ID', 1),
 
-    'bulk_email_queue' => env('WORKFLOW_BULK_EMAIL_QUEUE'),
+    'email_queue' => env('WORKFLOW_EMAIL_QUEUE'),
 
     'post_action_queue' => env('WORKFLOW_POST_ACTION_QUEUE'),
 

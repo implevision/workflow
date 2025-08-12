@@ -3,9 +3,9 @@
 namespace Taurus\Workflow\Services\WorkflowActions;
 
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
-use Taurus\Workflow\Jobs\BulkEmailJob;
+use Taurus\Workflow\Jobs\EmailJob;
 
-class BulkEmail
+class Email
 {
     public $payload;
 
@@ -13,7 +13,7 @@ class BulkEmail
 
     public $batchToCreate = 50;
 
-    public function __construct($emailClient = 'SES_BULK_EMAIL')
+    public function __construct($emailClient = 'SES_EMAIL')
     {
         $this->emailClient = $emailClient;
     }
@@ -33,10 +33,10 @@ class BulkEmail
         }
     }
 
-    private function dispatchBulkEmail($payload)
+    private function dispatchEmail($payload)
     {
-        \Log::info('WORKFLOW - Dispatching bulk email job for '.$this->emailClient);
-        BulkEmailJob::dispatch($this->emailClient, $payload, $this->payload['actionPayload']);
+        \Log::info('WORKFLOW - Dispatching email job for '.$this->emailClient);
+        EmailJob::dispatch($this->emailClient, $payload, $this->payload['actionPayload']);
     }
 
     private function sendEmails()
@@ -96,7 +96,7 @@ class BulkEmail
                     $leftover = $leftover - floor($leftover);
 
                     if (($rowCount - 1) && $leftover == 0) {
-                        $this->dispatchBulkEmail($jobPayload);
+                        $this->dispatchEmail($jobPayload);
                         $jobPayload['payload'] = [];
                     }
                     $jobPayload['payload'][] = $data;
@@ -104,7 +104,7 @@ class BulkEmail
                 }
 
                 if (count($jobPayload['payload'])) {
-                    $this->dispatchBulkEmail($jobPayload);
+                    $this->dispatchEmail($jobPayload);
                 }
             }
         }
@@ -120,7 +120,7 @@ class BulkEmail
 
         foreach ($jobData as $data) {
             if ($rowCount && $leftover == 0) {
-                $this->dispatchBulkEmail($jobPayload);
+                $this->dispatchEmail($jobPayload);
                 $jobPayload['payload'] = [];
             }
             $jobPayload['payload'][] = $data;
@@ -128,7 +128,7 @@ class BulkEmail
         }
 
         if (count($jobPayload['payload'])) {
-            $this->dispatchBulkEmail($jobPayload);
+            $this->dispatchEmail($jobPayload);
         }
 
         return count($jobData);
