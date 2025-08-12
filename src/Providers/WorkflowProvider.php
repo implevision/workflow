@@ -10,6 +10,7 @@ use Taurus\Workflow\Console\Commands\HealthCheck;
 use Taurus\Workflow\Console\Commands\InvokeMatchingWorkflow;
 use Taurus\Workflow\Console\Commands\InvokeUpcomingWorkflow;
 use Taurus\Workflow\Console\Commands\SetupAWSPlatform;
+use Taurus\Workflow\Console\Commands\WorkflowSeeder;
 use Taurus\Workflow\Repositories\Contracts\JobWorkflowRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowActionRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
@@ -57,6 +58,7 @@ class WorkflowProvider extends ServiceProvider
             InvokeUpcomingWorkflow::class,
             SetupAWSPlatform::class,
             InvokeMatchingWorkflow::class,
+            WorkflowSeeder::class,
         ]);
 
         $repositories = [
