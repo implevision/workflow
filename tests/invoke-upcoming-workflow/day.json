@@ -1,0 +1,63 @@
+{
+    "id": 1,
+    "detail": {
+        "module": "CLAIM",
+        "name": "test",
+        "description": null
+    },
+    "when": {
+        "effectiveActionToExecuteWorkflow": "ON_RECORD_ACTION",
+        "recordActionToExecuteWorkflow": "CREATE",
+        "dateTimeInfoToExecuteWorkflow": {
+            "executionFrequency": "1",
+            "executionFrequencyType": "DAY",
+            "executionEventIncident": "AFTER",
+            "executionEvent": "CREATION",
+            "recurringFrequency": "ONCE",
+            "executionEffectiveDate": "{{today}}",
+            "executionEffectiveTime": "{{now}}"
+        }
+    },
+    "workFlowConditions": [
+        {
+            "id": 1,
+            "applyRuleTo": "ALL",
+            "applyConditionRules": [
+                {
+                    "field": "CLAIM_NUMBER",
+                    "comparator": "LESS_THAN",
+                    "expectedValue": "test"
+                }
+            ],
+            "instanceActions": [
+                {
+                    "id": 3,
+                    "actionType": "EMAIL",
+                    "payload": {
+                        "id": "test-email"
+                    }
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "applyRuleTo": "ALL",
+            "applyConditionRules": [
+                {
+                    "field": null,
+                    "comparator": null,
+                    "expectedValue": null
+                }
+            ],
+            "instanceActions": [
+                {
+                    "id": 1,
+                    "actionType": "EMAIL",
+                    "payload": {
+                        "id": "test-email"
+                    }
+                }
+            ]
+        }
+    ]
+}

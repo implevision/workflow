@@ -1,0 +1,32 @@
+<?php
+
+namespace Taurus\Workflow\Listeners;
+
+use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
+use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
+
+class HandleJobWorkflowUpdatedEvent
+{
+    /**
+     * Handle the event.
+     */
+    public function handle(JobWorkflowUpdatedEvent $event): void
+    {
+        $jobWorkflowRepo = app(JobWorkflowRepository::class);
+        try {
+            $jobWorkflow = $event->jobWorkflowData;
+            if (array_key_exists('total_no_of_records_executed', $event->jobWorkflowData)) {
+                $jobWorkflowInfo = $jobWorkflowRepo->getInfo($event->jobWorkflowId);
+                $countOfProcessedRecord = $jobWorkflowInfo['total_no_of_records_executed'] + $event->jobWorkflowData['total_no_of_records_executed'];
+                $status = $countOfProcessedRecord == $jobWorkflowInfo['total_no_of_records_to_execute'] ? 'COMPLETED' : $jobWorkflowInfo['status'];
+                $jobWorkflow = [
+                    'total_no_of_records_executed' => $countOfProcessedRecord,
+                    'status' => $status,
+                ];
+            }
+            $jobWorkflowRepo->updateData($event->jobWorkflowId, $jobWorkflow);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+        }
+    }
+}
