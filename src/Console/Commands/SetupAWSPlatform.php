@@ -4,7 +4,7 @@ namespace Taurus\Workflow\Console\Commands;
 
 use Exception;
 use Illuminate\Console\Command;
-use Taurus\Workflow\Services\EventBridgeScheduler;
+use Taurus\Workflow\Services\AWS\EventBridgeScheduler;
 
 class SetupAWSPlatform extends Command
 {
@@ -50,7 +50,7 @@ class SetupAWSPlatform extends Command
             return;
         }
 
-        $groupName = 'taurus-workflow-'.$tenant;
+        $groupName = 'taurus-workflow-' . $tenant;
         $tags = [
             [
                 'Key' => 'service',
@@ -65,7 +65,7 @@ class SetupAWSPlatform extends Command
         try {
             EventBridgeScheduler::createScheduleGroup($groupName, $tags);
         } catch (Exception $e) {
-            $this->error('Error creating schedule group: '.$e->getMessage());
+            $this->error('Error creating schedule group: ' . $e->getMessage());
 
             return;
         }

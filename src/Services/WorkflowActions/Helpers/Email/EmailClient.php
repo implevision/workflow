@@ -1,11 +1,11 @@
 <?php
 
-namespace Taurus\Workflow\Services\WorkflowActions;
+namespace Taurus\Workflow\Services\WorkflowActions\Helpers\Email;
 
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Jobs\EmailJob;
 
-class Email
+class EmailClient
 {
     public $payload;
 
@@ -35,7 +35,7 @@ class Email
 
     private function dispatchEmail($payload)
     {
-        \Log::info('WORKFLOW - Dispatching email job for '.$this->emailClient);
+        \Log::info('WORKFLOW - Dispatching email job for ' . $this->emailClient);
         EmailJob::dispatch($this->emailClient, $payload, $this->payload['actionPayload']);
     }
 
@@ -85,7 +85,7 @@ class Email
                     }
 
                     if (count($placeholder) != count($data)) {
-                        \Log::error('WORKFLOW - CSV file has different number of columns in row '.$rowCount);
+                        \Log::error('WORKFLOW - CSV file has different number of columns in row ' . $rowCount);
 
                         continue;
                     }

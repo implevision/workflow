@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Services\WorkflowActions;
+namespace Taurus\Workflow\Services\WorkflowActions\Helpers\Email;
 
 class PrepareEmailData
 {
@@ -48,7 +48,7 @@ class PrepareEmailData
         ];
 
         try {
-            $action = new Email;
+            $action = new EmailClient;
             $action->setPayload($actionPayload);
             $action->execute();
         } catch (\Exception $e) {

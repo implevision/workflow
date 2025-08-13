@@ -3,7 +3,7 @@
 namespace Taurus\Workflow\Console\Commands;
 
 use Illuminate\Console\Command;
-use Taurus\Workflow\Services\CheckUserCapabilities;
+use Taurus\Workflow\Services\AWS\CheckUserCapabilities;
 
 class HealthCheck extends Command
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Services;
+namespace Taurus\Workflow\Services\AWS;
 
 use Aws\Exception\AwsException;
 use Aws\SesV2\SesV2Client;
@@ -44,7 +44,7 @@ class SES
                 $messageId = self::sendEmail($from, $subject, $emailTemplate, $payload[0], $plainEmailTemplate, $jobWorkflowId);
             }
         } catch (\Exception $e) {
-            throw new \Exception('Error sending email: '.$e->getMessage());
+            throw new \Exception('Error sending email: ' . $e->getMessage());
         }
 
         return $messageId;
@@ -55,7 +55,7 @@ class SES
         try {
             $sesClient = self::getSesClient();
         } catch (\Exception $e) {
-            throw new \Exception('Error creating SES client: '.$e->getMessage());
+            throw new \Exception('Error creating SES client: ' . $e->getMessage());
         }
 
         // SES dose not support if any placeholder is missing in the email template.
@@ -72,7 +72,7 @@ class SES
                 continue;
             }
 
-            \Log::info('WORKFLOW - Sending email to: '.$item['email']);
+            \Log::info('WORKFLOW - Sending email to: ' . $item['email']);
 
             $bulkEmailEntries[] = [
                 'Destination' => [
@@ -139,7 +139,7 @@ class SES
         try {
             $sesClient = self::getSesClient();
         } catch (\Exception $e) {
-            throw new \Exception('Error creating SES client: '.$e->getMessage());
+            throw new \Exception('Error creating SES client: ' . $e->getMessage());
         }
 
         // SES dose not support if any placeholder is missing in the email template.
@@ -154,11 +154,11 @@ class SES
             throw new \Exception('Skipping email due to missing placeholders');
         }
 
-        \Log::info('WORKFLOW - Sending email to: '.$payload['email']);
+        \Log::info('WORKFLOW - Sending email to: ' . $payload['email']);
 
         foreach ($payload as $key => $value) {
-            $htmlContent = str_replace('{{'.$key.'}}', $value, $htmlContent);
-            $textContent = str_replace('{{'.$key.'}}', $value, $textContent);
+            $htmlContent = str_replace('{{' . $key . '}}', $value, $htmlContent);
+            $textContent = str_replace('{{' . $key . '}}', $value, $textContent);
         }
 
         try {

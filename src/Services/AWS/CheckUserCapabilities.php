@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Services;
+namespace Taurus\Workflow\Services\AWS;
 
 use Aws\Exception\AwsException;
 use Aws\Iam\IamClient;

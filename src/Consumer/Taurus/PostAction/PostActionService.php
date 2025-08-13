@@ -26,7 +26,8 @@ class PostActionService
             throw new \InvalidArgumentException('Action type is required for post action execution.');
         }
 
-        if ($actionType == 'Email') {
+        $actionType = strtolower($actionType);
+        if ($actionType == 'email') {
             return \Taurus\Workflow\Consumer\Taurus\PostAction\PrepareEmailData::prepare($payload, $placeholders, $messageId);
         }
 

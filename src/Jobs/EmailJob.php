@@ -5,7 +5,7 @@ namespace Taurus\Workflow\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Taurus\Workflow\Events\PostActionEvent;
-use Taurus\Workflow\Services\SES;
+use Taurus\Workflow\Services\AWS\SES;
 
 class EmailJob implements ShouldQueue
 {
@@ -71,9 +71,9 @@ class EmailJob implements ShouldQueue
         try {
             \Log::info('WORKFLOW - Creating SES Request');
             $messageId = SES::creteRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId);
-            \Log::info('WORKFLOW - SES Request created with Message ID: '.$messageId);
+            \Log::info('WORKFLOW - SES Request created with Message ID: ' . $messageId);
         } catch (\Exception $e) {
-            \Log::error('WORKFLOW - Error creating SES Request: '.$e->getMessage());
+            \Log::error('WORKFLOW - Error creating SES Request: ' . $e->getMessage());
             throw $e; // Re-throw the exception to be handled by the queue system
         }
 
@@ -87,7 +87,7 @@ class EmailJob implements ShouldQueue
                 event(new PostActionEvent($module, $this->payload, $messageId));
             }
         } catch (\Exception $e) {
-            \Log::error('WORKFLOW - Error executing post action: '.$e->getMessage());
+            \Log::error('WORKFLOW - Error executing post action: ' . $e->getMessage());
         }
     }
 }
