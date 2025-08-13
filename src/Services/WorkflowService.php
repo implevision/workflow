@@ -77,6 +77,7 @@ class WorkflowService
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
                 'workflow_next_date_to_execute' => $workflowNextDateToExecute,
+                'is_active' => $data['detail']['isActive'] ?? true,
             ]);
 
             if (! empty($data['workFlowConditions'])) {
