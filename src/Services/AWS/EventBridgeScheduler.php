@@ -68,7 +68,7 @@ class EventBridgeScheduler
                 'Name' => $targetGroupName,
             ]);
 
-            \Log::info('Schedule Group Created! ARN: ' . $result['ScheduleGroupArn']);
+            \Log::info('Schedule Group Created! ARN: '.$result['ScheduleGroupArn']);
 
             if (count($tags)) {
                 $schedulerClient->tagResource([
@@ -110,7 +110,7 @@ class EventBridgeScheduler
 
                 return $schedulerClient->createSchedule($params);
             } catch (AwsException $e) {
-                throw new \Exception('Error creating schedule: ' . $e->getMessage());
+                throw new \Exception('Error creating schedule: '.$e->getMessage());
             }
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());

@@ -26,10 +26,10 @@ class Helper
 
         switch ($portal) {
             case 'InsuredPortal':
-                $hostedDomain = 'https://mypolicy.' . $hostedDomain;
+                $hostedDomain = 'https://mypolicy.'.$hostedDomain;
                 break;
             case 'AgentPortal':
-                $hostedDomain = 'https://agent.' . $hostedDomain;
+                $hostedDomain = 'https://agent.'.$hostedDomain;
                 break;
             case 'CorePortal':
                 break;
@@ -55,11 +55,11 @@ class Helper
         $domain = implode('.', array_slice($hostArr, -2));
 
         // Use regex to extract the domain pattern
-        if (preg_match('/([^.]*\.)?' . $domain . '$/', $host, $matches)) {
+        if (preg_match('/([^.]*\.)?'.$domain.'$/', $host, $matches)) {
             if (empty($matches[1])) {
                 return $domain;
             } else {
-                return rtrim($matches[1], '.') . ".{$domain}";
+                return rtrim($matches[1], '.').".{$domain}";
             }
         }
 
@@ -80,7 +80,7 @@ class Helper
         switch (strtoupper($country)) {
             case 'US':
             default:
-                return preg_replace("/(\\d{3})(\\d{3})(\\d{4})/", "($1) $2-$3", $phoneNumber);
+                return preg_replace('/(\\d{3})(\\d{3})(\\d{4})/', '($1) $2-$3', $phoneNumber);
         }
     }
 }

@@ -2,8 +2,8 @@
 
 namespace Taurus\Workflow\Services\WorkflowActions;
 
-use Taurus\Workflow\Services\WorkflowEmailService;
 use Taurus\Workflow\Services\WorkflowActions\Helpers\Email\PrepareEmailData;
+use Taurus\Workflow\Services\WorkflowEmailService;
 
 class EmailAction extends AbstractWorkflowAction
 {
