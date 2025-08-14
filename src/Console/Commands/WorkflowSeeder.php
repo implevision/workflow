@@ -56,7 +56,7 @@ class WorkflowSeeder extends Command
         $data = json_decode($json, true);
 
         if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-            \Log::error("WORKFLOW SEEDER - Invalid JSON in {$path} for workflow. Error: ".json_last_error_msg());
+            \Log::error("WORKFLOW SEEDER - Invalid JSON in {$path} for workflow. Error: " . json_last_error_msg());
         }
 
         try {
@@ -70,7 +70,7 @@ class WorkflowSeeder extends Command
             $workflowData = WorkflowData::fromArray($data);
             $this->workflowService->createWorkflow($workflowData);
         } catch (\Exception $e) {
-            \Log::error("WORKFLOW SEEDER - Error while creating workflow: {$workflow}. Error: ".$e->getMessage());
+            \Log::error("WORKFLOW SEEDER - Error while creating workflow: {$workflow}. Error: " . $e->getMessage());
 
             return 1;
         }
@@ -85,7 +85,7 @@ class WorkflowSeeder extends Command
             foreach ($data['externalServices'] as $key => $service) {
                 switch ($key) {
                     case 'email':
-                        // $this->insertEmailData($service);
+                        $this->insertEmailData($service);
                         break;
                     default:
                         \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path} for workflow.");
@@ -93,7 +93,7 @@ class WorkflowSeeder extends Command
                 }
             }
         } catch (\Exception $e) {
-            \Log::error("WORKFLOW SEEDER - Error while inserting data for workflow: {$workflow}. Error: ".$e->getMessage());
+            \Log::error("WORKFLOW SEEDER - Error while inserting data for workflow: {$workflow}. Error: " . $e->getMessage());
 
             return 1;
         }
@@ -124,7 +124,7 @@ class WorkflowSeeder extends Command
             $response = $client->request(
                 'post',
                 // TODO - replace with config url
-                config('workflow.email_template_service_url').'/api/email/template/save',
+                config('workflow.email_template_service_url') . '/api/email/template/save',
                 [
                     'headers' => $headers,
                     'json' => $requestBody,

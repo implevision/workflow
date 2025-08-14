@@ -11,7 +11,7 @@ class Helper
     {
         $holdingCompanyDetail = \DB::table('tb_holdingcompanies')->first();
 
-        return ['logo' => $holdingCompanyDetail->logo_url];
+        return ['logo' => $holdingCompanyDetail->public_logo_url ?? $holdingCompanyDetail->logo_url];
     }
 
     public static function formatDate($dateToFormat)
@@ -26,16 +26,14 @@ class Helper
 
         switch ($portal) {
             case 'InsuredPortal':
-                $hostedDomain = 'https://mypolicy.'.$hostedDomain;
+                $hostedDomain = 'https://mypolicy.' . $hostedDomain;
                 break;
             case 'AgentPortal':
-                $hostedDomain = 'https://agent.'.$hostedDomain;
+                $hostedDomain = 'https://agent.' . $hostedDomain;
                 break;
             case 'CorePortal':
                 break;
         }
-
-        \Log::info($hostedDomain);
 
         return $hostedDomain;
     }
@@ -57,11 +55,11 @@ class Helper
         $domain = implode('.', array_slice($hostArr, -2));
 
         // Use regex to extract the domain pattern
-        if (preg_match('/([^.]*\.)?'.$domain.'$/', $host, $matches)) {
+        if (preg_match('/([^.]*\.)?' . $domain . '$/', $host, $matches)) {
             if (empty($matches[1])) {
                 return $domain;
             } else {
-                return rtrim($matches[1], '.').".{$domain}";
+                return rtrim($matches[1], '.') . ".{$domain}";
             }
         }
 
@@ -72,5 +70,17 @@ class Helper
         }
 
         return false;
+    }
+
+    public static function formatPhone($phoneNumber, $country = 'US')
+    {
+        // Remove all non-numeric characters from the input
+        $phoneNumber = preg_replace('/[^0-9]/', '', $phoneNumber);
+
+        switch (strtoupper($country)) {
+            case 'US':
+            default:
+                return preg_replace("/(\\d{3})(\\d{3})(\\d{4})/", "($1) $2-$3", $phoneNumber);
+        }
     }
 }

@@ -88,8 +88,6 @@ class DispatchWorkflowService
      */
     public function dispatch()
     {
-        Helper::createPortalURL('InsuredPortal');
-        exit;
         if (! $this->workflowId || ! is_array($this->workflowInfo)) {
             return false;
         }
@@ -301,7 +299,7 @@ class DispatchWorkflowService
                             $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
                             $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
 
-                            \Log::error('WORKFLOW - Actual email address: ' . $emailPlaceHolderValue);
+                            \Log::info('WORKFLOW - Actual email address: ' . $emailPlaceHolderValue);
 
                             $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 

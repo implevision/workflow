@@ -70,7 +70,7 @@ class EmailJob implements ShouldQueue
         $messageId = 0;
         try {
             \Log::info('WORKFLOW - Creating SES Request');
-            $messageId = SES::creteRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId);
+            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId);
             \Log::info('WORKFLOW - SES Request created with Message ID: ' . $messageId);
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error creating SES Request: ' . $e->getMessage());

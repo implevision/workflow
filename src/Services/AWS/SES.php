@@ -41,7 +41,7 @@ class SES
             if ($isRequireBulkEmailRequest) {
                 $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId);
             } else {
-                $messageId = self::sendEmail($from, $subject, $emailTemplate, $payload[0], $plainEmailTemplate, $jobWorkflowId);
+                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId);
             }
         } catch (\Exception $e) {
             throw new \Exception('Error sending email: ' . $e->getMessage());
@@ -107,17 +107,7 @@ class SES
             $response = $sesClient->sendBulkEmail($bulkEmailPayload);
 
             if ($jobWorkflowId) {
-                $jobWorkflowRepo = app(JobWorkflowRepository::class);
-
-                $jobWorkflowInfo = $jobWorkflowRepo->getInfo($jobWorkflowId);
-                $countOfProcessedRecord = $jobWorkflowInfo['total_no_of_records_executed'] + count($payload);
-                $status = $countOfProcessedRecord == $jobWorkflowInfo['total_no_of_records_to_execute'] ? 'COMPLETED' : 'IN_PROGRESS';
-                $payload = [
-                    'total_no_of_records_executed' => $countOfProcessedRecord,
-                    'status' => $status,
-                ];
-
-                event(new JobWorkflowUpdatedEvent($jobWorkflowId, $payload));
+                self::updateStat($jobWorkflowId, count($payload));
             }
 
             $response = $response['BulkEmailEntryResults'][0];
@@ -163,31 +153,53 @@ class SES
 
         try {
             $response = $sesClient->sendEmail([
+                'ConfigurationSetName' => 'farmers',
                 'Destination' => [
                     'ToAddresses' => [$payload['email']],
                 ],
-                'Message' => [
-                    'Body' => [
-                        'Html' => [
+                'Content' => [
+                    'Simple' => [
+                        'Subject' => [
                             'Charset' => 'UTF-8',
-                            'Data' => $htmlContent,
+                            'Data' => $subject,
                         ],
-                        'Text' => [
-                            'Charset' => 'UTF-8',
-                            'Data' => $textContent ?: strip_tags($textContent),
+                        'Body' => [
+                            'Html' => [
+                                'Charset' => 'UTF-8',
+                                'Data' => $htmlContent,
+                            ],
+                            'Text' => [
+                                'Charset' => 'UTF-8',
+                                'Data' => $textContent ?: strip_tags($textContent),
+                            ],
                         ],
-                    ],
-                    'Subject' => [
-                        'Charset' => 'UTF-8',
-                        'Data' => $subject,
                     ],
                 ],
-                'Source' => $from,
+                'FromEmailAddress' => $from,
             ]);
+
+            if ($jobWorkflowId) {
+                self::updateStat($jobWorkflowId, count($payload));
+            }
 
             return $response['MessageId'] ?? 0;
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());
         }
+    }
+
+    private static function updateStat($jobWorkflowId, $processedRecord)
+    {
+        $jobWorkflowRepo = app(JobWorkflowRepository::class);
+
+        $jobWorkflowInfo = $jobWorkflowRepo->getInfo($jobWorkflowId);
+        $countOfProcessedRecord = $jobWorkflowInfo['total_no_of_records_executed'] + $processedRecord;
+        $status = $countOfProcessedRecord == $jobWorkflowInfo['total_no_of_records_to_execute'] ? 'COMPLETED' : 'IN_PROGRESS';
+        $payload = [
+            'total_no_of_records_executed' => $countOfProcessedRecord,
+            'status' => $status,
+        ];
+
+        event(new JobWorkflowUpdatedEvent($jobWorkflowId, $payload));
     }
 }
