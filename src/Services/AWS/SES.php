@@ -41,10 +41,10 @@ class SES
             if ($isRequireBulkEmailRequest) {
                 $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId);
             } else {
-                $messageId = self::sendEmail($from, $subject, $emailTemplate, $payload[0], $plainEmailTemplate, $jobWorkflowId);
+                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId);
             }
         } catch (\Exception $e) {
-            throw new \Exception('Error sending email: ' . $e->getMessage());
+            throw new \Exception('Error sending email: '.$e->getMessage());
         }
 
         return $messageId;
@@ -55,7 +55,7 @@ class SES
         try {
             $sesClient = self::getSesClient();
         } catch (\Exception $e) {
-            throw new \Exception('Error creating SES client: ' . $e->getMessage());
+            throw new \Exception('Error creating SES client: '.$e->getMessage());
         }
 
         // SES dose not support if any placeholder is missing in the email template.
@@ -72,7 +72,7 @@ class SES
                 continue;
             }
 
-            \Log::info('WORKFLOW - Sending email to: ' . $item['email']);
+            \Log::info('WORKFLOW - Sending email to: '.$item['email']);
 
             $bulkEmailEntries[] = [
                 'Destination' => [
@@ -107,17 +107,7 @@ class SES
             $response = $sesClient->sendBulkEmail($bulkEmailPayload);
 
             if ($jobWorkflowId) {
-                $jobWorkflowRepo = app(JobWorkflowRepository::class);
-
-                $jobWorkflowInfo = $jobWorkflowRepo->getInfo($jobWorkflowId);
-                $countOfProcessedRecord = $jobWorkflowInfo['total_no_of_records_executed'] + count($payload);
-                $status = $countOfProcessedRecord == $jobWorkflowInfo['total_no_of_records_to_execute'] ? 'COMPLETED' : 'IN_PROGRESS';
-                $payload = [
-                    'total_no_of_records_executed' => $countOfProcessedRecord,
-                    'status' => $status,
-                ];
-
-                event(new JobWorkflowUpdatedEvent($jobWorkflowId, $payload));
+                self::updateStat($jobWorkflowId, count($payload));
             }
 
             $response = $response['BulkEmailEntryResults'][0];
@@ -139,7 +129,7 @@ class SES
         try {
             $sesClient = self::getSesClient();
         } catch (\Exception $e) {
-            throw new \Exception('Error creating SES client: ' . $e->getMessage());
+            throw new \Exception('Error creating SES client: '.$e->getMessage());
         }
 
         // SES dose not support if any placeholder is missing in the email template.
@@ -154,40 +144,62 @@ class SES
             throw new \Exception('Skipping email due to missing placeholders');
         }
 
-        \Log::info('WORKFLOW - Sending email to: ' . $payload['email']);
+        \Log::info('WORKFLOW - Sending email to: '.$payload['email']);
 
         foreach ($payload as $key => $value) {
-            $htmlContent = str_replace('{{' . $key . '}}', $value, $htmlContent);
-            $textContent = str_replace('{{' . $key . '}}', $value, $textContent);
+            $htmlContent = str_replace('{{'.$key.'}}', $value, $htmlContent);
+            $textContent = str_replace('{{'.$key.'}}', $value, $textContent);
         }
 
         try {
             $response = $sesClient->sendEmail([
+                'ConfigurationSetName' => 'farmers',
                 'Destination' => [
                     'ToAddresses' => [$payload['email']],
                 ],
-                'Message' => [
-                    'Body' => [
-                        'Html' => [
+                'Content' => [
+                    'Simple' => [
+                        'Subject' => [
                             'Charset' => 'UTF-8',
-                            'Data' => $htmlContent,
+                            'Data' => $subject,
                         ],
-                        'Text' => [
-                            'Charset' => 'UTF-8',
-                            'Data' => $textContent ?: strip_tags($textContent),
+                        'Body' => [
+                            'Html' => [
+                                'Charset' => 'UTF-8',
+                                'Data' => $htmlContent,
+                            ],
+                            'Text' => [
+                                'Charset' => 'UTF-8',
+                                'Data' => $textContent ?: strip_tags($textContent),
+                            ],
                         ],
-                    ],
-                    'Subject' => [
-                        'Charset' => 'UTF-8',
-                        'Data' => $subject,
                     ],
                 ],
-                'Source' => $from,
+                'FromEmailAddress' => $from,
             ]);
+
+            if ($jobWorkflowId) {
+                self::updateStat($jobWorkflowId, count($payload));
+            }
 
             return $response['MessageId'] ?? 0;
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());
         }
+    }
+
+    private static function updateStat($jobWorkflowId, $processedRecord)
+    {
+        $jobWorkflowRepo = app(JobWorkflowRepository::class);
+
+        $jobWorkflowInfo = $jobWorkflowRepo->getInfo($jobWorkflowId);
+        $countOfProcessedRecord = $jobWorkflowInfo['total_no_of_records_executed'] + $processedRecord;
+        $status = $countOfProcessedRecord == $jobWorkflowInfo['total_no_of_records_to_execute'] ? 'COMPLETED' : 'IN_PROGRESS';
+        $payload = [
+            'total_no_of_records_executed' => $countOfProcessedRecord,
+            'status' => $status,
+        ];
+
+        event(new JobWorkflowUpdatedEvent($jobWorkflowId, $payload));
     }
 }

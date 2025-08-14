@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Carbon\Carbon;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbClaim
@@ -338,7 +339,12 @@ class TbClaim
 
     public function parseAdjustingFirmPhone($phoneArr)
     {
-        return is_array($phoneArr) && count($phoneArr) ? (last($phoneArr)['phoneNumber'] ?? null) : null;
+        $phone = is_array($phoneArr) && count($phoneArr) ? (last($phoneArr)['phoneNumber'] ?? null) : null;
+        if ($phone) {
+            $phone = Helper::formatPhone($phone);
+        }
+
+        return $phone;
     }
 
     public function parseClaimCommunication($claimCommunication)
@@ -366,11 +372,20 @@ class TbClaim
             $logo = $brandedCompanyArr['company']['logo'];
         }
 
-        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
-        $logo = $holdingCompanyDetail['logo'] ?? null;
+        if (! $logo) {
+            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+            $logo = $holdingCompanyDetail['logo'] ?? null;
+        }
 
         // From gfs-saas-infra/src/Foundation/Helpers.php
-        return removeS3HostAndBucketFromURL($logo);
+        $path = removeS3HostAndBucketFromURL($logo);
+        \Log::info('WORKFLOW - S3 path for company logo: '.$path);
+
+        if (str_starts_with($path, 'http')) {
+            return $path;
+        }
+
+        return \Storage::disk('s3')->temporaryUrl($path, Carbon::now()->addMinutes(4320));
     }
 
     public function parseCompanyName($brandedCompanyArr)

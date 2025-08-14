@@ -59,12 +59,12 @@ return [
         ],
     ],
 
-    'allowed_receiver' => [ //For NON-PRODUCTION environments, we allow all emails to be sent.
+    'allowed_receiver' => [ // For NON-PRODUCTION environments, we allow all emails to be sent.
         'email' => [],
         'ends_with' => [],
     ],
 
-    'send_all_workflow_email_to' => '', //For NON-PRODUCTION environments, we allow all emails to be sent.
+    'send_all_workflow_email_to' => '', // For NON-PRODUCTION environments, we allow all emails to be sent.
 
     'required_actions' => [
         'sns:CreateTopic' => 'To create a new SNS topic, the user must have permission to create it.',

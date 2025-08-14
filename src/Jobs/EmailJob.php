@@ -70,10 +70,10 @@ class EmailJob implements ShouldQueue
         $messageId = 0;
         try {
             \Log::info('WORKFLOW - Creating SES Request');
-            $messageId = SES::creteRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId);
-            \Log::info('WORKFLOW - SES Request created with Message ID: ' . $messageId);
+            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId);
+            \Log::info('WORKFLOW - SES Request created with Message ID: '.$messageId);
         } catch (\Exception $e) {
-            \Log::error('WORKFLOW - Error creating SES Request: ' . $e->getMessage());
+            \Log::error('WORKFLOW - Error creating SES Request: '.$e->getMessage());
             throw $e; // Re-throw the exception to be handled by the queue system
         }
 
@@ -87,7 +87,7 @@ class EmailJob implements ShouldQueue
                 event(new PostActionEvent($module, $this->payload, $messageId));
             }
         } catch (\Exception $e) {
-            \Log::error('WORKFLOW - Error executing post action: ' . $e->getMessage());
+            \Log::error('WORKFLOW - Error executing post action: '.$e->getMessage());
         }
     }
 }

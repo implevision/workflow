@@ -85,7 +85,7 @@ class WorkflowSeeder extends Command
             foreach ($data['externalServices'] as $key => $service) {
                 switch ($key) {
                     case 'email':
-                        // $this->insertEmailData($service);
+                        $this->insertEmailData($service);
                         break;
                     default:
                         \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path} for workflow.");

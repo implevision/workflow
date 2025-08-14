@@ -11,7 +11,7 @@ class Helper
     {
         $holdingCompanyDetail = \DB::table('tb_holdingcompanies')->first();
 
-        return ['logo' => $holdingCompanyDetail->logo_url];
+        return ['logo' => $holdingCompanyDetail->public_logo_url ?? $holdingCompanyDetail->logo_url];
     }
 
     public static function formatDate($dateToFormat)
@@ -34,8 +34,6 @@ class Helper
             case 'CorePortal':
                 break;
         }
-
-        \Log::info($hostedDomain);
 
         return $hostedDomain;
     }
@@ -72,5 +70,17 @@ class Helper
         }
 
         return false;
+    }
+
+    public static function formatPhone($phoneNumber, $country = 'US')
+    {
+        // Remove all non-numeric characters from the input
+        $phoneNumber = preg_replace('/[^0-9]/', '', $phoneNumber);
+
+        switch (strtoupper($country)) {
+            case 'US':
+            default:
+                return preg_replace('/(\\d{3})(\\d{3})(\\d{4})/', '($1) $2-$3', $phoneNumber);
+        }
     }
 }

@@ -53,7 +53,7 @@ class S3
             $s3Client = self::initializeS3Client();
             $extension = pathinfo($fileName, PATHINFO_EXTENSION);
 
-            $filePath = self::getPath() . $fileName;
+            $filePath = self::getPath().$fileName;
 
             $cmd = $s3Client->getCommand('PutObject', [
                 'Bucket' => $bucketName,
@@ -90,7 +90,7 @@ class S3
 
     private static function getPath()
     {
-        return getTenant() . '/workflow/';
+        return getTenant().'/workflow/';
     }
 
     private static function getMIMEType($extension)

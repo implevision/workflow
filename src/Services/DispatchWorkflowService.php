@@ -3,12 +3,11 @@
 namespace Taurus\Workflow\Services;
 
 use Illuminate\Support\Facades\Storage;
-use Taurus\Workflow\Consumer\Taurus\Helper;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
+use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 use Taurus\Workflow\Services\WorkflowActions\EmailAction;
-use Taurus\Workflow\Services\AWS\S3;
 
 /**
  * Class DispatchWorkflowService
@@ -66,7 +65,7 @@ class DispatchWorkflowService
         try {
             $workflowInfo = $this->workflowService->getWorkflowDetailsById($this->workflowId);
         } catch (\Exception $e) {
-            \Log::error('WORKFLOW - Error fetching workflow details: ' . $e->getMessage());
+            \Log::error('WORKFLOW - Error fetching workflow details: '.$e->getMessage());
 
             return false;
         }
@@ -88,8 +87,6 @@ class DispatchWorkflowService
      */
     public function dispatch()
     {
-        Helper::createPortalURL('InsuredPortal');
-        exit;
         if (! $this->workflowId || ! is_array($this->workflowInfo)) {
             return false;
         }
@@ -100,7 +97,7 @@ class DispatchWorkflowService
             return false;
         }
 
-        \Log::info('WORKFLOW - Name: ' . $this->workflowInfo['detail']['name']);
+        \Log::info('WORKFLOW - Name: '.$this->workflowInfo['detail']['name']);
 
         $jobWorkflowId = 0;
         try {
@@ -114,7 +111,7 @@ class DispatchWorkflowService
             $jobWorkflowId = $this->jobWorkflowRepo->createSingle($jobWorkflow);
             setRunningJobWorkflowId($jobWorkflowId);
         } catch (\Exception $e) {
-            \Log::error('WORKFLOW - Error while creating entry in JOB WORKFLOW table. ' . $e->getMessage());
+            \Log::error('WORKFLOW - Error while creating entry in JOB WORKFLOW table. '.$e->getMessage());
 
             return false;
         }
@@ -138,7 +135,7 @@ class DispatchWorkflowService
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEvent']
                 );
             } catch (\Exception $e) {
-                throw new \Exception('Error while creating GraphQL query for effective action. ' . $e->getMessage());
+                throw new \Exception('Error while creating GraphQL query for effective action. '.$e->getMessage());
             }
         }
 
@@ -150,7 +147,7 @@ class DispatchWorkflowService
                     $this->recordIdentifier
                 );
             } catch (\Exception $e) {
-                throw new \Exception('Error while creating GraphQL query for record identifier. ' . $e->getMessage());
+                throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
             }
         }
 
@@ -166,8 +163,8 @@ class DispatchWorkflowService
                 try {
                     $feedFile = $this->getFileOnLocal($condition['s3FilePath']);
                 } catch (\Exception $e) {
-                    \Log::error('WORKFLOW - Failed to download feed file from S3: ' . $condition['s3FilePath']);
-                    \Log::error('WORKFLOW - ' . $e->getMessage());
+                    \Log::error('WORKFLOW - Failed to download feed file from S3: '.$condition['s3FilePath']);
+                    \Log::error('WORKFLOW - '.$e->getMessage());
                 }
             }
 
@@ -183,14 +180,14 @@ class DispatchWorkflowService
                         $actionToExecute = new EmailAction($action['actionType'], $action['payload']);
                         $actionToExecute->handle();
                     } catch (\Exception $e) {
-                        \Log::error('WORKFLOW - Error while initiating email action. ' . $e->getMessage());
+                        \Log::error('WORKFLOW - Error while initiating email action. '.$e->getMessage());
 
                         continue;
                     }
                 }
 
                 if (! $actionToExecute) {
-                    \Log::error('WORKFLOW - Action not found: ' . $action['actionType']);
+                    \Log::error('WORKFLOW - Action not found: '.$action['actionType']);
 
                     continue;
                 }
@@ -203,7 +200,7 @@ class DispatchWorkflowService
                         $listOfRequiredData[] = $listOfMandateData[] = ucfirst($action['payload']['emailRecipient']);
                     }
                 } catch (\Exception $e) {
-                    \Log::error('WORKFLOW - Error while getting required data for action - ' . $action['actionType'] . ' : ' . $e->getMessage());
+                    \Log::error('WORKFLOW - Error while getting required data for action - '.$action['actionType'].' : '.$e->getMessage());
 
                     continue;
                 }
@@ -221,7 +218,7 @@ class DispatchWorkflowService
                         $schemaData = $graphQLSchemaBuilder->getSchema();
                         $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery);
                     } catch (\Exception $e) {
-                        \Log::error('WORKFLOW - Error while preparing GraphQL query payload - ' . $e->getMessage());
+                        \Log::error('WORKFLOW - Error while preparing GraphQL query payload - '.$e->getMessage());
 
                         continue;
                     }
@@ -233,7 +230,7 @@ class DispatchWorkflowService
                         $graphQLClient = new GraphQLClient;
                         $response = $graphQLClient->query($graphQLRequestPayload);
                     } catch (\Exception $e) {
-                        \Log::error('WORKFLOW - Error while executing GraphQL query - ' . $e->getMessage());
+                        \Log::error('WORKFLOW - Error while executing GraphQL query - '.$e->getMessage());
 
                         continue;
                     }
@@ -243,7 +240,7 @@ class DispatchWorkflowService
                     try {
                         foreach ($listOfRequiredData as $placeHolder) {
                             if (! array_key_exists($placeHolder, $fieldMapping)) {
-                                \Log::error('WORKFLOW - Field mapping not found for placeholder: ' . $placeHolder);
+                                \Log::error('WORKFLOW - Field mapping not found for placeholder: '.$placeHolder);
                                 $parsedData[$placeHolder] = '';
 
                                 continue;
@@ -268,7 +265,7 @@ class DispatchWorkflowService
                         // SET DATA FOP ACTION
                         $data[] = $parsedData;
                     } catch (\Exception $e) {
-                        \Log::error('WORKFLOW - Error while extracting data from GraphQL response - ' . $e->getMessage());
+                        \Log::error('WORKFLOW - Error while extracting data from GraphQL response - '.$e->getMessage());
 
                         continue;
                     }
@@ -301,7 +298,7 @@ class DispatchWorkflowService
                             $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
                             $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
 
-                            \Log::error('WORKFLOW - Actual email address: ' . $emailPlaceHolderValue);
+                            \Log::info('WORKFLOW - Actual email address: '.$emailPlaceHolderValue);
 
                             $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
@@ -324,7 +321,7 @@ class DispatchWorkflowService
                             if ($executeEmailAction) {
                                 $data[$index]['email'] = $emailPlaceHolderValue;
                             } else {
-                                \Log::error('WORKFLOW - Email address not allowed in non-production env: ' . $emailPlaceHolderValue);
+                                \Log::error('WORKFLOW - Email address not allowed in non-production env: '.$emailPlaceHolderValue);
                                 $hasPriorDataForWorkflow = false;
                                 unset($data[$index]);
 
@@ -341,7 +338,7 @@ class DispatchWorkflowService
                     $actionToExecute->setDataForAction($feedFile, $data);
                     $actionToExecute->execute();
                 } catch (\Exception $e) {
-                    \Log::error('WORKFLOW - Error while executing action - ' . $action['actionType'] . ' : ' . $e->getMessage());
+                    \Log::error('WORKFLOW - Error while executing action - '.$action['actionType'].' : '.$e->getMessage());
 
                     continue;
                 }
@@ -360,7 +357,7 @@ class DispatchWorkflowService
     private function getFileOnLocal($s3FilePath)
     {
         $bucketName = config('workflow.aws_bucket');
-        $feedFile = storage_path('app' . $s3FilePath);
+        $feedFile = storage_path('app'.$s3FilePath);
 
         try {
             Storage::makeDirectory(dirname($s3FilePath));

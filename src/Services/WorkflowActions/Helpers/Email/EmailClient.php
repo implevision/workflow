@@ -35,7 +35,7 @@ class EmailClient
 
     private function dispatchEmail($payload)
     {
-        \Log::info('WORKFLOW - Dispatching email job for ' . $this->emailClient);
+        \Log::info('WORKFLOW - Dispatching email job for '.$this->emailClient);
         EmailJob::dispatch($this->emailClient, $payload, $this->payload['actionPayload']);
     }
 
@@ -85,7 +85,7 @@ class EmailClient
                     }
 
                     if (count($placeholder) != count($data)) {
-                        \Log::error('WORKFLOW - CSV file has different number of columns in row ' . $rowCount);
+                        \Log::error('WORKFLOW - CSV file has different number of columns in row '.$rowCount);
 
                         continue;
                     }
