@@ -1,0 +1,17 @@
+name: Workflow
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  laravel-ci:
+    uses: implevision/laravel-ci-actions/.github/workflows/laravel-ci.yml@main
+    with:
+      php-version: "8.2"
+      run-pint: true
+      run-larastan: true
+      run-tests: true
+    secrets:
+      composer-token: ${{ secrets.COMPOSER_AUTH_TOKEN }}
+      reviewdog-token: ${{ secrets.GITHUB_TOKEN }}
