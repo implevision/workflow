@@ -72,7 +72,7 @@ class SES
                 continue;
             }
 
-            \Log::info('WORKFLOW - Sending email to: '.$item['email']);
+            \Log::info('WORKFLOW - Sending email to: ', (array) $item['email']);
 
             $bulkEmailEntries[] = [
                 'Destination' => [
@@ -144,9 +144,12 @@ class SES
             throw new \Exception('Skipping email due to missing placeholders');
         }
 
-        \Log::info('WORKFLOW - Sending email to: '.$payload['email']);
+        \Log::info('WORKFLOW - Sending email to: ', (array) $payload['email']);
 
         foreach ($payload as $key => $value) {
+            if ($key == 'email') {
+                continue;
+            }
             $htmlContent = str_replace('{{'.$key.'}}', $value, $htmlContent);
             $textContent = str_replace('{{'.$key.'}}', $value, $textContent);
         }
