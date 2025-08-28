@@ -76,7 +76,7 @@ class SES
 
             $bulkEmailEntries[] = [
                 'Destination' => [
-                    'ToAddresses' => [$item['email']],
+                    'ToAddresses' => (array) $item['email'],
                 ],
                 'ReplacementEmailContent' => [
                     'ReplacementTemplate' => [
@@ -155,7 +155,7 @@ class SES
             $response = $sesClient->sendEmail([
                 'ConfigurationSetName' => 'farmers',
                 'Destination' => [
-                    'ToAddresses' => [$payload['email']],
+                    'ToAddresses' => (array) $payload['email'],
                 ],
                 'Content' => [
                     'Simple' => [
