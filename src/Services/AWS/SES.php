@@ -95,7 +95,7 @@ class SES
                         'TemplateContent' => [
                             'Html' => $htmlContent,
                             'Subject' => $subject,
-                            'Text' => $textContent ?: strip_tags($textContent),
+                            'Text' => $textContent ?: strip_tags($htmlContent),
                         ],
                         'TemplateData' => '{}',
                     ],
@@ -146,14 +146,15 @@ class SES
 
         \Log::info('WORKFLOW - Sending email to: ', (array) $payload['email']);
 
-        foreach ($payload as $key => $value) {
+        /*foreach ($payload as $key => $value) {
             if ($key == 'email') {
                 continue;
             }
-            $htmlContent = str_replace('{{'.$key.'}}', $value, $htmlContent);
-            $textContent = str_replace('{{'.$key.'}}', $value, $textContent);
-        }
+            $htmlContent = str_replace('{{' . $key . '}}', $value, $htmlContent);
+            $textContent = str_replace('{{' . $key . '}}', $value, $textContent);
+        }*/
 
+        unset($payload['email']);
         try {
             $response = $sesClient->sendEmail([
                 'ConfigurationSetName' => 'farmers',
@@ -161,22 +162,14 @@ class SES
                     'ToAddresses' => (array) $payload['email'],
                 ],
                 'Content' => [
-                    'Simple' => [
-                        'Subject' => [
-                            'Charset' => 'UTF-8',
-                            'Data' => $subject,
-                        ],
-                        'Body' => [
-                            'Html' => [
-                                'Charset' => 'UTF-8',
-                                'Data' => $htmlContent,
-                            ],
-                            'Text' => [
-                                'Charset' => 'UTF-8',
-                                'Data' => $textContent ?: strip_tags($textContent),
-                            ],
+                    'Template' => [
+                        'TemplateContent' => [
+                            'Html' => $htmlContent,
+                            'Subject' => $subject,
+                            'Text' => $textContent ?: strip_tags($htmlContent),
                         ],
                     ],
+                    'TemplateData' => json_encode(array_replace($placeHolders, $payload)),
                 ],
                 'FromEmailAddress' => $from,
             ]);
@@ -204,5 +197,25 @@ class SES
         ];
 
         event(new JobWorkflowUpdatedEvent($jobWorkflowId, $payload));
+    }
+
+    public static function getEmailTemplate($templateName)
+    {
+        try {
+            $sesClient = self::getSesClient();
+        } catch (\Exception $e) {
+            throw new \Exception('Error creating SES client: '.$e->getMessage());
+        }
+
+        try {
+            $result = $sesClient->getEmailTemplate([
+                'TemplateName' => $templateName,
+            ]);
+
+            // The response includes TemplateContent (Html, Subject, Text) and TemplateName
+            return $result->toArray() ?? [];
+        } catch (AwsException $e) {
+            throw new \Exception($e->getAwsErrorMessage());
+        }
     }
 }

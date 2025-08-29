@@ -322,7 +322,7 @@ class DispatchWorkflowService
                                 }
                             }
 
-                            $finalList = array_intersect($allowedEmailAddressList1, $allowedEmailAddressList2);
+                            $finalList = [...$allowedEmailAddressList1, ...$allowedEmailAddressList2];
 
                             if ($executeEmailAction && count($finalList) > 0) {
                                 $data[$index]['email'] = $emailPlaceHolderValue;

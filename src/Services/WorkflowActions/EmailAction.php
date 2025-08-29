@@ -30,7 +30,10 @@ class EmailAction extends AbstractWorkflowAction
 
     public function getListOfRequiredData()
     {
-        return ! empty($this->emailInformation['extractedPlaceholders']) ? $this->emailInformation['extractedPlaceholders'] : [];
+        $extractedPlaceHolder = ! empty($this->emailInformation['extractedPlaceholders']) ? $this->emailInformation['extractedPlaceholders'] : [];
+        preg_match_all('/{{\s*(.*?)\s*}}/', $this->emailInformation['subject'], $matches);
+
+        return [...$extractedPlaceHolder, ...$matches[1]];
     }
 
     public function getListOfMandateData()
