@@ -34,14 +34,14 @@ class SES
         return new SesV2Client($awsConfig);
     }
 
-    public static function createRequest($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId)
+    public static function createRequest($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo = [], $configurationSetName = '', $tenant = '')
     {
         $isRequireBulkEmailRequest = count($payload) > 1 ? true : false;
         try {
             if ($isRequireBulkEmailRequest) {
-                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId);
+                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
             } else {
-                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId);
+                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
             }
         } catch (\Exception $e) {
             throw new \Exception('Error sending email: '.$e->getMessage());
@@ -50,7 +50,7 @@ class SES
         return $messageId;
     }
 
-    public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0)
+    public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')
     {
         try {
             $sesClient = self::getSesClient();
@@ -66,13 +66,15 @@ class SES
 
         $bulkEmailEntries = [];
         foreach ($payload as $item) {
+            $recipient = $item['email'];
+            unset($item['email']);
             if (empty($item['email']) || count($item) < count($placeHolders)) {
                 \Log::info('WORKFLOW - Skipping email due to missing placeholders', $item);
 
                 continue;
             }
 
-            \Log::info('WORKFLOW - Sending email to: ', (array) $item['email']);
+            \Log::info('WORKFLOW - Sending email to: ', (array) $recipient);
 
             $bulkEmailEntries[] = [
                 'Destination' => [
@@ -89,19 +91,21 @@ class SES
         try {
 
             $bulkEmailPayload = [
+                ...(! empty($configurationSetName) ? ['ConfigurationSetName' => $configurationSetName] : []),
                 'FromEmailAddress' => $from,
                 'DefaultContent' => [
                     'Template' => [
                         'TemplateContent' => [
                             'Html' => $htmlContent,
                             'Subject' => $subject,
-                            'Text' => $textContent ?: strip_tags($textContent),
+                            'Text' => $textContent ?: strip_tags($htmlContent),
                         ],
                         'TemplateData' => '{}',
                     ],
                 ],
-                'ConfigurationSetName' => 'farmers',
                 'BulkEmailEntries' => $bulkEmailEntries,
+                ...[count($replyTo) ? ["ReplyToAddresses => $replyTo"] : []],
+                ...[! empty($tenant) ? ["Tenant => $tenant"] : []],
             ];
 
             $response = $sesClient->sendBulkEmail($bulkEmailPayload);
@@ -124,7 +128,7 @@ class SES
         }
     }
 
-    public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0)
+    public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')
     {
         try {
             $sesClient = self::getSesClient();
@@ -146,39 +150,28 @@ class SES
 
         \Log::info('WORKFLOW - Sending email to: ', (array) $payload['email']);
 
-        foreach ($payload as $key => $value) {
-            if ($key == 'email') {
-                continue;
-            }
-            $htmlContent = str_replace('{{'.$key.'}}', $value, $htmlContent);
-            $textContent = str_replace('{{'.$key.'}}', $value, $textContent);
-        }
+        $recipient = $payload['email'];
+        unset($payload['email']);
 
         try {
             $response = $sesClient->sendEmail([
-                'ConfigurationSetName' => 'farmers',
+                ...(! empty($configurationSetName) ? ['ConfigurationSetName' => $configurationSetName] : []),
                 'Destination' => [
-                    'ToAddresses' => (array) $payload['email'],
+                    'ToAddresses' => (array) $recipient,
                 ],
                 'Content' => [
-                    'Simple' => [
-                        'Subject' => [
-                            'Charset' => 'UTF-8',
-                            'Data' => $subject,
+                    'Template' => [
+                        'TemplateContent' => [
+                            'Html' => $htmlContent,
+                            'Subject' => $subject,
+                            'Text' => $textContent ?: strip_tags($htmlContent),
                         ],
-                        'Body' => [
-                            'Html' => [
-                                'Charset' => 'UTF-8',
-                                'Data' => $htmlContent,
-                            ],
-                            'Text' => [
-                                'Charset' => 'UTF-8',
-                                'Data' => $textContent ?: strip_tags($textContent),
-                            ],
-                        ],
+                        'TemplateData' => json_encode(array_replace($placeHolders, $payload)),
                     ],
                 ],
                 'FromEmailAddress' => $from,
+                ...($replyTo ? ['ReplyToAddresses' => (array) $replyTo] : []),
+                ...[! empty($tenant) ? ['Tenant' => $tenant] : []],
             ]);
 
             if ($jobWorkflowId) {
@@ -204,5 +197,25 @@ class SES
         ];
 
         event(new JobWorkflowUpdatedEvent($jobWorkflowId, $payload));
+    }
+
+    public static function getEmailTemplate($templateName)
+    {
+        try {
+            $sesClient = self::getSesClient();
+        } catch (\Exception $e) {
+            throw new \Exception('Error creating SES client: '.$e->getMessage());
+        }
+
+        try {
+            $result = $sesClient->getEmailTemplate([
+                'TemplateName' => $templateName,
+            ]);
+
+            // The response includes TemplateContent (Html, Subject, Text) and TemplateName
+            return $result->toArray() ?? [];
+        } catch (AwsException $e) {
+            throw new \Exception($e->getAwsErrorMessage());
+        }
     }
 }
