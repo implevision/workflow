@@ -30,7 +30,9 @@ class PrepareEmailData
 
     public function execute()
     {
-        $from = sprintf('"%s" <%s>', getTenant(), config('workflow.sender_email_address'));
+        $senderName = ! empty($this->emailInformation['senderName']) ? $this->emailInformation['senderName'] : getTenant();
+        $senderEmailAddress = str_replace('{{tenant}}', tenant(), config('workflow.sender_email_address'));
+        $from = sprintf('"%s" <%s>', $senderName, $senderEmailAddress);
         $actionPayload = [
             'workflowId' => $this->workflowId,
             'jobWorkflowId' => $this->jobWorkflowId,
@@ -43,6 +45,7 @@ class PrepareEmailData
             'subject' => $this->emailInformation['subject'],
             'payload' => [],
             'from' => $from,
+            'replyTo' => ! empty($this->emailInformation['replyTo']) ? explode(',', $this->emailInformation['replyTo']) : [],
             'postAction' => $this->payload['postAction'] ?? '',
             'actionPayload' => $this->payload['actionPayload'] ?? [],
         ];
