@@ -28,6 +28,8 @@ class DispatchWorkflow extends Command
     {
         $workflowId = $this->option('workflowId');
         $recordIdentifier = $this->option('recordIdentifier', 0);
+        $data = $this->option('data');
+        $data = $data ? json_decode($data, true) : [];
 
         if (! $workflowId) {
             $this->error('The --workflowId option is required.');
@@ -44,7 +46,7 @@ class DispatchWorkflow extends Command
             \Log::info('WORKFLOW - Dispatching workflow with ID '.$workflowId);
             $recordIdentifier ? \Log::info('WORKFLOW - Dispatching workflow with record identifier '.$recordIdentifier) : null;
 
-            $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier);
+            $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier, $data);
             $workflow->dispatch();
         } catch (\Exception $e) {
             $errorMessage = "WORKFLOW - Error dispatching workflow with ID $workflowId: ".$e->getMessage();
