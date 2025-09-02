@@ -12,7 +12,7 @@ class DispatchWorkflow extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:dispatch-workflow {--workflowId=} {--recordIdentifier=}';
+    protected $signature = 'taurus:dispatch-workflow {--workflowId=} {--recordIdentifier=} {--data=}';
 
     /**
      * The console command description.
