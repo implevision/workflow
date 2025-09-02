@@ -37,18 +37,24 @@ class DispatchWorkflowService
 
     protected $recordIdentifier;
 
+    protected $data;
+
+    protected $isManuallyInvoked = false;
+
     /**
      * DispatchWorkflowService constructor.
      *
      * @param  int  $workflowId  The ID of the workflow to be dispatched.
      * @param  int|string  $recordIdentifier  An optional identifier for the record, default is 0.
      */
-    public function __construct(int $workflowId, int|string $recordIdentifier = 0)
+    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [])
     {
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
         $this->workflowService = app(WorkflowService::class);
         $this->recordIdentifier = $recordIdentifier;
+        $this->data = $data;
+        $this->isManuallyInvoked = count($data) ? true : false;
         $this->getInfo();
     }
 
@@ -123,6 +129,7 @@ class DispatchWorkflowService
         // NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
         // Example: After/Before X day(s)/month(s)/year(s) of the event
         if (
+            ! $this->isManuallyInvoked &&
             $this->workflowInfo['when']['effectiveActionToExecuteWorkflow'] == 'ON_DATE_TIME' &&
             ! $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['certainDateTime']
         ) {
@@ -140,7 +147,7 @@ class DispatchWorkflowService
         }
 
         $graphQLQuery = [];
-        if ($this->recordIdentifier) {
+        if ($this->recordIdentifier && ! $this->isManuallyInvoked) {
             try {
                 $graphQLQuery[] = $this->workflowService->getQueryForRecordIdentifier(
                     $this->workflowInfo['detail']['module'],
@@ -205,7 +212,9 @@ class DispatchWorkflowService
                     continue;
                 }
 
-                if (count($graphQLQuery) || count($listOfRequiredData)) {
+                if ($this->isManuallyInvoked) {
+                    $data[] = $this->data;
+                } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
                     // Build GraphQL query
                     try {
                         $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->workflowInfo['detail']['module']);
