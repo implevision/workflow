@@ -42,11 +42,11 @@ trait DispatchCustomEvents
         return $this;
     }
 
-    protected function fireEvent($event, $eventVirtualModel, $data = [], $recordIdentifier = null, $halt = true)
+    protected function fireEvent($event, $eventVirtualModel, $data = [], $recordIdentifier = null, $halt = false)
     {
         $data = array_merge($data, ['recordIdentifier' => $recordIdentifier]);
         if (in_array($event, $this->getObservableEvents())) {
-            $halt ?
+            ! $halt ?
                 event(new AsyncCustomEvents($event, $eventVirtualModel, $data)) :
                 event(new CustomEvents($event, $eventVirtualModel, $data));
         }
