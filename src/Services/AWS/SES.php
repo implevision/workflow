@@ -76,6 +76,10 @@ class SES
 
             \Log::info('WORKFLOW - Sending email to: ', (array) $recipient);
 
+            $item = array_map(function ($value) {
+                return empty($value) ? '' : $value;
+            }, $item);
+
             $bulkEmailEntries[] = [
                 'Destination' => [
                     'ToAddresses' => (array) $item['email'],
@@ -152,6 +156,10 @@ class SES
 
         $recipient = $payload['email'];
         unset($payload['email']);
+
+        $payload = array_map(function ($value) {
+            return empty($value) ? '' : $value;
+        }, $payload);
 
         try {
             $response = $sesClient->sendEmail([
