@@ -278,6 +278,10 @@ class DispatchWorkflowService
                     }
                 }
 
+                if (config('app.env') != 'production') {
+                    \Log::info('WORKFLOW - data: ', $data);
+                }
+
                 try {
                     // VALIDATE ALL REQUIRED INFO IS PRESENT OR NOT
                     $hasPriorDataForWorkflow = false;
@@ -302,6 +306,7 @@ class DispatchWorkflowService
                         }
 
                         if (config('app.env') != 'production' && $action['actionType'] == 'EMAIL') {
+
                             $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
                             $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
 
