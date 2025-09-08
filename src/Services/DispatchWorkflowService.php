@@ -265,10 +265,21 @@ class DispatchWorkflowService
                         // SET DATA FOP ACTION
                         $data[] = $parsedData;
                     } catch (\Exception $e) {
-                        \Log::error('WORKFLOW - Error while extracting data from GraphQL response - '.$e->getMessage());
+                        \Log::error(
+                            'WORKFLOW - Error while extracting data from GraphQL response - '.$e->getMessage(),
+                            [
+                                'message' => $e->getMessage(),
+                                'file' => $e->getFile(),
+                                'line_no' => $e->getLine(),
+                            ]
+                        );
 
                         continue;
                     }
+                }
+
+                if (config('app.env') != 'production') {
+                    \Log::info('WORKFLOW - data: ', $data);
                 }
 
                 try {
@@ -295,6 +306,7 @@ class DispatchWorkflowService
                         }
 
                         if (config('app.env') != 'production' && $action['actionType'] == 'EMAIL') {
+
                             $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
                             $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
 
