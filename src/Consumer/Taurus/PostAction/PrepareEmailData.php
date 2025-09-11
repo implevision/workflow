@@ -31,7 +31,7 @@ class PrepareEmailData
             $html = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
                 $key = trim($matches[1]);
 
-                return $placeholders[$key] ?? $matches[0]; // fallback to original if key not found
+                return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
             }, $payload['emailTemplate']);
 
             $pdfBuffer = self::htmlToPdf($html, $pageSize, $pageOrientation);
