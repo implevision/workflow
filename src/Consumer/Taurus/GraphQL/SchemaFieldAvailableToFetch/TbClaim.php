@@ -80,6 +80,12 @@ class TbClaim
                 ],
                 'jqFilter' => '.claim.riskId',
             ],
+            'ReferenceNo' => [
+                'GraphQLschemaToReplace' => [
+                    'Claim_No' => null,
+                ],
+                'jqFilter' => '.claim.Claim_No',
+            ],
             'PolicyId' => [
                 'GraphQLschemaToReplace' => [
                     'policyId' => null,

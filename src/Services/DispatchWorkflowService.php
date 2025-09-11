@@ -248,15 +248,23 @@ class DispatchWorkflowService
 
                             $jqFilter = $fieldMapping[$placeHolder]['jqFilter'];
                             $parseResultCallback = ! empty($fieldMapping[$placeHolder]['parseResultCallback']) ? $fieldMapping[$placeHolder]['parseResultCallback'] : null;
-                            $placeHolderValue = $graphQLSchemaBuilder->extractValue($response, $jqFilter);
 
-                            if ($placeHolderValue) {
-                                $parsedValue = json_decode($placeHolderValue, true);
-                                $placeHolderValue = json_last_error() === JSON_ERROR_NONE ? $parsedValue : $placeHolderValue;
+                            $placeHolderValue = '';
+                            if (! $jqFilter && $parseResultCallback) {
+                                if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
+                                    $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback();
+                                }
+                            } else {
+                                $placeHolderValue = $graphQLSchemaBuilder->extractValue($response, $jqFilter);
 
-                                if ($parseResultCallback) {
-                                    if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
-                                        $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback($placeHolderValue);
+                                if ($placeHolderValue) {
+                                    $parsedValue = json_decode($placeHolderValue, true);
+                                    $placeHolderValue = json_last_error() === JSON_ERROR_NONE ? $parsedValue : $placeHolderValue;
+
+                                    if ($parseResultCallback) {
+                                        if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
+                                            $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback($placeHolderValue);
+                                        }
                                     }
                                 }
                             }
