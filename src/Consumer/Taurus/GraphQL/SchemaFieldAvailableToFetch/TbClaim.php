@@ -82,9 +82,9 @@ class TbClaim
             ],
             'ReferenceNo' => [
                 'GraphQLschemaToReplace' => [
-                    'Claim_No' => null,
+                    'referenceNo' => null,
                 ],
-                'jqFilter' => '.claim.Claim_No',
+                'jqFilter' => '.claim.referenceNo',
             ],
             'PolicyId' => [
                 'GraphQLschemaToReplace' => [
