@@ -302,7 +302,7 @@ class TbClaim
         $address = [
             'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
             'city' => $addressArr['tbCity']['name'] ?? null,
-            'city' => $addressArr['tbCounty']['name'] ?? null,
+            // 'county' => $addressArr['tbCounty']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
             'postalCode' => $addressArr['postalCode'] ?? null,
         ];
