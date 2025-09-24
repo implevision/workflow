@@ -3,9 +3,13 @@
 namespace Taurus\Workflow\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Taurus\Workflow\Events\AsyncCustomEvents;
+use Taurus\Workflow\Events\CustomEvents;
 use Taurus\Workflow\Events\JobWorkflowCreatedEvent;
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Events\PostActionEvent;
+use Taurus\Workflow\Listeners\HandleAsyncCustomEvents;
+use Taurus\Workflow\Listeners\HandleCustomEvents;
 use Taurus\Workflow\Listeners\HandleJobWorkflowCreatedEvent;
 use Taurus\Workflow\Listeners\HandleJobWorkflowUpdatedEvent;
 use Taurus\Workflow\Listeners\HandlePostActionEvent;
@@ -21,6 +25,12 @@ class EventServiceProvider extends ServiceProvider
         ],
         PostActionEvent::class => [
             HandlePostActionEvent::class,
+        ],
+        CustomEvents::class => [
+            HandleCustomEvents::class,
+        ],
+        AsyncCustomEvents::class => [
+            HandleAsyncCustomEvents::class,
         ],
     ];
 }
