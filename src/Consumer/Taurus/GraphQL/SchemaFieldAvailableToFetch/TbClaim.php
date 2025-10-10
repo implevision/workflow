@@ -374,6 +374,7 @@ class TbClaim
 
     public function parseCompanyLogo($brandedCompanyArr)
     {
+        $logo = '';
         if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['logo'])) {
             $logo = $brandedCompanyArr['company']['logo'];
         }
@@ -381,6 +382,10 @@ class TbClaim
         if (! $logo) {
             $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
             $logo = $holdingCompanyDetail['logo'] ?? null;
+        }
+
+        if (! $logo) {
+            \Log::info('WORKFLOW - failed to fetch logo ', (array) $brandedCompanyArr);
         }
 
         // From gfs-saas-infra/src/Foundation/Helpers.php
