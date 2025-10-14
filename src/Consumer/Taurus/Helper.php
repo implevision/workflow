@@ -11,7 +11,7 @@ class Helper
     {
         $holdingCompanyDetail = \DB::table('tb_holdingcompanies')->first();
 
-        return ['logo' => $holdingCompanyDetail->public_logo_url ?? $holdingCompanyDetail->logo_url];
+        return ['logo' => $holdingCompanyDetail->public_logo_url ?? $holdingCompanyDetail->logo_url, 'name' => $holdingCompanyDetail->s_HoldingCompanyName ?? null];
     }
 
     public static function formatDate($dateToFormat)
