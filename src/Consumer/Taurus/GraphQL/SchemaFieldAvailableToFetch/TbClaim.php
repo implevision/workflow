@@ -85,6 +85,7 @@ class TbClaim
                     'referenceNo' => null,
                 ],
                 'jqFilter' => '.claim.referenceNo',
+                'parseResultCallback' => 'parseReferenceNo',
             ],
             'PolicyId' => [
                 'GraphQLschemaToReplace' => [
@@ -411,5 +412,13 @@ class TbClaim
     public function getInsuredPortalUrl()
     {
         return Helper::createPortalURL('InsuredPortal');
+    }
+
+    public function parseReferenceNo($referenceNo)
+    {
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+        $tenant = getTenant();
+
+        return sprintf('%s%s%s', ucfirst(substr($tenant, 0, 1)), $holdingCompanyDetail['naic_number'], $referenceNo);
     }
 }
