@@ -76,6 +76,7 @@ class WorkflowService
                 'effective_action_to_execute_workflow' => $data['when']['effectiveActionToExecuteWorkflow'] ?? null,
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
+                'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
                 'workflow_next_date_to_execute' => $workflowNextDateToExecute,
                 'is_active' => $data['detail']['isActive'] ?? true,
@@ -169,6 +170,7 @@ class WorkflowService
                 'effectiveActionToExecuteWorkflow' => $workflow->effective_action_to_execute_workflow,
                 'recordActionToExecuteWorkflow' => $workflow->record_action_to_execute_workflow,
                 'dateTimeInfoToExecuteWorkflow' => $workflow->date_time_info_to_execute_workflow,
+                'customDateTimeInfoToExecuteWorkflow' => $workflow->custom_date_time_info_to_execute_workflow ?? [],
             ],
             'workFlowConditions' => $workflowConditions,
         ]);
@@ -195,6 +197,7 @@ class WorkflowService
                 'effective_action_to_execute_workflow' => $data['when']['effectiveActionToExecuteWorkflow'] ?? null,
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
+                'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
                 // TODO: UPDATE workflow_execution_frequency & workflow_next_date_to_execute
             ]);
 
