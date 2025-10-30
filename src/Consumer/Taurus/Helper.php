@@ -12,7 +12,8 @@ class Helper
         $holdingCompanyDetail = \DB::table('tb_holdingcompanies')->first();
 
         return [
-            'logo' => $holdingCompanyDetail->public_logo_url ?? $holdingCompanyDetail->logo_url,
+            'logo' => $holdingCompanyDetail->logo_url,
+            'public_logo' => $holdingCompanyDetail->public_logo_url,
             'wyo' => $holdingCompanyDetail->s_HoldingCompanyName,
             'naic_number' => $holdingCompanyDetail->naic_number,
         ];
