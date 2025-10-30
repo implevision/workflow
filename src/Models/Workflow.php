@@ -19,6 +19,7 @@ class Workflow extends Model
         'effective_action_to_execute_workflow',
         'record_action_to_execute_workflow',
         'date_time_info_to_execute_workflow',
+        'custom_date_time_info_to_execute_workflow',
         'workflow_execution_frequency',
         'workflow_next_date_to_execute',
         'is_active',
@@ -26,6 +27,7 @@ class Workflow extends Model
     ];
 
     protected $casts = [
+        'custom_date_time_info_to_execute_workflow' => 'json',
         'date_time_info_to_execute_workflow' => 'json',
         'workflow_next_date_to_execute' => 'datetime',
     ];
