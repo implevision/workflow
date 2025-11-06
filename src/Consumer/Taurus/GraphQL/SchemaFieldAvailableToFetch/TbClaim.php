@@ -258,6 +258,7 @@ class TbClaim
                     'brandedCompany' => [
                         'company' => [
                             'logo' => null,
+                            'publicLogo' => null,
                         ],
                     ],
                 ],
@@ -376,17 +377,33 @@ class TbClaim
     public function parseCompanyLogo($brandedCompanyArr)
     {
         $logo = '';
+        $logoHasPublicUrl = false;
+
         if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['logo'])) {
             $logo = $brandedCompanyArr['company']['logo'];
+        }
+
+        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['publicLogo'])) {
+            $logo = $brandedCompanyArr['company']['publicLogo'];
+            $logoHasPublicUrl = true;
         }
 
         if (! $logo) {
             $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
             $logo = $holdingCompanyDetail['logo'] ?? null;
+
+            if ($holdingCompanyDetail['public_logo']) {
+                $logo = $holdingCompanyDetail['public_logo'];
+                $logoHasPublicUrl = true;
+            }
         }
 
         if (! $logo) {
             \Log::info('WORKFLOW - failed to fetch logo ', (array) $brandedCompanyArr);
+        }
+
+        if ($logoHasPublicUrl) {
+            return $logo;
         }
 
         // From gfs-saas-infra/src/Foundation/Helpers.php
