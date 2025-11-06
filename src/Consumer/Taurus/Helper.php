@@ -88,4 +88,30 @@ class Helper
                 return preg_replace('/(\\d{3})(\\d{3})(\\d{4})/', '($1) $2-$3', $phoneNumber);
         }
     }
+
+    public static function generateDataImage($logoUrl)
+    {
+        if (empty($logoUrl)) {
+            return '';
+        }
+
+        try {
+            $urlData = parse_url($logoUrl);
+
+            $mimeType = 'image/jpg';
+            if (str_ends_with(strtolower($urlData['path']), 'png') == 'png') {
+                $mimeType = 'image/png';
+            } elseif (str_ends_with(strtolower($urlData['path']), 'jpeg') == 'jpeg') {
+                $mimeType = 'image/jpeg';
+            } elseif (str_ends_with(strtolower($urlData['path']), 'jpg') == 'jpg') {
+                $mimeType = 'image/jpg';
+            }
+
+            $imgData = 'data:'.$mimeType.';base64, '.base64_encode(file_get_contents($logoUrl));
+        } catch (\Exception $e) {
+            return '';
+        }
+
+        return $imgData;
+    }
 }
