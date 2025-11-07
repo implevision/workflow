@@ -31,10 +31,10 @@ class Helper
 
         switch ($portal) {
             case 'InsuredPortal':
-                $hostedDomain = 'https://mypolicy.'.tenant('id').'.'.$hostedDomain;
+                $hostedDomain = 'https://'.getTenant().'.mypolicy.'.$hostedDomain;
                 break;
             case 'AgentPortal':
-                $hostedDomain = 'https://agent.'.tenant('id').'.'.$hostedDomain;
+                $hostedDomain = 'https://'.getTenant().'.agent.'.$hostedDomain;
                 break;
             case 'CorePortal':
                 break;
