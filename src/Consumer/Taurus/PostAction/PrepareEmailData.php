@@ -3,6 +3,7 @@
 namespace Taurus\Workflow\Consumer\Taurus\PostAction;
 
 use Dompdf\Dompdf;
+use Taurus\Workflow\Consumer\Taurus\Helper;
 use Taurus\Workflow\Services\AWS\S3;
 
 class PrepareEmailData
@@ -25,6 +26,10 @@ class PrepareEmailData
     {
         $pageSize = 'A4';
         $pageOrientation = 'portrait';
+
+        if (array_key_exists('CompanyLogo', $placeholders)) {
+            $placeholders['CompanyLogo'] = Helper::generateDataImage($placeholders['CompanyLogo']);
+        }
 
         // CREATE S3 PATH
         try {
