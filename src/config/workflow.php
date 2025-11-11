@@ -59,12 +59,13 @@ return [
         ],
     ],
 
-    'allowed_receiver' => [ // For NON-PRODUCTION environments, we allow all emails to be sent.
-        'email' => [],
-        'ends_with' => [],
+    'allowed_receiver' => [ // FOR NON PRODUCTION ENVIRONMENTS
+        'email' => explode(',', env('WORKFLOW_ALLOWED_RECEIVER_EMAIL', '')), // COMMA SEPARATED
+        'ends_with' => explode(',', env('WORKFLOW_ALLOWED_RECEIVER_EMAIL_ENDS_WITH', '')), // COMMA SEPARATED
     ],
 
-    'send_all_workflow_email_to' => '', // For NON-PRODUCTION environments, we allow all emails to be sent.
+    // FOR NON PRODUCTION ENVIRONMENTS
+    'send_all_workflow_email_to' => env('WORKFLOW_SEND_ALL_WORKFLOW_EMAIL_TO', ''), // COMMA SEPARATED
 
     'required_actions' => [
         'sns:CreateTopic' => 'To create a new SNS topic, the user must have permission to create it.',
