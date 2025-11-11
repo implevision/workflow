@@ -161,14 +161,31 @@ class TbAgentTasksMaster
                 'jqFilter' => '.agentTask.updatedAt',
                 'parseResultCallback' => 'formatDate',
             ],
+            'AssignedAgentEmail' => [
+                'GraphQLschemaToReplace' => [
+                    'agent' => [
+                        'emailInfo' => [
+                            'email' => null,
+                            'isDefault' => null,
+                        ]
+                    ],
+                ],
+                'jqFilter' => '[.agentTask.agent.emailInfo[0] | select(.isDefault == "Y")]',
+                'parseResultCallback' => 'parseAssignedAgentEmail',
+            ],
         ];
 
-       
+
         return $fieldMapping;
     }
 
     public function formatDate($dateToFormat)
     {
         return Helper::formatDate($dateToFormat);
+    }
+
+    public function parseAssignedAgentEmail($emailArr)
+    {
+        return is_array($emailArr) && count($emailArr) ? (last($emailArr)['email'] ?? null) : null;
     }
 }
