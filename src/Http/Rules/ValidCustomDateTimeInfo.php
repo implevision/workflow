@@ -69,11 +69,12 @@ class ValidCustomDateTimeInfo implements ValidationRule
             ];
 
             foreach ($cronFields as $field => $meta) {
-                if (!isset($value[$field])) {
+                if (! isset($value[$field])) {
                     $fail("Value of {$meta['label']} is required.");
+
                     continue;
                 }
-                if (!preg_match($meta['regex'], (string)$value[$field])) {
+                if (! preg_match($meta['regex'], (string) $value[$field])) {
                     $fail($meta['error']);
                 }
             }

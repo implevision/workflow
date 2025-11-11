@@ -161,6 +161,16 @@ class SES
             return empty($value) ? '' : $value;
         }, $payload);
 
+        // REPLACE FROM NAME
+        preg_match_all('/{{\s*(.*?)\s*}}/', $from, $fromPlaceholderMatches);
+
+        if (is_array($fromPlaceholderMatches) && ! empty($fromPlaceholderMatches[1])) {
+            foreach ($fromPlaceholderMatches[1] as $placeholder) {
+                $placeholderValue = $payload[$placeholder] ?? '';
+                $from = str_replace('{{'.$placeholder.'}}', $placeholderValue, $from);
+            }
+        }
+
         try {
             $response = $sesClient->sendEmail([
                 ...(! empty($configurationSetName) ? ['ConfigurationSetName' => $configurationSetName] : []),

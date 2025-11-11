@@ -12,7 +12,8 @@ class Helper
         $holdingCompanyDetail = \DB::table('tb_holdingcompanies')->first();
 
         return [
-            'logo' => $holdingCompanyDetail->public_logo_url ?? $holdingCompanyDetail->logo_url,
+            'logo' => $holdingCompanyDetail->logo_url,
+            'public_logo' => $holdingCompanyDetail->public_logo_url,
             'wyo' => $holdingCompanyDetail->s_HoldingCompanyName,
             'naic_number' => $holdingCompanyDetail->naic_number,
         ];
@@ -30,10 +31,10 @@ class Helper
 
         switch ($portal) {
             case 'InsuredPortal':
-                $hostedDomain = 'https://mypolicy.'.tenant('id').'.'.$hostedDomain;
+                $hostedDomain = 'https://'.getTenant().'.mypolicy.'.$hostedDomain;
                 break;
             case 'AgentPortal':
-                $hostedDomain = 'https://agent.'.tenant('id').'.'.$hostedDomain;
+                $hostedDomain = 'https://'.getTenant().'.agent.'.$hostedDomain;
                 break;
             case 'CorePortal':
                 break;
@@ -86,5 +87,31 @@ class Helper
             default:
                 return preg_replace('/(\\d{3})(\\d{3})(\\d{4})/', '($1) $2-$3', $phoneNumber);
         }
+    }
+
+    public static function generateDataImage($logoUrl)
+    {
+        if (empty($logoUrl)) {
+            return '';
+        }
+
+        try {
+            $urlData = parse_url($logoUrl);
+
+            $mimeType = 'image/jpg';
+            if (str_ends_with(strtolower($urlData['path']), 'png') == 'png') {
+                $mimeType = 'image/png';
+            } elseif (str_ends_with(strtolower($urlData['path']), 'jpeg') == 'jpeg') {
+                $mimeType = 'image/jpeg';
+            } elseif (str_ends_with(strtolower($urlData['path']), 'jpg') == 'jpg') {
+                $mimeType = 'image/jpg';
+            }
+
+            $imgData = 'data:'.$mimeType.';base64, '.base64_encode(file_get_contents($logoUrl));
+        } catch (\Exception $e) {
+            return '';
+        }
+
+        return $imgData;
     }
 }
