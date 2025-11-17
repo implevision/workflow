@@ -172,13 +172,21 @@ class TbAgentTasksMaster
                 'jqFilter' => '[.agentTask.agent.emailInfo[0] | select(.isDefault == "Y")]',
                 'parseResultCallback' => 'parseAssignedAgentEmail',
             ],
-            'title' => [
+            'Title' => [
                 'GraphQLschemaToReplace' => [
                     'taskMapping' => [
                         'title' => null,
                     ],
                 ],
                 'jqFilter' => '.agentTask.taskMapping.title',
+            ],
+            'PolicyNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'policyNumber' => null,
+                    ],
+                ],
+                'jqFilter' => '.agentTask.policy.policyNumber',
             ],
         ];
 
