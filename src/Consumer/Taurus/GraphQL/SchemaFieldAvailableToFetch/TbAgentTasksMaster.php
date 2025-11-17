@@ -2,7 +2,6 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
-use Carbon\Carbon;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbAgentTasksMaster
@@ -120,39 +119,39 @@ class TbAgentTasksMaster
                 'GraphQLschemaToReplace' => [
                     'completeStatus' => null,
                 ],
-                'jqFilter' => '.agentTask.completeStatus'
+                'jqFilter' => '.agentTask.completeStatus',
             ],
             'CompleteDate' => [
                 'GraphQLschemaToReplace' => [
                     'completeDate' => null,
                 ],
                 'jqFilter' => '.agentTask.completeDate',
-                'parseResultCallback' => 'formatDate'
+                'parseResultCallback' => 'formatDate',
             ],
             'MeataData' => [
                 'GraphQLschemaToReplace' => [
                     'metadata' => null,
                 ],
-                'jqFilter' => '.agentTask.metadata'
+                'jqFilter' => '.agentTask.metadata',
             ],
             'CreatedBy' => [
                 'GraphQLschemaToReplace' => [
                     'createdBy' => null,
                 ],
-                'jqFilter' => '.agentTask.createdBy'
+                'jqFilter' => '.agentTask.createdBy',
             ],
             'CreatedAt' => [
                 'GraphQLschemaToReplace' => [
                     'createdAt' => null,
                 ],
                 'jqFilter' => '.agentTask.createdAt',
-                'parseResultCallback' => 'formatDate'
+                'parseResultCallback' => 'formatDate',
             ],
             'UpdatedBy' => [
                 'GraphQLschemaToReplace' => [
                     'updatedBy' => null,
                 ],
-                'jqFilter' => '.agentTask.updatedBy'
+                'jqFilter' => '.agentTask.updatedBy',
             ],
             'UpdatedAt' => [
                 'GraphQLschemaToReplace' => [
@@ -167,7 +166,7 @@ class TbAgentTasksMaster
                         'emailInfo' => [
                             'email' => null,
                             'isDefault' => null,
-                        ]
+                        ],
                     ],
                 ],
                 'jqFilter' => '[.agentTask.agent.emailInfo[0] | select(.isDefault == "Y")]',
@@ -175,15 +174,13 @@ class TbAgentTasksMaster
             ],
             'title' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' =>
-                    [
+                    'taskMapping' => [
                         'title' => null,
-                    ]
+                    ],
                 ],
                 'jqFilter' => '.agentTask.taskMapping.title',
             ],
         ];
-
 
         return $fieldMapping;
     }
