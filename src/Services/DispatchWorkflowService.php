@@ -322,45 +322,49 @@ class DispatchWorkflowService
                             continue;
                         }
 
-                        if (config('app.env') != 'production' && $action['actionType'] == 'EMAIL') {
+                        if ($action['actionType'] == 'EMAIL') {
 
                             $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
                             $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
 
                             \Log::info('WORKFLOW - Actual email address: '.$emailPlaceHolderValue);
 
-                            $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
+                            if (config('app.env') != 'production') {
+                                $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
-                            if ($sendAllEmailsTo) {
-                                $emailPlaceHolderValue = explode(',', $sendAllEmailsTo);
-                            }
+                                if ($sendAllEmailsTo) {
+                                    $emailPlaceHolderValue = explode(',', $sendAllEmailsTo);
+                                }
 
-                            $executeEmailAction = false;
-                            $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));
-                            if (count($allowedEmailAddressList1) > 0) {
-                                $executeEmailAction = true;
-                            }
+                                $executeEmailAction = false;
+                                $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));
+                                if (count($allowedEmailAddressList1) > 0) {
+                                    $executeEmailAction = true;
+                                }
 
-                            $allowedEmailAddressList2 = [];
-                            foreach (config('workflow.allowed_receiver.ends_with') as $endsWith) {
-                                foreach ((array) $emailPlaceHolderValue as $singleEmail) {
-                                    if (str_ends_with($singleEmail, $endsWith)) {
-                                        $executeEmailAction = true;
-                                        $allowedEmailAddressList2[] = $singleEmail;
+                                $allowedEmailAddressList2 = [];
+                                foreach (config('workflow.allowed_receiver.ends_with') as $endsWith) {
+                                    foreach ((array) $emailPlaceHolderValue as $singleEmail) {
+                                        if (str_ends_with($singleEmail, $endsWith)) {
+                                            $executeEmailAction = true;
+                                            $allowedEmailAddressList2[] = $singleEmail;
+                                        }
                                     }
                                 }
-                            }
 
-                            $finalList = [...$allowedEmailAddressList1, ...$allowedEmailAddressList2];
+                                $finalList = [...$allowedEmailAddressList1, ...$allowedEmailAddressList2];
 
-                            if ($executeEmailAction && count($finalList) > 0) {
-                                $data[$index]['email'] = $emailPlaceHolderValue;
+                                if ($executeEmailAction && count($finalList) > 0) {
+                                    $data[$index]['email'] = $emailPlaceHolderValue;
+                                } else {
+                                    \Log::error('WORKFLOW - Email address not allowed in non-production env: '.$emailPlaceHolderValue);
+                                    $hasPriorDataForWorkflow = false;
+                                    unset($data[$index]);
+
+                                    continue;
+                                }
                             } else {
-                                \Log::error('WORKFLOW - Email address not allowed in non-production env: '.$emailPlaceHolderValue);
-                                $hasPriorDataForWorkflow = false;
-                                unset($data[$index]);
-
-                                continue;
+                                $data[$index]['email'] = [$emailPlaceHolderValue];
                             }
                         }
                     }
