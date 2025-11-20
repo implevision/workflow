@@ -46,15 +46,14 @@ class WebhookAction extends AbstractWorkflowAction
             return [];
         }
 
-        $accessTokenExpiry = 300;
-        $authCredentials = $payload['authCredentials'] ?? [];
+        $accessTokenExpiryTimeInSeconds = $payload['accessTokenExpiryTimeInSeconds'];
         switch ($authMethod) {
             case 'BASIC_AUTH':
                 $basicAuthService = new BasicAuthService;
-                $authResponse = Cache::remember('BASIC_AUTH_TOKEN', $accessTokenExpiry, function () use ($basicAuthService, $authCredentials) {
+                $authResponse = Cache::remember('BASIC_AUTH_TOKEN', $accessTokenExpiryTimeInSeconds, function () use ($basicAuthService) {
                     \Log::info('WORKFLOW - cache hit missed, fetching new BASIC_AUTH token');
 
-                    return $basicAuthService->authenticate($authCredentials);
+                    return $basicAuthService->authenticate($payload);
                 });
                 $this->updatePayload('authResponse', $authResponse);
                 break;
