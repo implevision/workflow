@@ -212,8 +212,6 @@ class DispatchWorkflowService
                         \Log::error('WORKFLOW - Error while initiating action. '.$actionType);
                 }
 
-                exit;
-
                 if (! $actionToExecute) {
                     \Log::error('WORKFLOW - Action not found: '.$actionType);
 
