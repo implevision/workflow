@@ -41,24 +41,27 @@ class WebhookAction extends AbstractWorkflowAction
     private function handleAuthorization()
     {
         $payload = $this->getPayload();
-        $authMethod = $payload['authMethod'];
-        if (! $authMethod) {
+        $authType = $payload['authType'];
+        if (! $authType) {
             return [];
         }
 
         $accessTokenExpiryTimeInSeconds = $payload['accessTokenExpiryTimeInSeconds'];
-        switch ($authMethod) {
+        switch ($authType) {
             case 'BASIC_AUTH':
                 $basicAuthService = new BasicAuthService;
-                $authResponse = Cache::remember('BASIC_AUTH_TOKEN', $accessTokenExpiryTimeInSeconds, function () use ($basicAuthService) {
+                $authResponse = Cache::remember('BASIC_AUTH_TOKEN', $accessTokenExpiryTimeInSeconds, function () use ($payload, $basicAuthService) {
                     \Log::info('WORKFLOW - cache hit missed, fetching new BASIC_AUTH token');
 
                     return $basicAuthService->authenticate($payload);
                 });
+                if (config('app.env') != 'production') {
+                    \Log::info('WORKFLOW - Auth Response', $authResponse);
+                }
                 $this->updatePayload('authResponse', $authResponse);
                 break;
             default:
-                \Log::info('WORKFLOW - auth method not available : '.$authMethod);
+                \Log::info('WORKFLOW - auth type not available : '.$authType);
         }
     }
 

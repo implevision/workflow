@@ -197,7 +197,7 @@ class DispatchWorkflowService
                         }
                         break;
 
-                    case 'WEBHOOK':
+                    case 'WEB_HOOK':
                         try {
                             $actionToExecute = new WebhookAction($actionType, $actionPayload);
                             $actionToExecute->handle();
