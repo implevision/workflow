@@ -8,6 +8,7 @@ use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 use Taurus\Workflow\Services\WorkflowActions\EmailAction;
+use Taurus\Workflow\Services\WorkflowActions\WebhookAction;
 
 /**
  * Class DispatchWorkflowService
@@ -182,19 +183,37 @@ class DispatchWorkflowService
 
             foreach ($condition['instanceActions'] as $action) {
                 $actionToExecute = null;
-                if ($action['actionType'] == 'EMAIL') {
-                    try {
-                        $actionToExecute = new EmailAction($action['actionType'], $action['payload']);
-                        $actionToExecute->handle();
-                    } catch (\Exception $e) {
-                        \Log::error('WORKFLOW - Error while initiating email action. '.$e->getMessage());
+                $actionType = $action['actionType'];
+                $actionPayload = $action['payload'];
+                switch ($actionType) {
+                    case 'EMAIL':
+                        try {
+                            $actionToExecute = new EmailAction($actionType, $actionPayload);
+                            $actionToExecute->handle();
+                        } catch (\Exception $e) {
+                            \Log::error('WORKFLOW - Error while initiating email action. '.$e->getMessage());
 
-                        continue;
-                    }
+                            continue 2;
+                        }
+                        break;
+
+                    case 'WEB_HOOK':
+                        try {
+                            $actionToExecute = new WebhookAction($actionType, $actionPayload);
+                            $actionToExecute->handle();
+                        } catch (\Exception $e) {
+                            \Log::error('WORKFLOW - Error while initiating webhook action. '.$e->getMessage());
+
+                            continue 2;
+                        }
+                        break;
+
+                    default:
+                        \Log::error('WORKFLOW - Error while initiating action. '.$actionType);
                 }
 
                 if (! $actionToExecute) {
-                    \Log::error('WORKFLOW - Action not found: '.$action['actionType']);
+                    \Log::error('WORKFLOW - Action not found: '.$actionType);
 
                     continue;
                 }
