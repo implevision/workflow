@@ -51,7 +51,10 @@ class WebhookAction extends AbstractWorkflowAction
         switch ($authType) {
             case 'BASIC_AUTH':
                 $basicAuthService = new BasicAuthService;
-                $authResponse = Cache::remember('BASIC_AUTH_TOKEN', $accessTokenExpiryTimeInSeconds, function () use ($payload, $basicAuthService) {
+                $baseUrl = $payload['baseUrl'];
+                // Create unique cache key per tenant and baseUrl, in case multiple webhooks are used
+                $cacheKey = 'BASIC_AUTH_TOKEN_'.md5($baseUrl).'_'.getTenant();
+                $authResponse = Cache::remember($cacheKey, $accessTokenExpiryTimeInSeconds, function () use ($payload, $basicAuthService) {
                     \Log::info('WORKFLOW - cache hit missed, fetching new BASIC_AUTH token');
 
                     return $basicAuthService->authenticate($payload);
