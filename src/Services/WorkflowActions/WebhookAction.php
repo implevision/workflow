@@ -62,7 +62,7 @@ class WebhookAction extends AbstractWorkflowAction
                 $this->updatePayload('authResponse', $authResponse);
                 break;
             default:
-                \Log::info('WORKFLOW - auth type not available : ' . $authType);
+                \Log::info('WORKFLOW - auth type not available : '.$authType);
         }
     }
 
@@ -114,9 +114,9 @@ class WebhookAction extends AbstractWorkflowAction
 
         try {
             \Log::info([$webhookRequestMethod, $webhookRequestUrl, $webhookRequestHeaders, $webhookRequestPayload]);
-            //Http::makeRequest($webhookRequestMethod, $webhookRequestUrl, $webhookRequestHeaders, $webhookRequestPayload);
+            // Http::makeRequest($webhookRequestMethod, $webhookRequestUrl, $webhookRequestHeaders, $webhookRequestPayload);
         } catch (\Exception $e) {
-            throw new \Exception('Webhook execution failed: ' . $e->getMessage());
+            throw new \Exception('Webhook execution failed: '.$e->getMessage());
         }
     }
 }

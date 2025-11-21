@@ -35,7 +35,7 @@ class Http
                 $options['form_params'] = $body;
                 break;
             default:
-                throw new \InvalidArgumentException('Unsupported Content-Type: ' . $contentType);
+                throw new \InvalidArgumentException('Unsupported Content-Type: '.$contentType);
         }
 
         try {
@@ -43,7 +43,7 @@ class Http
 
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            throw new \Exception('HTTP Request failed: ' . $e->getMessage());
+            throw new \Exception('HTTP Request failed: '.$e->getMessage());
         }
     }
 }
