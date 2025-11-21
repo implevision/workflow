@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Services\WorkflowActions;
 
 use Illuminate\Support\Facades\Cache;
 use Taurus\Workflow\Services\Auth\BasicAuthService;
+use Taurus\Workflow\Services\WorkflowActions\Helpers\Http;
 
 /**
  * Class WebhookAction
@@ -55,13 +56,11 @@ class WebhookAction extends AbstractWorkflowAction
 
                     return $basicAuthService->authenticate($payload);
                 });
-                if (config('app.env') != 'production') {
-                    \Log::info('WORKFLOW - Auth Response', $authResponse);
-                }
+
                 $this->updatePayload('authResponse', $authResponse);
                 break;
             default:
-                \Log::info('WORKFLOW - auth type not available : '.$authType);
+                \Log::info('WORKFLOW - auth type not available : ' . $authType);
         }
     }
 
@@ -102,5 +101,20 @@ class WebhookAction extends AbstractWorkflowAction
      *
      * @return void
      */
-    public function execute() {}
+    public function execute()
+    {
+        $payload = $this->getPayload();
+
+        $webhookRequestMethod = $payload['webhookRequestMethod'];
+        $webhookRequestUrl = $payload['webhookRequestUrl'];
+        $webhookRequestHeaders = $payload['webhookRequestHeaders'];
+        $webhookRequestPayload = $payload['webhookRequestPayload'];
+
+        try {
+            \Log::info([$webhookRequestMethod, $webhookRequestUrl, $webhookRequestHeaders, $webhookRequestPayload]);
+            //Http::makeRequest($webhookRequestMethod, $webhookRequestUrl, $webhookRequestHeaders, $webhookRequestPayload);
+        } catch (\Exception $e) {
+            throw new \Exception('Webhook execution failed: ' . $e->getMessage());
+        }
+    }
 }
