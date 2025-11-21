@@ -56,7 +56,9 @@ class WebhookAction extends AbstractWorkflowAction
 
                     return $basicAuthService->authenticate($payload);
                 });
-
+                if (config('app.env') != 'production') {
+                    \Log::info('WORKFLOW - Auth Response', $authResponse);
+                }
                 $this->updatePayload('authResponse', $authResponse);
                 break;
             default:
