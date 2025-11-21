@@ -119,6 +119,8 @@ class WorkflowSeeder extends Command
                 'subject' => $data['subject'],
                 'html' => $emailTemplateContentAsString,
                 'templateName' => $data['templateName'],
+                'replyTo' => $data['replyTo'] ?? '',
+                'senderName' => $data['senderName'] ?? '',
             ];
 
             $response = $client->request(
