@@ -113,7 +113,7 @@ class WorkflowSeeder extends Command
         try {
             $headers = [
                 'x-client-key' => config('workflow.email_template_service_client_key'),
-                'X-Tenant' => tenant('id'),
+                'X-Tenant' => getTenant(),
             ];
             $requestBody = [
                 'subject' => $data['subject'],
@@ -121,6 +121,7 @@ class WorkflowSeeder extends Command
                 'templateName' => $data['templateName'],
                 'replyTo' => $data['replyTo'] ?? '',
                 'senderName' => $data['senderName'] ?? '',
+                'module' => $data['module'] ?? '',
             ];
 
             $response = $client->request(
