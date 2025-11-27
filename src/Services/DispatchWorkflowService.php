@@ -8,6 +8,7 @@ use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 use Taurus\Workflow\Services\WorkflowActions\EmailAction;
+use Taurus\Workflow\Services\WorkflowActions\WebhookAction;
 
 /**
  * Class DispatchWorkflowService
@@ -182,19 +183,37 @@ class DispatchWorkflowService
 
             foreach ($condition['instanceActions'] as $action) {
                 $actionToExecute = null;
-                if ($action['actionType'] == 'EMAIL') {
-                    try {
-                        $actionToExecute = new EmailAction($action['actionType'], $action['payload']);
-                        $actionToExecute->handle();
-                    } catch (\Exception $e) {
-                        \Log::error('WORKFLOW - Error while initiating email action. '.$e->getMessage());
+                $actionType = $action['actionType'];
+                $actionPayload = $action['payload'];
+                switch ($actionType) {
+                    case 'EMAIL':
+                        try {
+                            $actionToExecute = new EmailAction($actionType, $actionPayload);
+                            $actionToExecute->handle();
+                        } catch (\Exception $e) {
+                            \Log::error('WORKFLOW - Error while initiating email action. '.$e->getMessage());
 
-                        continue;
-                    }
+                            continue 2;
+                        }
+                        break;
+
+                    case 'WEB_HOOK':
+                        try {
+                            $actionToExecute = new WebhookAction($actionType, $actionPayload);
+                            $actionToExecute->handle();
+                        } catch (\Exception $e) {
+                            \Log::error('WORKFLOW - Error while initiating webhook action. '.$e->getMessage());
+
+                            continue 2;
+                        }
+                        break;
+
+                    default:
+                        \Log::error('WORKFLOW - Error while initiating action. '.$actionType);
                 }
 
                 if (! $actionToExecute) {
-                    \Log::error('WORKFLOW - Action not found: '.$action['actionType']);
+                    \Log::error('WORKFLOW - Action not found: '.$actionType);
 
                     continue;
                 }
@@ -322,45 +341,49 @@ class DispatchWorkflowService
                             continue;
                         }
 
-                        if (config('app.env') != 'production' && $action['actionType'] == 'EMAIL') {
+                        if ($action['actionType'] == 'EMAIL') {
 
                             $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
                             $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
 
                             \Log::info('WORKFLOW - Actual email address: '.$emailPlaceHolderValue);
 
-                            $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
+                            if (config('app.env') != 'production') {
+                                $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
-                            if ($sendAllEmailsTo) {
-                                $emailPlaceHolderValue = explode(',', $sendAllEmailsTo);
-                            }
+                                if ($sendAllEmailsTo) {
+                                    $emailPlaceHolderValue = explode(',', $sendAllEmailsTo);
+                                }
 
-                            $executeEmailAction = false;
-                            $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));
-                            if (count($allowedEmailAddressList1) > 0) {
-                                $executeEmailAction = true;
-                            }
+                                $executeEmailAction = false;
+                                $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));
+                                if (count($allowedEmailAddressList1) > 0) {
+                                    $executeEmailAction = true;
+                                }
 
-                            $allowedEmailAddressList2 = [];
-                            foreach (config('workflow.allowed_receiver.ends_with') as $endsWith) {
-                                foreach ((array) $emailPlaceHolderValue as $singleEmail) {
-                                    if (str_ends_with($singleEmail, $endsWith)) {
-                                        $executeEmailAction = true;
-                                        $allowedEmailAddressList2[] = $singleEmail;
+                                $allowedEmailAddressList2 = [];
+                                foreach (config('workflow.allowed_receiver.ends_with') as $endsWith) {
+                                    foreach ((array) $emailPlaceHolderValue as $singleEmail) {
+                                        if (str_ends_with($singleEmail, $endsWith)) {
+                                            $executeEmailAction = true;
+                                            $allowedEmailAddressList2[] = $singleEmail;
+                                        }
                                     }
                                 }
-                            }
 
-                            $finalList = [...$allowedEmailAddressList1, ...$allowedEmailAddressList2];
+                                $finalList = [...$allowedEmailAddressList1, ...$allowedEmailAddressList2];
 
-                            if ($executeEmailAction && count($finalList) > 0) {
-                                $data[$index]['email'] = $emailPlaceHolderValue;
+                                if ($executeEmailAction && count($finalList) > 0) {
+                                    $data[$index]['email'] = $emailPlaceHolderValue;
+                                } else {
+                                    \Log::error('WORKFLOW - Email address not allowed in non-production env: '.$emailPlaceHolderValue);
+                                    $hasPriorDataForWorkflow = false;
+                                    unset($data[$index]);
+
+                                    continue;
+                                }
                             } else {
-                                \Log::error('WORKFLOW - Email address not allowed in non-production env: '.$emailPlaceHolderValue);
-                                $hasPriorDataForWorkflow = false;
-                                unset($data[$index]);
-
-                                continue;
+                                $data[$index]['email'] = [$emailPlaceHolderValue];
                             }
                         }
                     }
