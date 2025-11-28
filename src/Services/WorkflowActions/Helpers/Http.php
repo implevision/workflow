@@ -29,7 +29,7 @@ class Http
         $contentType = strtolower($headers['Content-Type']);
         switch ($contentType) {
             case 'application/json':
-                $options['json'] = json_encode($body);
+                $options['json'] = $body;
                 break;
             case 'application/x-www-form-urlencoded':
                 $options['form_params'] = $body;

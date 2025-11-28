@@ -254,10 +254,10 @@ class DispatchWorkflowService
                     // Handle GraphQL query execution
                     try {
                         // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
+                        // \Log::info('WORKFLOW - GraphQL Request Payload: ' . $graphQLRequestPayload);
                         $graphQLClient = new GraphQLClient;
                         $response = $graphQLClient->query($graphQLRequestPayload);
-                        \Log::info('WORKFLOW - GraphQL Response: ', $response);
+                        // \Log::info('WORKFLOW - GraphQL Response: ', $response);
                     } catch (\Exception $e) {
                         \Log::error('WORKFLOW - Error while executing GraphQL query - '.$e->getMessage());
 
@@ -341,7 +341,7 @@ class DispatchWorkflowService
                         if ($data[$index]['hasPriorDataForWorkflow']) {
                             $hasPriorDataForWorkflow = true;
                         } else {
-                            \Log::error('WORKFLOW - Missing mandate data', ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]);
+                            \Log::warning('WORKFLOW - Missing mandate data', ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]);
                             unset($data[$index]);
 
                             continue;
