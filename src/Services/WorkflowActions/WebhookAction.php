@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Services\WorkflowActions;
 
 use Illuminate\Support\Facades\Cache;
 use Taurus\Workflow\Services\Auth\BasicAuthService;
+use Taurus\Workflow\Services\WorkflowActions\Helpers\Http;
 
 /**
  * Class WebhookAction
@@ -50,7 +51,10 @@ class WebhookAction extends AbstractWorkflowAction
         switch ($authType) {
             case 'BASIC_AUTH':
                 $basicAuthService = new BasicAuthService;
-                $authResponse = Cache::remember('BASIC_AUTH_TOKEN', $accessTokenExpiryTimeInSeconds, function () use ($payload, $basicAuthService) {
+                $baseUrl = $payload['baseUrl'];
+                // Create unique cache key per tenant and baseUrl, in case multiple webhooks are used
+                $cacheKey = 'BASIC_AUTH_TOKEN_'.md5($baseUrl).'_'.getTenant();
+                $authResponse = Cache::remember($cacheKey, $accessTokenExpiryTimeInSeconds, function () use ($payload, $basicAuthService) {
                     \Log::info('WORKFLOW - cache hit missed, fetching new BASIC_AUTH token');
 
                     return $basicAuthService->authenticate($payload);
@@ -118,5 +122,20 @@ class WebhookAction extends AbstractWorkflowAction
      *
      * @return void
      */
-    public function execute() {}
+    public function execute()
+    {
+        $payload = $this->getPayload();
+
+        $webhookRequestMethod = $payload['webhookRequestMethod'];
+        $webhookRequestUrl = $payload['webhookRequestUrl'];
+        $webhookRequestHeaders = $payload['webhookRequestHeaders'];
+        $webhookRequestPayload = $payload['webhookRequestPayload'];
+
+        try {
+            \Log::info([$webhookRequestMethod, $webhookRequestUrl, $webhookRequestHeaders, $webhookRequestPayload]);
+            // Http::makeRequest($webhookRequestMethod, $webhookRequestUrl, $webhookRequestHeaders, $webhookRequestPayload);
+        } catch (\Exception $e) {
+            throw new \Exception('Webhook execution failed: '.$e->getMessage());
+        }
+    }
 }

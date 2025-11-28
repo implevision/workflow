@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Services\Auth;
 
+use Taurus\Workflow\Services\WorkflowActions\Helpers\Http;
+
 /**
  * Class BasicAuthService
  *
@@ -48,7 +50,7 @@ class BasicAuthService extends AbstractAuthService
         $authHeaders['Authorization'] = 'Basic '.$credentials;
 
         try {
-            $response = $this->makeRequest($authMethod, $authUrl, $authHeaders, $body);
+            $response = Http::makeRequest($authMethod, $authUrl, $authHeaders, $body);
         } catch (\Exception $e) {
             throw new \Exception('BASIC_AUTH - Authentication request failed: '.$e->getMessage());
         }
