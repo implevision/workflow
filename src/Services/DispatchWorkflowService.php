@@ -222,11 +222,11 @@ class DispatchWorkflowService
                     $listOfRequiredData = $actionToExecute ? $actionToExecute->getListOfRequiredData() : [];
                     $listOfMandateData = $actionToExecute ? $actionToExecute->getListOfMandateData() : [];
 
-                    if ($action['actionType'] == 'EMAIL') {
+                    if ($actionType == 'EMAIL') {
                         $listOfRequiredData[] = $listOfMandateData[] = ucfirst($action['payload']['emailRecipient']);
                     }
                 } catch (\Exception $e) {
-                    \Log::error('WORKFLOW - Error while getting required data for action - '.$action['actionType'].' : '.$e->getMessage());
+                    \Log::error('WORKFLOW - Error while getting required data for action - '.$actionType.' : '.$e->getMessage());
 
                     continue;
                 }
@@ -254,9 +254,10 @@ class DispatchWorkflowService
                     // Handle GraphQL query execution
                     try {
                         // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        // \Log::info('WORKFLOW - GraphQL Request Payload: ' . $graphQLRequestPayload);
+                        \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
                         $graphQLClient = new GraphQLClient;
                         $response = $graphQLClient->query($graphQLRequestPayload);
+                        \Log::info('WORKFLOW - GraphQL Response: ', $response);
                     } catch (\Exception $e) {
                         \Log::error('WORKFLOW - Error while executing GraphQL query - '.$e->getMessage());
 
@@ -298,8 +299,13 @@ class DispatchWorkflowService
                             }
                             $parsedData[$placeHolder] = $placeHolderValue;
                         }
-                        // SET DATA FOP ACTION
-                        $data[] = $parsedData;
+
+                        if ($actionType == 'WEB_HOOK') {
+                            $data = $this->generatePayloadFromParsedData($parsedData);
+                        } else {
+                            // SET DATA FOP ACTION
+                            $data[] = $parsedData;
+                        }
                     } catch (\Exception $e) {
                         \Log::error(
                             'WORKFLOW - Error while extracting data from GraphQL response - '.$e->getMessage(),
@@ -341,7 +347,7 @@ class DispatchWorkflowService
                             continue;
                         }
 
-                        if ($action['actionType'] == 'EMAIL') {
+                        if ($actionType == 'EMAIL') {
 
                             $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
                             $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
@@ -388,7 +394,7 @@ class DispatchWorkflowService
                         }
                     }
 
-                    if ($hasPriorDataForWorkflow === false) {
+                    if ($hasPriorDataForWorkflow === false && count($data) == 0) {
                         continue;
                     }
 
@@ -396,7 +402,7 @@ class DispatchWorkflowService
                     $actionToExecute->setDataForAction($feedFile, $data);
                     $actionToExecute->execute();
                 } catch (\Exception $e) {
-                    \Log::error('WORKFLOW - Error while executing action - '.$action['actionType'].' : '.$e->getMessage());
+                    \Log::error('WORKFLOW - Error while executing action - '.$actionType.' : '.$e->getMessage());
 
                     continue;
                 }
@@ -425,5 +431,47 @@ class DispatchWorkflowService
         }
 
         return $feedFile;
+    }
+
+    /**
+     * Generates a payload from the parsed data.
+     *
+     * This function takes the parsed data as input and constructs
+     * a payload that can be used for further processing or
+     * transmission. The structure of the payload will depend on
+     * the specific requirements of the workflow.
+     *
+     * @param  mixed  $parsedData  The data that has been parsed and
+     *                             is to be converted into a payload.
+     * @return array The generated payload based on the parsed data.
+     */
+    private function generatePayloadFromParsedData($parsedData)
+    {
+        $totalPayloadToGenerate = 0;
+
+        foreach ($parsedData as $key => $value) {
+            if (is_array($value)) {
+                $totalPayloadToGenerate = max($totalPayloadToGenerate, count($value));
+            }
+        }
+
+        if (! $totalPayloadToGenerate) {
+            return $parsedData;
+        }
+
+        $payload = [];
+        foreach ($parsedData as $key => $value) {
+            if (! is_array($value)) {
+                for ($i = 0; $i < $totalPayloadToGenerate; $i++) {
+                    $payload[$i][$key] = $value;
+                }
+            } else {
+                for ($i = 0; $i < $totalPayloadToGenerate; $i++) {
+                    $payload[$i][$key] = $value[$i];
+                }
+            }
+        }
+
+        return $payload;
     }
 }

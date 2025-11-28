@@ -81,9 +81,9 @@ class TbAgentTasksMaster
             ],
             'MasterId' => [
                 'GraphQLschemaToReplace' => [
-                    'policymasterId' => null,
+                    'policyId' => null,
                 ],
-                'jqFilter' => '.agentTask.policymasterId',
+                'jqFilter' => '.agentTask.policyId',
             ],
             'AgentId' => [
                 'GraphQLschemaToReplace' => [
@@ -128,7 +128,7 @@ class TbAgentTasksMaster
                 'jqFilter' => '.agentTask.completeDate',
                 'parseResultCallback' => 'formatDate',
             ],
-            'MeataData' => [
+            'MetaData' => [
                 'GraphQLschemaToReplace' => [
                     'metadata' => null,
                 ],
@@ -178,16 +178,130 @@ class TbAgentTasksMaster
                         'title' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.taskMapping.title',
+                'jqFilter' => '[.agentTask.taskMapping.title]',
+            ],
+            'isEnabledForWorkflow' => [
+                'GraphQLschemaToReplace' => [
+                    'taskMapping' => [
+                        'task' => [
+                            'metadata' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
+                'parseResultCallback' => 'parseIsEnabledForWorkflow',
+            ],
+            'Type' => [
+                'GraphQLschemaToReplace' => [
+                    'taskMapping' => [
+                        'task' => [
+                            'metadata' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
+                'parseResultCallback' => 'parseTaskType',
+            ],
+            'SubType' => [
+                'GraphQLschemaToReplace' => [
+                    'taskMapping' => [
+                        'task' => [
+                            'metadata' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
+                'parseResultCallback' => 'parseTaskSubType',
+            ],
+            'Reason' => [
+                'GraphQLschemaToReplace' => [
+                    'taskMapping' => [
+                        'task' => [
+                            'metadata' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
+                'parseResultCallback' => 'parseTaskReason',
+            ],
+            'Task' => [
+                'GraphQLschemaToReplace' => [
+                    'taskMapping' => [
+                        'task' => [
+                            'metadata' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
+                'parseResultCallback' => 'parseTaskDetails',
+            ],
+            'DocumentName' => [
+                'GraphQLschemaToReplace' => [
+                    'taskMapping' => [
+                        'task' => [
+                            'metadata' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
+                'parseResultCallback' => 'parseTaskDocumentName',
+            ],
+            'SourceSystem' => [
+                'GraphQLschemaToReplace' => [
+                    'taskMapping' => [
+                        'task' => [
+                            'metadata' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
+                'parseResultCallback' => 'parseSourceSystem',
+            ],
+            'PremiumDue' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'premiumChange' => null,
+                        'policyFees' => null,
+                    ],
+                ],
+                'jqFilter' => '.agentTask.policyTransaction',
+                'parseResultCallback' => 'parsePremiumDue',
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
-                    'policy' => [
-                        'policyNumber' => null,
+                    'policyTransaction' => [
+                        'TbPolicy' => [
+                            'policyNumber' => null,
+                        ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policy.policyNumber',
+                'jqFilter' => '.agentTask.policyTransaction.TbPolicy.policyNumber',
             ],
+            'AgencyName' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'tbAccountMaster' => [
+                            'TbPersoninfo' => [
+                                'fullName' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.fullName',
+            ],
+            'AgencyCode' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'tbAccountMaster' => [
+                            'TbPersoninfo' => [
+                                'personUniqueId' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.personUniqueId',
+            ],
+
         ];
 
         return $fieldMapping;
@@ -201,5 +315,72 @@ class TbAgentTasksMaster
     public function parseAssignedAgentEmail($emailArr)
     {
         return is_array($emailArr) && count($emailArr) ? (last($emailArr)['email'] ?? null) : null;
+    }
+
+    public function parsePremiumDue($premiumChangeAndFeesArr)
+    {
+        $premiumDue = 0;
+        if (is_array($premiumChangeAndFeesArr)) {
+            $premiumChange = $premiumChangeAndFeesArr['premiumChange'] ?? 0;
+            $policyFees = $premiumChangeAndFeesArr['policyFees'] ?? 0;
+            $premiumDue = $premiumChange + $policyFees;
+        }
+
+        return $premiumDue;
+    }
+
+    public function parseMetadata($metadata, $key)
+    {
+        if (! $metadata) {
+            return null;
+        }
+
+        if (is_array($metadata)) {
+            $metadataArr = [];
+            foreach ($metadata as $metadataItem) {
+                $metadataArr[] = $this->parseMetadata($metadataItem, $key);
+            }
+
+            return $metadataArr;
+        }
+
+        $metadataArr = json_decode($metadata, true);
+
+        return $metadataArr[$key] ?? null;
+    }
+
+    public function parseTaskType($metadata)
+    {
+        return $this->parseMetadata($metadata, 'type');
+    }
+
+    public function parseTaskSubType($metadata)
+    {
+        return $this->parseMetadata($metadata, 'subType');
+    }
+
+    public function parseTaskReason($metadata)
+    {
+        return $this->parseMetadata($metadata, 'reason');
+    }
+
+    public function parseTaskDocumentName($metadata)
+    {
+        return $this->parseMetadata($metadata, 'documentName');
+    }
+
+    public function parseIsEnabledForWorkflow($metadata)
+    {
+        return $this->parseMetadata($metadata, 'isEnabledForWorkflow');
+    }
+
+    public function parseSourceSystem($metadata)
+    {
+        return $this->parseMetadata($metadata, 'sourceSystem');
+    }
+
+    public function parseTaskDetails($metadata)
+    {
+        return $this->parseMetadata($metadata, 'task');
     }
 }

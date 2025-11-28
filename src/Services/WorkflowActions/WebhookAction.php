@@ -75,7 +75,19 @@ class WebhookAction extends AbstractWorkflowAction
      */
     public function getListOfRequiredData()
     {
-        return [];
+        // TODO: Need to come from DB. HARDCODED for farmers release
+        return [
+            'PremiumDue',
+            'PolicyNumber',
+            'AgencyName',
+            'AgencyCode',
+            'Type',
+            'SubType',
+            'Reason',
+            'Task',
+            'DocumentName',
+            'SourceSystem',
+        ];
     }
 
     /**
@@ -89,7 +101,11 @@ class WebhookAction extends AbstractWorkflowAction
      */
     public function getListOfMandateData()
     {
-        return [];
+        // TODO: Need to come from DB. HARDCODED for farmers release
+        return [
+            'Type',
+            'SubType',
+        ];
     }
 
     /**
