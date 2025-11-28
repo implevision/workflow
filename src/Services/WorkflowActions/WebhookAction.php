@@ -145,7 +145,6 @@ class WebhookAction extends AbstractWorkflowAction
         if ($data) {
             preg_match_all('/{{\s*(.*?)\s*}}/', $webhookRequestUrl, $webhookRequestUrlPlaceholderMatches);
             foreach ($data as $placeHolderData) {
-                $placeHolderData['PolicyNumber'] = '974551';
                 $requestUrl = $this->replacePlaceholders($webhookRequestUrl, $placeHolderData);
                 $requestPayload = $this->replacePlaceholders($webhookRequestPayload, $placeHolderData);
 
