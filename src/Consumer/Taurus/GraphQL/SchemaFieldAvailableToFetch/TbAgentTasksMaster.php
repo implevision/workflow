@@ -301,6 +301,27 @@ class TbAgentTasksMaster
                 ],
                 'jqFilter' => '.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.personUniqueId',
             ],
+            'PotentialDiscountLostIndicator' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'id' => null,
+                    ],
+                ],
+                'jqFilter' => '.agentTask.policyTransaction.id',
+                'parseResultCallback' => 'parsePotentialDiscountLostIndicator',
+            ],
+            'WyoAgencyAgentCode' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'TbPersoninfo' => [
+                            'additionalInfo' => [
+                                'wyoAgencyAgentCode' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.agentTask.policyTransaction.TbPersoninfo.additionalInfo.wyoAgencyAgentCode',
+            ],
 
         ];
 
@@ -382,5 +403,32 @@ class TbAgentTasksMaster
     public function parseTaskDetails($metadata)
     {
         return $this->parseMetadata($metadata, 'task');
+    }
+
+    public function parsePotentialDiscountLost($transactionId, $coverageCode)
+    {
+        // TODO: TMP fix. Need to covert to actual one
+        $coverageData = \DB::select(
+            'SELECT cvgt.n_CvgSegmentGrossPremium AS coverage_premium
+from tb_potransactions pot
+left join tb_policies pol on pol.n_PolicyNoId_PK = pot.n_PolicyMaster_FK
+left join tb_pocoveragetrans cvgt on cvgt.n_POTransactionFK = pot.n_potransaction_PK
+left join tb_pocoverageschedules cvgs on cvgs.n_POCoverageSchedule_PK = cvgt.n_POCoverageScheduleFK
+left join tb_pocoveragemasters cvgm on cvgm.n_POCoverageMaster_PK = cvgs.n_POCoverageMasterFk
+left join tb_cvgpccoverages cvgp on cvgp.n_PCCoverageID_PK = cvgm.n_PRCoverageFK
+left join tb_poriskmasters risk on risk.n_PORiskMaster_PK = cvgs.n_PORiskMasterFK
+where pot.n_potransaction_PK IN(:transactionId)
+AND cvgp.s_CoverageCode = :coverageCode',
+            ['coverageCode' => $coverageCode, 'transactionId' => $transactionId]
+        );
+
+        return isset($coverageData['coverage_premium']) ? $coverageData['coverage_premium'] : 0;
+    }
+
+    public function parsePotentialDiscountLostIndicator($transactionId)
+    {
+        $coverageAmount = $this->parsePotentialDiscountLost($transactionId, 'ANNUALCAPDISC');
+
+        return $coverageAmount > 0 ? true : false;
     }
 }

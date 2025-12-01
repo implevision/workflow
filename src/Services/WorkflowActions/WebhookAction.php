@@ -88,6 +88,8 @@ class WebhookAction extends AbstractWorkflowAction
             'Task',
             'DocumentName',
             'SourceSystem',
+            'PotentialDiscountLostIndicator',
+            'WyoAgencyAgentCode',
         ];
     }
 
