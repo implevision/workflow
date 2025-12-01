@@ -224,6 +224,17 @@ class TbAgentTasksMaster
                 'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
                 'parseResultCallback' => 'parseTaskReason',
             ],
+            'ReasonCode' => [
+                'GraphQLschemaToReplace' => [
+                    'taskMapping' => [
+                        'task' => [
+                            'metadata' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
+                'parseResultCallback' => 'parseTaskReasonCode',
+            ],
             'Task' => [
                 'GraphQLschemaToReplace' => [
                     'taskMapping' => [
@@ -383,6 +394,11 @@ class TbAgentTasksMaster
     public function parseTaskReason($metadata)
     {
         return $this->parseMetadata($metadata, 'reason');
+    }
+
+    public function parseTaskReasonCode($metadata)
+    {
+        return $this->parseMetadata($metadata, 'reasonCode');
     }
 
     public function parseTaskDocumentName($metadata)
