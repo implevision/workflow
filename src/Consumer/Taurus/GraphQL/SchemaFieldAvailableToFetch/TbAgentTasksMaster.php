@@ -145,7 +145,7 @@ class TbAgentTasksMaster
                     'createdAt' => null,
                 ],
                 'jqFilter' => '.agentTask.createdAt',
-                'parseResultCallback' => 'formatDate',
+                'parseResultCallback' => 'formatDateToGMT',
             ],
             'UpdatedBy' => [
                 'GraphQLschemaToReplace' => [
@@ -268,6 +268,17 @@ class TbAgentTasksMaster
                 'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
                 'parseResultCallback' => 'parseSourceSystem',
             ],
+            'DueDate' => [
+                'GraphQLschemaToReplace' => [
+                    'taskMapping' => [
+                        'task' => [
+                            'metadata' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.agentTask.taskMapping[].task.metadata]',
+                'parseResultCallback' => 'parseDueDate',
+            ],
             'PremiumDue' => [
                 'GraphQLschemaToReplace' => [
                     'policyTransaction' => [
@@ -333,7 +344,11 @@ class TbAgentTasksMaster
                 ],
                 'jqFilter' => '.agentTask.policyTransaction.TbPersoninfo.additionalInfo.wyoAgencyAgentCode',
             ],
-
+            'UUID' => [
+                'GraphQLschemaToReplace' => [],
+                'jqFilter' => '',
+                'parseResultCallback' => 'getUUID',
+            ],
         ];
 
         return $fieldMapping;
@@ -342,6 +357,11 @@ class TbAgentTasksMaster
     public function formatDate($dateToFormat)
     {
         return Helper::formatDate($dateToFormat);
+    }
+
+    public function formatDateToGMT($dateToFormat)
+    {
+        return gmdate('Y-m-d-H.i.s.v', time());
     }
 
     public function parseAssignedAgentEmail($emailArr)
@@ -446,5 +466,26 @@ AND cvgp.s_CoverageCode = :coverageCode',
         $coverageAmount = $this->parsePotentialDiscountLost($transactionId, 'ANNUALCAPDISC');
 
         return $coverageAmount > 0 ? true : false;
+    }
+
+    public function getUUID()
+    {
+        return (string) \Str::uuid();
+    }
+
+    public function parseDueDate($metadata)
+    {
+        $dueDateArr = $this->parseMetadata($metadata, 'dueDate');
+        if (is_array($dueDateArr)) {
+            foreach ($dueDateArr as $index => $dueDate) {
+                if (str_starts_with($dueDate, '+')) {
+                    $dueDateArr[$index] = date('Y-m-d', strtotime($dueDate, time()));
+                }
+            }
+        } elseif (str_starts_with($dueDateArr, '+')) {
+            $dueDateArr = date('Y-m-d', strtotime($dueDateArr, time()));
+        }
+
+        return $dueDateArr;
     }
 }
