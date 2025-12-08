@@ -644,4 +644,36 @@ class WorkflowService
             return new stdClass;
         }
     }
+
+    public function getOdysseyActions()
+    {
+        try {
+            $actions = DB::table('tb_paaccoutingactions')->get();
+            $response = [];
+
+            foreach ($actions as $action) {
+                $module = $action?->module ?? '';
+                $submodule = [
+                    'value' => $action?->s_PATranTypeCode ?? '',
+                    'label' => $action?->s_TranTypeScreenName ?? '',
+                    'n_PAActionCode_PK' => $action?->n_PAActionCode_PK ?? null,
+                ];
+                if (! isset($response[$module])) {
+                    $response[$module] = [];
+                }
+                $response[$module][] = $submodule;
+            }
+
+            return $response;
+        } catch (\Exception $exception) {
+            \Log::error('WORKFLOW: Error getting Odyssey actions', [
+                'message' => $exception->getMessage(),
+                'line' => $exception->getLine(),
+                'file' => $exception->getFile(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return [];
+        }
+    }
 }
