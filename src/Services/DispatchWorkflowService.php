@@ -222,7 +222,7 @@ class DispatchWorkflowService
                     $listOfRequiredData = $actionToExecute ? $actionToExecute->getListOfRequiredData() : [];
                     $listOfMandateData = $actionToExecute ? $actionToExecute->getListOfMandateData() : [];
 
-                    if ($actionType == 'EMAIL') {
+                    if ($actionType == 'EMAIL' && strtoupper($action['payload']['emailRecipient']) != 'CUSTOM') {
                         $listOfRequiredData[] = $listOfMandateData[] = ucfirst($action['payload']['emailRecipient']);
                     }
                 } catch (\Exception $e) {
