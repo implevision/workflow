@@ -348,9 +348,12 @@ class DispatchWorkflowService
                         }
 
                         if ($actionType == 'EMAIL') {
-
-                            $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
-                            $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
+                            if (! empty($action['payload']['emailRecipient']) && strtoupper($action['payload']['emailRecipient']) == 'CUSTOM') {
+                                $emailPlaceHolderValue = $action['payload']['customEmailRecipients'];
+                            } else {
+                                $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
+                                $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
+                            }
 
                             \Log::info('WORKFLOW - Actual email address: '.$emailPlaceHolderValue);
 
@@ -389,7 +392,7 @@ class DispatchWorkflowService
                                     continue;
                                 }
                             } else {
-                                $data[$index]['email'] = [$emailPlaceHolderValue];
+                                $data[$index]['email'] = explode(',', $emailPlaceHolderValue);
                             }
                         }
                     }
