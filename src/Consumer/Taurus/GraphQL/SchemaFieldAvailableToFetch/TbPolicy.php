@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Taurus\Workflow\Consumer\Taurus\Helper;
+
 class TbPolicy
 {
     /**
@@ -69,10 +71,10 @@ class TbPolicy
                 'GraphQLschemaToReplace' => [
                     'policyNumber' => null,
                 ],
-                'jqFilter' => '.data.policy.policy.policyNumber',
+                'jqFilter' => '.policy.policy.policyNumber',
             ],
 
-            'Document' => [
+            'AttachDecPage' => [
                 'GraphQLschemaToReplace' => [
                     'docurl' => null,
                 ],
@@ -80,16 +82,28 @@ class TbPolicy
                 // then extracts the first docInfo.docurl value.
                 'jqFilter' => '
                    [
-                         .data.policy.policy.docuploadinfo[]
+                         .policy.policy.docuploadinfo[]
                          | select(.doctypes.docTypeCode == "DECLARATION")
                          | .docUploadDocInfoRel[]
                          | .docInfo[]
-                         | .docurl
+                         | .docPath
                   ]
                 ',
+                'parseResultCallback' => 'generatePresignedUrl',
             ],
         ];
 
         return $fieldMapping;
+    }
+
+    public function generatePresignedUrl(array $paths): array
+    {
+        $presigned = [];
+
+        foreach ($paths as $path) {
+            $presigned[] = Helper::generatePresignedUrl($path);
+        }
+
+        return $presigned;
     }
 }
