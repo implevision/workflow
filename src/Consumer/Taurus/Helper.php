@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Consumer\Taurus;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
 
 class Helper
 {
@@ -113,5 +114,30 @@ class Helper
         }
 
         return $imgData;
+    }
+
+    /**
+     * Generate a pre-signed AWS S3 URL from a given file path.
+     *
+     * @param string $path  Path inside the S3 bucket (e.g. "amfam/2023/.../file.pdf")
+     * @param int $expiry   Expiry time in minutes
+     * @return string|null
+     */
+    public static function generatePresignedUrl(string $path, int $expiry = 60): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        // Ensure the S3 disk exists
+        if (! Storage::disk('s3')) {
+            return null;
+        }
+
+        // Generate pre-signed URL
+        return Storage::disk('s3')->temporaryUrl(
+            $path,
+            now()->addMinutes($expiry)
+        );
     }
 }
