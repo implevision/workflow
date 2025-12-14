@@ -199,7 +199,7 @@ class SES
             ]);
 
             if ($jobWorkflowId) {
-                self::updateStat($jobWorkflowId, count($payload));
+                self::updateState($jobWorkflowId, count($payload));
             }
 
             return $response['MessageId'] ?? 0;
@@ -208,7 +208,7 @@ class SES
         }
     }
 
-    private static function updateStat($jobWorkflowId, $processedRecord)
+    private static function updateState($jobWorkflowId, $processedRecord)
     {
         $jobWorkflowRepo = app(JobWorkflowRepository::class);
 
@@ -270,9 +270,9 @@ class SES
                 'ContentDisposition' => 'ATTACHMENT',
                 // "ContentId"                => uniqid("cid_"),
                 'ContentTransferEncoding' => 'BASE64',
-                // "ContentType"              => "application/png",
+                "ContentType"              => "application/pdf",
                 'FileName' => $fileName,
-                'RawContent' => base64_encode($rawContent),
+                'RawContent' => $rawContent,
             ];
         }
 
