@@ -34,14 +34,14 @@ class SES
         return new SesV2Client($awsConfig);
     }
 
-    public static function createRequest($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo = [], $attachments=[], $configurationSetName = '', $tenant = '')
+    public static function createRequest($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo = [], $configurationSetName = '', $tenant = '')
     {
         $isRequireBulkEmailRequest = count($payload) > 1 ? true : false;
         try {
             if ($isRequireBulkEmailRequest) {
-                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $attachments);
+                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
             } else {
-                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $attachments);
+                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
             }
         } catch (\Exception $e) {
             throw new \Exception('Error sending email: '.$e->getMessage());
@@ -50,7 +50,7 @@ class SES
         return $messageId;
     }
 
-    public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '', $attachments = [])
+    public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')
     {
         try {
             $sesClient = self::getSesClient();
@@ -92,6 +92,9 @@ class SES
             ];
         }
 
+        // $attachments = $payload['attachments'];
+        // \Log::info('Attachments ***', $attachments);
+
         try {
 
             $bulkEmailPayload = [
@@ -105,7 +108,7 @@ class SES
                             'Text' => $textContent ?: strip_tags($htmlContent),
                         ],
                         'TemplateData' => '{}',
-                        'Attachments' => self::processAttachment($attachments),
+                        // 'Attachments' => self::processAttachment($attachments),
                     ],
                 ],
                 'BulkEmailEntries' => $bulkEmailEntries,
@@ -133,7 +136,7 @@ class SES
         }
     }
 
-    public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '', $attachments = [])
+    public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')
     {
         try {
             $sesClient = self::getSesClient();
@@ -241,16 +244,16 @@ class SES
 
     public static function processAttachment($attachments): array
     {
-        if (empty($attachments) || !is_array($attachments)) {
+        if (empty($attachments) || ! is_array($attachments)) {
             return [];
         }
 
         $processed = [];
 
         foreach ($attachments as $file) {
-            if (!isset($file['path']) || !file_exists($file['path'])) {
+            /*if (!isset($file['path']) || !file_exists($file['path'])) {
                 continue;
-            }
+            }*/
 
             $filePath = $file['path'];
             $fileName = $file['name'] ?? basename($filePath);
@@ -262,13 +265,13 @@ class SES
             $rawContent = file_get_contents($filePath);
 
             $processed[] = [
-                "ContentDescription"       => $fileName,
-                "ContentDisposition"       => "attachment",
-                "ContentId"                => uniqid("cid_"),
-                "ContentTransferEncoding"  => "base64",
-                "ContentType"              => mime_content_type($filePath) ?: "application/octet-stream",
-                "FileName"                 => $fileName,
-                "RawContent"               => base64_encode($rawContent),
+                'ContentDescription' => $fileName,
+                'ContentDisposition' => 'ATTACHMENT',
+                // "ContentId"                => uniqid("cid_"),
+                'ContentTransferEncoding' => 'BASE64',
+                // "ContentType"              => "application/png",
+                'FileName' => $fileName,
+                'RawContent' => base64_encode($rawContent),
             ];
         }
 

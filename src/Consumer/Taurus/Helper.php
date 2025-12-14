@@ -119,9 +119,8 @@ class Helper
     /**
      * Generate a pre-signed AWS S3 URL from a given file path.
      *
-     * @param string $path  Path inside the S3 bucket (e.g. "amfam/2023/.../file.pdf")
-     * @param int $expiry   Expiry time in minutes
-     * @return string|null
+     * @param  string  $path  Path inside the S3 bucket (e.g. "amfam/2023/.../file.pdf")
+     * @param  int  $expiry  Expiry time in minutes
      */
     public static function generatePresignedUrl(string $path, int $expiry = 60): ?string
     {

@@ -99,6 +99,7 @@ class EmailClient
                         $this->dispatchEmail($jobPayload);
                         $jobPayload['payload'] = [];
                     }
+                    $data['attachments'] = [...$this->extractAttachments($data)];
                     $jobPayload['payload'][] = $data;
                     $rowCount++;
                 }
@@ -123,6 +124,7 @@ class EmailClient
                 $this->dispatchEmail($jobPayload);
                 $jobPayload['payload'] = [];
             }
+            $data['attachments'] = [...$this->extractAttachments($data)];
             $jobPayload['payload'][] = $data;
             $rowCount++;
         }
@@ -132,5 +134,23 @@ class EmailClient
         }
 
         return count($jobData);
+    }
+
+    /**
+     * Extract all payload keys that start with "attachment" (case-insensitive)
+     * and return them as an array.
+     */
+    public function extractAttachments(array $payload): array
+    {
+        $attachments = [];
+
+        foreach ($payload as $key => $value) {
+            // Case-insensitive check for keys starting with "attachment"
+            if (preg_match('/^attach/i', $key)) {
+                $attachments[$key] = $value;
+            }
+        }
+
+        return array_values($attachments);
     }
 }

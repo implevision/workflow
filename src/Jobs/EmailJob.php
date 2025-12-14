@@ -66,13 +66,12 @@ class EmailJob implements ShouldQueue
         $postAction = $this->payload['postAction'];
         $module = ! empty($this->payload['module']) ? $this->payload['module'] : '';
         $replyTo = ! empty($this->payload['replyTo']) ? $this->payload['replyTo'] : '';
-        $attachments = $this->extractAttachments($this->payload); // Extract attachments from payload
 
         // SEND EMAIL
         $messageId = 0;
         try {
             \Log::info('WORKFLOW - Creating SES Request');
-            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo, $attachments);
+            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo);
             \Log::info('WORKFLOW - SES Request created with Message ID: '.$messageId);
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error creating SES Request: '.$e->getMessage());
@@ -91,23 +90,5 @@ class EmailJob implements ShouldQueue
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error executing post action: '.$e->getMessage());
         }
-    }
-
-    /**
-     * Extract all payload keys that start with "attachment" (case-insensitive)
-     * and return them as an array.
-     */
-    public function extractAttachments(array $payload): array
-    {
-        $attachments = [];
-
-        foreach ($payload as $key => $value) {
-            // Case-insensitive check for keys starting with "attachment"
-            if (preg_match('/^attachment/i', $key)) {
-                $attachments[$key] = $value;
-            }
-        }
-
-        return $attachments;
     }
 }
