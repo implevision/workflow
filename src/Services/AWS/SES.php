@@ -93,7 +93,6 @@ class SES
         }
 
         // $attachments = $payload['attachments'];
-        // \Log::info('Attachments ***', $attachments);
 
         try {
 
@@ -174,6 +173,8 @@ class SES
                 $from = str_replace('{{'.$placeholder.'}}', $placeholderValue, $from);
             }
         }
+
+        $attachments = $payload['attachments'];
 
         try {
             $response = $sesClient->sendEmail([
