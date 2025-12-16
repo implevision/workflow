@@ -652,7 +652,7 @@ class WorkflowService
             $response = [];
 
             foreach ($actions as $action) {
-                $module = $action?->module ?? '';
+                $module = $action?->workflow_module ?? '';
                 $submodule = [
                     'value' => $action?->s_PATranTypeCode ?? '',
                     'label' => $action?->s_TranTypeScreenName ?? '',
