@@ -17,7 +17,7 @@ class WorkflowRepository implements WorkflowRepositoryInterface
 
     public function all(): ?Collection
     {
-        return $this->model->all(['id', 'module', 'name', 'description']);
+        return $this->model->all(['id', 'module', 'name', 'description', 'is_active']);
     }
 
     public function create(array $data): Workflow
