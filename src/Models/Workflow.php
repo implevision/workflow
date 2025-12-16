@@ -20,6 +20,7 @@ class Workflow extends Model
         'record_action_to_execute_workflow',
         'date_time_info_to_execute_workflow',
         'custom_date_time_info_to_execute_workflow',
+        'odyssey_action_to_execute_workflow',
         'workflow_execution_frequency',
         'workflow_next_date_to_execute',
         'is_active',
@@ -30,6 +31,7 @@ class Workflow extends Model
         'custom_date_time_info_to_execute_workflow' => 'json',
         'date_time_info_to_execute_workflow' => 'json',
         'workflow_next_date_to_execute' => 'datetime',
+        'odyssey_action_to_execute_workflow' => 'json',
     ];
 
     public function __construct(array $attributes = [])

@@ -77,6 +77,7 @@ class WorkflowService
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
+                'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? [],
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
                 'workflow_next_date_to_execute' => $workflowNextDateToExecute,
                 'is_active' => $data['detail']['isActive'] ?? true,
@@ -170,7 +171,8 @@ class WorkflowService
                 'effectiveActionToExecuteWorkflow' => $workflow->effective_action_to_execute_workflow,
                 'recordActionToExecuteWorkflow' => $workflow->record_action_to_execute_workflow,
                 'dateTimeInfoToExecuteWorkflow' => $workflow->date_time_info_to_execute_workflow,
-                'customDateTimeInfoToExecuteWorkflow' => $workflow->custom_date_time_info_to_execute_workflow ?? [],
+                'customDateTimeInfoToExecuteWorkflow' => $workflow?->custom_date_time_info_to_execute_workflow ?? [],
+                'odysseyActionToExecuteWorkflow' => $workflow?->odyssey_action_to_execute_workflow ?? []
             ],
             'workFlowConditions' => $workflowConditions,
         ]);
@@ -198,6 +200,7 @@ class WorkflowService
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
+                'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? [],
                 // TODO: UPDATE workflow_execution_frequency & workflow_next_date_to_execute
             ]);
 
