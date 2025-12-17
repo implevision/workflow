@@ -647,6 +647,24 @@ class WorkflowService
             return new stdClass;
         }
     }
+    
+    /**
+    * Update the active/inactive status of a workflow.
+    *
+    * @param  int  $id
+    *
+    * @return Workflow
+    */
+    public function changeWorkflowStatus(int $id)
+    {
+        $workflow = $this->workflowRepo->getById($id); 
+
+        $workflow->is_active = $workflow->is_active ? 0 : 1;
+
+        $workflow->save();
+
+        return $workflow;
+    }
 
     /**
      * Get Odyssey actions grouped by module.
