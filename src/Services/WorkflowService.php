@@ -648,6 +648,11 @@ class WorkflowService
         }
     }
 
+    /**
+     * Get Odyssey actions grouped by module.
+     * 
+     * @return array<array>
+     */
     public function getOdysseyActions()
     {
         try {

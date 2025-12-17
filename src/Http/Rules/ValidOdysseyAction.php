@@ -23,7 +23,7 @@ class ValidOdysseyAction implements ValidationRule
                 ! is_string($value['odysseyActionSubmodule']) ||
                 trim($value['odysseyActionSubmodule']) === ''
             ) {
-                $fail('The odysseyActionSubmodule field is required and cannot be empty.');
+                $fail('The Submodule field in odyssey actions is required and cannot be empty.');
             }
         }
     }
