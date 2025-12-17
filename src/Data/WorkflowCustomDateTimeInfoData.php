@@ -18,12 +18,12 @@ class WorkflowCustomDateTimeInfoData extends Data
     public static function fromArray(array $data): self
     {
         return new self(
-            cronMinutes: $data['cronMinutes'] ?? "",
-            cronHours: $data['cronHours'] ?? "",
-            cronDayOfMonth: $data['cronDayOfMonth'] ?? "",
-            cronMonth: $data['cronMonth'] ?? "",
-            cronDayOfWeek: $data['cronDayOfWeek'] ?? "",
-            cronYear: $data['cronYear'] ?? ""
+            cronMinutes: $data['cronMinutes'] ?? '',
+            cronHours: $data['cronHours'] ?? '',
+            cronDayOfMonth: $data['cronDayOfMonth'] ?? '',
+            cronMonth: $data['cronMonth'] ?? '',
+            cronDayOfWeek: $data['cronDayOfWeek'] ?? '',
+            cronYear: $data['cronYear'] ?? ''
         );
     }
 }
