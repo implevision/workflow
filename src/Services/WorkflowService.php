@@ -77,6 +77,7 @@ class WorkflowService
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
+                'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? [],
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
                 'workflow_next_date_to_execute' => $workflowNextDateToExecute,
                 'is_active' => $data['detail']['isActive'] ?? true,
@@ -170,7 +171,8 @@ class WorkflowService
                 'effectiveActionToExecuteWorkflow' => $workflow->effective_action_to_execute_workflow,
                 'recordActionToExecuteWorkflow' => $workflow->record_action_to_execute_workflow,
                 'dateTimeInfoToExecuteWorkflow' => $workflow->date_time_info_to_execute_workflow,
-                'customDateTimeInfoToExecuteWorkflow' => $workflow->custom_date_time_info_to_execute_workflow ?? [],
+                'customDateTimeInfoToExecuteWorkflow' => $workflow?->custom_date_time_info_to_execute_workflow ?? [],
+                'odysseyActionToExecuteWorkflow' => $workflow?->odyssey_action_to_execute_workflow ?? [],
             ],
             'workFlowConditions' => $workflowConditions,
         ]);
@@ -198,6 +200,7 @@ class WorkflowService
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
+                'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? [],
                 // TODO: UPDATE workflow_execution_frequency & workflow_next_date_to_execute
             ]);
 
@@ -644,22 +647,58 @@ class WorkflowService
             return new stdClass;
         }
     }
-    
+
     /**
-    * Update the active/inactive status of a workflow.
-    *
-    * @param  int  $id
-    *
-    * @return Workflow
-    */
+     * Update the active/inactive status of a workflow.
+     *
+     * @param  int  $id  The ID of the workflow to update.
+     * @return Workflow
+     */
     public function changeWorkflowStatus(int $id)
     {
-        $workflow = $this->workflowRepo->getById($id); 
+        $workflow = $this->workflowRepo->getById($id);
 
         $workflow->is_active = $workflow->is_active ? 0 : 1;
 
         $workflow->save();
 
         return $workflow;
+    }
+
+    /**
+     * Get Odyssey actions grouped by module.
+     *
+     * @return array<array>
+     */
+    public function getOdysseyActions()
+    {
+        try {
+            $actions = DB::table('tb_paaccoutingactions')->get();
+            $response = [];
+
+            foreach ($actions as $action) {
+                $module = $action?->workflow_module ?? '';
+                $submodule = [
+                    'value' => $action?->s_PATranTypeCode ?? '',
+                    'label' => $action?->s_TranTypeScreenName ?? '',
+                    'n_PAActionCode_PK' => $action?->n_PAActionCode_PK ?? null,
+                ];
+                if (! isset($response[$module])) {
+                    $response[$module] = [];
+                }
+                $response[$module][] = $submodule;
+            }
+
+            return $response;
+        } catch (\Exception $exception) {
+            \Log::error('WORKFLOW: Error getting Odyssey actions', [
+                'message' => $exception->getMessage(),
+                'line' => $exception->getLine(),
+                'file' => $exception->getFile(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return [];
+        }
     }
 }
