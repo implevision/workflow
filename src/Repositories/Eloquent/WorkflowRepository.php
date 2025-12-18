@@ -79,8 +79,14 @@ class WorkflowRepository implements WorkflowRepositoryInterface
     {
         $query = $this->model
             ->where('module', $entityType)
-            ->where('record_action_to_execute_workflow', $entityAction)
-            ->where('effective_action_to_execute_workflow', 'ON_RECORD_ACTION')
+            ->where(function ($query) use ($entityAction) {
+                $query->where('record_action_to_execute_workflow', $entityAction)
+                    ->orWhere('odyssey_action_to_execute_workflow', $entityAction);
+            })
+            ->where(function ($query) {
+                $query->where('effective_action_to_execute_workflow', 'ON_RECORD_ACTION')
+                    ->orWhere('effective_action_to_execute_workflow', 'ODYSSEY_ACTION');
+            })
             ->where('is_active', true)
             ->with([
                 'conditions' => function ($query) use ($withDeleted) {

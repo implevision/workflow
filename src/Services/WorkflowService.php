@@ -650,8 +650,8 @@ class WorkflowService
 
     /**
      * Update the active/inactive status of a workflow.
+     *
      * @param  int  $id  The ID of the workflow to update.
-     * 
      * @return Workflow
      */
     public function changeWorkflowStatus(int $id)
