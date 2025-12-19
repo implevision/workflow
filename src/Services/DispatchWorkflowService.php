@@ -178,7 +178,7 @@ class DispatchWorkflowService
 
             if ($condition['applyRuleTo'] == 'CERTAIN' && ! $this->isManuallyInvoked) {
                 $conditionsToApply = [];
-                foreach ($condition['certainConditions'] as $certainCondition) {
+                foreach ($condition['applyConditionRules']['children'] as $certainCondition) {
                     $conditionsToApply[] = GraphQLSchemaBuilderService::getQueryMapping(
                         $certainCondition['field'],
                         $certainCondition['comparator'],
