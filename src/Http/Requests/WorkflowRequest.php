@@ -58,8 +58,14 @@ class WorkflowRequest extends FormRequest
             // 'workFlowConditions.*.instanceActions.*.actionType' => 'required|string|in:EMAIL',
             // 'workFlowConditions.*.instanceActions.*.payload' => 'required|array',
             'workFlowConditions.*.instanceActions' => ['required', 'array', new ValidInstanceActions],
-            'workFlowConditions.*.applyConditionRules.children.*' => [
+            'workFlowConditions.*.applyConditionRules' => [
                 'required_if:workFlowConditions.*.applyRuleTo,CERTAIN',
+                'array',
+            ],
+            'workFlowConditions.*.applyConditionRules.type' => 'required|in:group,rule',
+            'workFlowConditions.*.applyConditionRules.operator' => 'required|in:AND,OR',
+            'workFlowConditions.*.applyConditionRules.id' => 'sometimes|nullable|string',
+            'workFlowConditions.*.applyConditionRules.children' => [
                 'array',
                 new ValidApplyConditionRules,
             ],
