@@ -176,9 +176,21 @@ class DispatchWorkflowService
                 }
             }
 
-            if ($condition['applyRuleTo'] == 'CERTAIN') {
-                // GET DATA BASED ON CERTAIN CONDITION
-                // APPEND IN $graphQLQuery
+            if ($condition['applyRuleTo'] == 'CERTAIN' && ! $this->isManuallyInvoked) {
+                $conditionsToApply = [];
+                foreach ($condition['certainConditions'] as $certainCondition) {
+                    $conditionsToApply[] = GraphQLSchemaBuilderService::getQueryMapping(
+                        $certainCondition['field'],
+                        $certainCondition['comparator'],
+                        $certainCondition['expectedValue']
+                    );
+                }
+
+                if (count($graphQLQuery)) {
+                    $graphQLQuery[0]['AND'] = $conditionsToApply;
+                } else {
+                    $graphQLQuery[] = ['AND' => $conditionsToApply];
+                }
             }
 
             foreach ($condition['instanceActions'] as $action) {

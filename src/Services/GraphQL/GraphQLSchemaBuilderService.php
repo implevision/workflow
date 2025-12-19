@@ -101,9 +101,9 @@ class GraphQLSchemaBuilderService
     {
         $fields = $this->arrayToGraphQLFields($data, 0);
 
-        $variablesStr = implode('\n', $variables);
+        $variablesStr = json_encode($variables);
 
-        return "query {\n  $queryName(where: {".$variablesStr."}){\n".
+        return "query {\n  $queryName(where: ".$variablesStr."){\n".
             preg_replace('/^/m', '    ', $fields)."\n  }\n}";
     }
 
@@ -123,10 +123,7 @@ class GraphQLSchemaBuilderService
         if (! is_array($column)) {
             $column = strtoupper(self::convertToUnderscore($column));
 
-            return '
-            AND: [
-                { column: '.$column.', operator: '.$operator.', value: '.$value.' }      
-            ]';
+            return ['column' => $column, 'operator' => $operator, 'value' => $value];
         }
     }
 
