@@ -235,6 +235,80 @@ class Producer
             'jqFilter' => '.data.producer.licenseManagers[]',
         ];
 
+        $fieldMapping['OriginatingAddress'] = [
+            'GraphQLschemaToReplace' => [
+                'al3Details' => [
+                    'metadata' => [
+                        'flood' => [
+                            'originating_addr' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.data.producer.al3Details[].metadata[].flood.originating_addr',
+        ];
+
+
+        $fieldMapping['LastFourDigitAccountNumber'] = [
+            'GraphQLschemaToReplace' => [
+                    'accounts' => [
+                        'achConfigurations' => [
+                        'lastFourDigitAccountNumber' => null,
+                    ],
+                ],
+            ],
+        'jqFilter' => '.data.producer.accounts[].achConfigurations[].lastFourDigitAccountNumber',
+    ];
+
+    $fieldMapping['TodayDate'] = [
+        'GraphQLschemaToReplace' => [
+            'todayDate' => null,
+        ],
+        'jqFilter' => '.data.producer.todayDate',
+    ];
+
+    $fieldMapping['AgentPortalUrl'] = [
+        'GraphQLschemaToReplace' => [
+            'agentInfo' => [
+                'agentUrl' => null,
+            ],
+        ],
+        'jqFilter' => '.data.producer.agentInfo.agentUrl',
+    ];
+
+    $fieldMapping['WyoUpn'] = [
+        'GraphQLschemaToReplace' => [
+            'wyoUpn' => null,
+        ],
+        'jqFilter' => '.data.producer.wyoUpn',
+    ];
+
+$fieldMapping['Naic'] = [
+    'GraphQLschemaToReplace' => [
+        'referenceNo' => null,
+    ],
+    'jqFilter' => '.data.producer.referenceNo',
+    'parseResultCallback' => 'parseNaic',
+];
+
+$fieldMapping['User'] = [
+    'GraphQLschemaToReplace' => [
+        'userAgents' => [
+            'user' => [
+                'id' => null,
+                'screenName' => null,
+                'level' => [
+                    'UserLevel_Name' => null,
+                ],
+            ],
+        ],
+    ],
+    'jqFilter' => '.data.producer.userAgents[]',
+    'parseResultCallback' => 'parseFirstUser',
+];
+
+
+    
         return $fieldMapping;
     }
 
@@ -365,11 +439,37 @@ class Producer
         return Helper::createPortalURL('InsuredPortal');
     }
 
-    public function parseReferenceNo($referenceNo)
+    public function parseNaic($referenceNo)
     {
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
         $tenant = getTenant();
 
         return sprintf('%s%s%s', ucfirst(substr($tenant, 0, 1)), $holdingCompanyDetail['naic_number'], $referenceNo);
     }
+
+    public function parseOriginatingAddress($metadata)
+    {
+        return $metadata['flood']['originating_addr'] ?? null;
+    }   
+
+    public function parseLastFourDigitAccountNumber($achConfig)
+    {
+        return $achConfig['lastFourDigitAccountNumber'] ?? null;    
+    }
+
+    public function parseFirstUser($userAgent)
+{
+    $user = $userAgent['user'] ?? null;
+
+    if (! $user) {
+        return null;
+    }
+
+    return [
+        'UserId' => $user['id'] ?? null,
+        'UserScreenName' => $user['screenName'] ?? null,
+        'UserLevelName' => $user['level']['UserLevel_Name'] ?? null,
+    ];
+}
+
 }
