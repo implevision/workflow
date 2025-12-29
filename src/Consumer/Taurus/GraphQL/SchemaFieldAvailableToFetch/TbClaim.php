@@ -76,9 +76,9 @@ class TbClaim
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
-                    'riskId' => null,
+                    'policyNumber' => null,
                 ],
-                'jqFilter' => '.claim.riskId',
+                'jqFilter' => '.claim.policyNumber',
             ],
             'ReferenceNo' => [
                 'GraphQLschemaToReplace' => [
@@ -87,11 +87,11 @@ class TbClaim
                 'jqFilter' => '.claim.referenceNo',
                 'parseResultCallback' => 'parseReferenceNo',
             ],
-            'PolicyId' => [
+            'PolicyHolder' => [
                 'GraphQLschemaToReplace' => [
-                    'policyId' => null,
+                    'policyHolder' => null,
                 ],
-                'jqFilter' => '.claim.policyId',
+                'jqFilter' => '.claim.policyHolder',
             ],
             'DateOfLoss' => [
                 'GraphQLschemaToReplace' => [
@@ -108,10 +108,24 @@ class TbClaim
             ],
             'ClaimantEmail' => [
                 'GraphQLschemaToReplace' => [
-                    'claimCommunication' => [
-                        'isAcceptEmail' => null,
-                        'primaryEmail' => null,
-                        'secondaryEmail' => null,
+                    'claimCommunication'     => [
+                        'temporaryPhone'     => null,
+                        'secondaryPhone'     => null,
+                        'temporaryEmail'     => null,
+                        'secondaryEmail'     => null,
+                        'isAcceptText'       => null,
+                        'isAcceptEmail'      => null,
+                        'addressLine1'       => null,
+                        'addressLine2'       => null,
+                        'addressLine3'       => null,
+                        'postalCode'         => null,
+                        'postalCodeSuffix'   => null,
+                        'zipDetailsId'       => null,
+                        'city'               => null,
+                        'county'             => null,
+                        'state'              => null,
+                        'country'            => null,
+                        'createdDate'        => null,                    
                     ],
                 ],
                 'jqFilter' => '.claim.claimCommunication',
@@ -287,6 +301,128 @@ class TbClaim
             'parseResultCallback' => 'getInsuredPortalUrl',
         ];
 
+        $fieldMapping['ClaimStatusCode'] = [
+            'GraphQLschemaToReplace' => [
+            'claimStatusCode' => null,
+            ],
+            'jqFilter' => '.claim.claimStatusCode',
+        ];
+
+        $fieldMapping['CauseOfLoss'] = [
+            'GraphQLschemaToReplace' => [
+            'causeOfLoss' => null,
+            ],
+            'jqFilter' => '.claim.causeOfLoss',
+        ];
+
+        $fieldMapping['UpdatedBy'] = [
+            'GraphQLschemaToReplace' => [
+            'updatedBy' => [
+                'screenName' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.updatedBy.screenName',
+        ];
+
+        $fieldMapping['ClaimEnteredBy'] = [
+            'GraphQLschemaToReplace' => [
+            'claimEnteredBy' => [
+                'screenName' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.claimEnteredBy.screenName',
+        ];
+
+        $fieldMapping['DateAllocated'] = [
+            'GraphQLschemaToReplace' => [
+            'dateAllocated' => null,
+        ],
+            'jqFilter' => '.claim.dateAllocated',
+            'parseResultCallback' => 'formatDate', 
+        ];
+
+        $fieldMapping['AllocatedTo'] = [
+            'GraphQLschemaToReplace' => [
+            'allocatedTo' => [
+                'screenName' => null,
+                'fcn'        => null,
+            ],
+        ],
+            'jqFilter' => '.claim.allocatedTo',
+            'parseResultCallback' => 'parseAllocatedTo',
+        ];
+
+        $fieldMapping['Agency'] = [
+            'GraphQLschemaToReplace' => [
+            'agency' => [
+                'personUniqueId'      => null,
+                'insuredPersonInfoId' => null,
+                'fullName'            => null,
+            ],
+        ],
+            'jqFilter' => '.claim.agency',
+            'parseResultCallback' => 'parseAgency',
+        ];
+
+        $fieldMapping['ClaimAdditionalDetails'] = [
+            'GraphQLschemaToReplace' => [
+                'addInfo' => [
+                    'claim_detail_json' => [
+                        'iccfee'               => null,
+                        'waiverRecieptDate'    => null,
+                        'waiverRequired'       => null,
+
+                        'newScreenData' => [
+                            'gcof'                 => null,
+                            'waterLineFlipExt'     => null,
+                            'waterLineFlipInt'     => null,
+                            'appWaterLineFlipExt'  => null,
+                            'appWaterLineFlipInt'  => null,
+                            'inspectionMethod'     => null,
+                            'delayReason'         => null,
+                            'hoursInFlood'        => null,
+                        ],
+                    ],
+                ],
+            ],
+
+            'jqFilter' => '.claim.addInfo.claim_detail_json',   
+
+            'parseResultCallback' => 'parseClaimAdditionalDetails',
+        ];
+
+        $fieldMapping['RapLatestStatusText'] = [
+            'GraphQLschemaToReplace' => [
+            'rapLatestStatusText' => null,
+            ],
+            'jqFilter' => '',
+            'parseResultCallback' => 'getRapLatestStatusText',
+        ];
+
+        $fieldMapping['PaymentTotals'] = [
+        'GraphQLschemaToReplace' => [
+                'paymentTotals' => [
+                    'building_advanced_payment_amount' => null,
+                    'building_final_payment_amount' => null,
+                    'building_supplemental_payment_amount' => null,
+                    'total_building_payments' => null,
+
+                    'contents_advanced_payment_amount' => null,
+                    'contents_final_payment_amount' => null,
+                    'contents_supplemental_payment_amount' => null,
+                    'total_contents_payments' => null,
+
+                    'icc_advanced_payment_amount' => null,
+                    'icc_final_payment_amount' => null,
+                    'icc_supplemental_payment_amount' => null,
+                    'total_icc_payments' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.paymentTotals',
+            'parseResultCallback' => 'parsePaymentTotals',
+        ];
+
+
         return $fieldMapping;
     }
 
@@ -359,15 +495,33 @@ class TbClaim
     {
         if (empty($claimCommunication)) {
             return null;
-        }
+     }
 
-        $email = $claimCommunication['primaryEmail'] ?? null;
-        if (empty($email)) {
-            $email = $claimCommunication['secondaryEmail'] ?? null;
-        }
+        return [
+            'temporaryPhone'     => $claimCommunication['temporaryPhone']     ?? null,
+            'secondaryPhone'     => $claimCommunication['secondaryPhone']     ?? null,
+            'temporaryEmail'     => $claimCommunication['temporaryEmail']     ?? null,
+            'secondaryEmail'     => $claimCommunication['secondaryEmail']     ?? null,
+            'isAcceptText'       => $claimCommunication['isAcceptText']       ?? null,
+            'isAcceptEmail'      => $claimCommunication['isAcceptEmail']      ?? null,
 
-        return $email;
+            'addressLine1'       => $claimCommunication['addressLine1']       ?? null,
+            'addressLine2'       => $claimCommunication['addressLine2']       ?? null,
+            'addressLine3'       => $claimCommunication['addressLine3']       ?? null,
+
+            'postalCode'         => $claimCommunication['postalCode']         ?? null,
+            'postalCodeSuffix'   => $claimCommunication['postalCodeSuffix']   ?? null,
+            'zipDetailsId'       => $claimCommunication['zipDetailsId']       ?? null,
+
+            'city'               => $claimCommunication['city']['name']       ?? null,
+            'county'             => $claimCommunication['county']['name']     ?? null,
+            'state'              => $claimCommunication['state']['name']      ?? null,
+            'country'            => $claimCommunication['country']['name']    ?? null,
+
+            'createdDate'        => $claimCommunication['createdDate']        ?? null,
+        ];
     }
+
 
     public function parseExaminerEmail($emailArr)
     {
@@ -437,5 +591,83 @@ class TbClaim
         $tenant = getTenant();
 
         return sprintf('%s%s%s', ucfirst(substr($tenant, 0, 1)), $holdingCompanyDetail['naic_number'], $referenceNo);
+    }
+
+    public function parseAgency($agency)
+    {
+        if (empty($agency)) {
+            return null;
+        }
+
+        return [
+            'personUniqueId'      => $agency['personUniqueId'] ?? null,
+            'insuredPersonInfoId' => $agency['insuredPersonInfoId'] ?? null,
+            'fullName'            => $agency['fullName'] ?? null,
+        ];
+    }
+
+    public function parseClaimAdditionalDetails($json)
+{
+    if (empty($json)) {
+        return null;
+    }
+
+        return [
+            'iccfee'              => $json['iccfee'] ?? null,
+            'waiverRecieptDate'   => $json['waiverRecieptDate'] ?? null,
+            'waiverRequired'      => $json['waiverRequired'] ?? null,
+            'gcof'                => $json['newScreenData']['gcof'] ?? null,
+            'waterLineFlipExt'    => $json['newScreenData']['waterLineFlipExt'] ?? null,
+            'waterLineFlipInt'    => $json['newScreenData']['waterLineFlipInt'] ?? null,
+            'appWaterLineFlipExt' => $json['newScreenData']['appWaterLineFlipExt'] ?? null,
+            'appWaterLineFlipInt' => $json['newScreenData']['appWaterLineFlipInt'] ?? null,
+            'inspectionMethod'    => $json['newScreenData']['inspectionMethod'] ?? null,
+            'hoursInFlood'        => $json['newScreenData']['hoursInFlood'] ?? null,
+            'delayReason'         => $json['newScreenData']['delayReason'] ?? null,                  
+        ];
+    }
+
+    public function getRapLatestStatusText($claim)
+    {
+        return $claim->rapLatestStatusText() ?? '';
+    }
+    public function parseAllocatedTo($allocatedTo)
+    {
+        if (empty($allocatedTo)) {
+            return '';
+        }
+
+        $name = $allocatedTo['screenName'] ?? '';
+        $fcn  = $allocatedTo['fcn'] ?? '';
+
+        if ($fcn) {
+            return $name . ' (' . $fcn . ')';
+        }
+
+        return $name;
+    }
+
+    public function parsePaymentTotals($data) 
+    {
+        if (empty($data) || !is_array($data)) {
+            return [];
+        }
+
+        return [
+            'BuildingAdvancedPayment'      => $data['building_advanced_payment_amount'] ?? 0,
+            'BuildingFinalPayment'         => $data['building_final_payment_amount'] ?? 0,
+            'BuildingSupplementalPayment'  => $data['building_supplemental_payment_amount'] ?? 0,
+            'BuildingTotalPayments'        => $data['total_building_payments'] ?? 0,
+
+            'ContentsAdvancedPayment'      => $data['contents_advanced_payment_amount'] ?? 0,
+            'ContentsFinalPayment'         => $data['contents_final_payment_amount'] ?? 0,
+            'ContentsSupplementalPayment'  => $data['contents_supplemental_payment_amount'] ?? 0,
+            'ContentsTotalPayments'        => $data['total_contents_payments'] ?? 0,
+
+            'ICCAdvancedPayment'           => $data['icc_advanced_payment_amount'] ?? 0,
+            'ICCFinalPayment'              => $data['icc_final_payment_amount'] ?? 0,
+            'ICCSupplementalPayment'       => $data['icc_supplemental_payment_amount'] ?? 0,
+            'ICCTotalPayments'             => $data['total_icc_payments'] ?? 0,
+        ];
     }
 }
