@@ -399,6 +399,30 @@ class TbClaim
             'parseResultCallback' => 'getRapLatestStatusText',
         ];
 
+        $fieldMapping['PaymentTotals'] = [
+        'GraphQLschemaToReplace' => [
+                'paymentTotals' => [
+                    'building_advanced_payment_amount' => null,
+                    'building_final_payment_amount' => null,
+                    'building_supplemental_payment_amount' => null,
+                    'total_building_payments' => null,
+
+                    'contents_advanced_payment_amount' => null,
+                    'contents_final_payment_amount' => null,
+                    'contents_supplemental_payment_amount' => null,
+                    'total_contents_payments' => null,
+
+                    'icc_advanced_payment_amount' => null,
+                    'icc_final_payment_amount' => null,
+                    'icc_supplemental_payment_amount' => null,
+                    'total_icc_payments' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.paymentTotals',
+            'parseResultCallback' => 'parsePaymentTotals',
+        ];
+
+
         return $fieldMapping;
     }
 
@@ -621,5 +645,29 @@ class TbClaim
         }
 
         return $name;
+    }
+
+    public function parsePaymentTotals($data) 
+    {
+        if (empty($data) || !is_array($data)) {
+            return [];
+        }
+
+        return [
+            'BuildingAdvancedPayment'      => $data['building_advanced_payment_amount'] ?? 0,
+            'BuildingFinalPayment'         => $data['building_final_payment_amount'] ?? 0,
+            'BuildingSupplementalPayment'  => $data['building_supplemental_payment_amount'] ?? 0,
+            'BuildingTotalPayments'        => $data['total_building_payments'] ?? 0,
+
+            'ContentsAdvancedPayment'      => $data['contents_advanced_payment_amount'] ?? 0,
+            'ContentsFinalPayment'         => $data['contents_final_payment_amount'] ?? 0,
+            'ContentsSupplementalPayment'  => $data['contents_supplemental_payment_amount'] ?? 0,
+            'ContentsTotalPayments'        => $data['total_contents_payments'] ?? 0,
+
+            'ICCAdvancedPayment'           => $data['icc_advanced_payment_amount'] ?? 0,
+            'ICCFinalPayment'              => $data['icc_final_payment_amount'] ?? 0,
+            'ICCSupplementalPayment'       => $data['icc_supplemental_payment_amount'] ?? 0,
+            'ICCTotalPayments'             => $data['total_icc_payments'] ?? 0,
+        ];
     }
 }
