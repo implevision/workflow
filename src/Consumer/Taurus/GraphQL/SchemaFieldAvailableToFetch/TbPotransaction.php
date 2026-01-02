@@ -2,6 +2,10 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Taurus\Workflow\Consumer\Taurus\Helper;
+
 class TbPotransaction
 {
     /**
@@ -131,6 +135,188 @@ class TbPotransaction
                 'jqFilter' => '.policy.policyTransaction.TbPersoninfo.additionalInfo.wyoAgencyAgentCode',
                 'parseResultCallback' => 'parseWyoAgencyAgentCode',
             ],
+            'InsuredName' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'TbPolicy' => [
+                            'insuredPersonInfo' => [
+                                'fullName' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policy.policyTransaction.TbPolicy.insuredPersonInfo.fullName',
+            ],
+            'InsuredPropertyAddress' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'TbPolicy' => [
+                            'insuredPersonInfo' => [
+                                'TbPersonaddress' => [
+                                    'addressTypeCode' => null,
+                                    'houseNo' => null,
+                                    'streetName' => null,
+                                    'addressLine1' => null,
+                                    'addressLine2' => null,
+                                    'addressLine3' => null,
+                                    'addressLine4' => null,
+                                    'postalCode' => null,
+                                    'postalCodeSuffix' => null,
+                                    'tbCity' => [
+                                        'name' => null,
+                                    ],
+                                    'tbState' => [
+                                        'name' => null,
+                                    ],
+                                    'tbCountry' => [
+                                        'name' => null,
+                                    ],
+                                    'isDefaultAddress' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policy.policyTransaction.TbPolicy.insuredPersonInfo.TbPersonaddress[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Location")',
+                'parseResultCallback' => 'parsePropertyAddress',
+            ],
+            'PolicyExpirationDate' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'transactionEffectiveToDate' => null,
+                    ],
+                ],
+                'jqFilter' => '.policy.policyTransaction.transactionEffectiveToDate',
+            ],
+            // Need to confirm with sir
+            // 'TodaysDate' => [
+            //     'GraphQLschemaToReplace' => [
+            //         'policyTransaction' => [
+            //             'TbPolicy' => [],
+            //         ],
+            //     ],
+            //     'jqFilter' => '.policy.policyTransaction.TbPolicy',
+            // ],
+            'AgentName' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'TbPolicy' => [
+                            'agentInfo' => [
+                                'fullName' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policy.policyTransaction.TbPolicy.agentInfo.fullName',
+            ],
+            'InsuredEmail' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'TbPolicy' => [
+                            'insuredPersonInfo' => [
+                                'emailInfo' => [
+                                    'email' => null,
+                                    'isDefault' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.policy.policyTransaction.TbPolicy.insuredPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
+                'parseResultCallback' => 'parseInsuredPersonEmail',
+            ],
+            'InsuredPhoneNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'TbPolicy' => [
+                            'insuredPersonInfo' => [
+                                'phoneInfo' => [
+                                    'phoneNumber' => null,
+                                    'isDefault' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.policy.policyTransaction.TbPolicy.insuredPersonInfo.phoneInfo[0] | select(.isDefault == "Y")]',
+                'parseResultCallback' => 'parseInsuredPersonPhone',
+            ],
+            // 'TermStartDate' => [
+            //     'GraphQLschemaToReplace' => [
+            //         'policyTransaction' => [
+            //             'policyTermMaster' => [
+            //                 'termStartDate' => null,
+            //             ],
+            //         ],
+            //     ],
+            //     'jqFilter' => '.policy.policyTransaction.policyTermMaster.termStartDate',
+            //     'parseResultCallback' => 'formatDate',
+            // ],
+            // 'TermEndDate' => [
+            //     'GraphQLschemaToReplace' => [
+            //         'policyTransaction' => [
+            //             'policyTermMaster' => [
+            //                 'termEndDate' => null,
+            //             ],
+            //         ],
+            //     ],
+            //     'jqFilter' => '.policy.policyTransaction.policyTermMaster.termEndDate',
+            //     'parseResultCallback' => 'formatDate',
+            // ],
+            'ProductName' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'TbPolicy' => [
+                            'product' => [
+                                'productName' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policy.policyTransaction.TbPolicy.product.productName',
+            ],
+            // 'TransactionType' => [
+            //     'GraphQLschemaToReplace' => [
+            //         'policyTransaction' => [
+            //             'policyRiskTransactionType' => [
+            //                 'transactionTypeScreenName' => null,
+            //             ],
+            //             'policyRiskTransactionSubType' => [
+            //                 'transactionSubTypeScreenName' => null,
+            //             ],
+            //         ],
+            //     ],
+            //     'jqFilter' => '.policy.policyTransaction',
+            //     'parseResultCallback' => 'parseTransactionType',
+            // ],
+            'WaitingPeriod' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'riskAdditionalFloodInfo' => [
+                            'policyWaitingPeriod' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policy.policyTransaction.riskAdditionalFloodInfo.policyWaitingPeriod',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+            'RenewalIndicator' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'TbPolicy' => [
+                            'renewalTypeCode' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policy.policyTransaction.TbPolicy.renewalTypeCode',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+        ];
+
+        $fieldMapping['InsuredMailingAddress'] = [
+            'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
+            'jqFilter' => '.policy.policyTransaction.TbPolicy.insuredPersonInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'parseResultCallback' => 'parseMailingAddress',
         ];
 
         return $fieldMapping;
@@ -139,6 +325,7 @@ class TbPotransaction
     public function parsePremiumDue($premiumChangeAndFeesArr)
     {
         $premiumDue = 0;
+        // Need to update for other products
         if (is_array($premiumChangeAndFeesArr)) {
             $premiumChange = $premiumChangeAndFeesArr['premiumChange'] ?? 0;
             $policyFees = $premiumChangeAndFeesArr['policyFees'] ?? 0;
@@ -151,7 +338,7 @@ class TbPotransaction
     public function parsePotentialDiscountLost($transactionId, $coverageCode)
     {
         // TODO: TMP fix. Need to covert to actual one
-        $coverageData = \DB::select(
+        $coverageData = DB::select(
             'SELECT cvgt.n_CvgSegmentGrossPremium AS coverage_premium
                 from tb_potransactions pot
                 left join tb_policies pol on pol.n_PolicyNoId_PK = pot.n_PolicyMaster_FK
@@ -178,5 +365,81 @@ class TbPotransaction
     public function parseWyoAgencyAgentCode($agentCode)
     {
         return (strlen($agentCode) === 7) ? substr_replace($agentCode, '', 4, 1) : $agentCode;
+    }
+
+    private function parseAddress($addressArr)
+    {
+        if (empty($addressArr)) {
+            return null;
+        }
+
+        $address = [
+            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'city' => $addressArr['tbCity']['name'] ?? null,
+            // 'county' => $addressArr['tbCounty']['name'] ?? null,
+            'state' => $addressArr['tbState']['name'] ?? null,
+            'postalCode' => $addressArr['postalCode'] ?? null,
+        ];
+
+        if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
+            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
+        }
+
+        $address = array_filter(array_map('trim', $address), function ($item) {
+            return ! empty($item);
+        });
+
+        return implode(', ', $address);
+    }
+
+    public function parseMailingAddress($addressArr)
+    {
+        return $this->parseAddress($addressArr);
+    }
+
+    public function parsePropertyAddress($addressArr)
+    {
+        return $this->parseAddress($addressArr);
+    }
+
+    public function getTodayDate(): string
+    {
+        return Carbon::now()->toDateString();
+    }
+
+    public function parseInsuredPersonEmail($emailArr)
+    {
+        return is_array($emailArr) && count($emailArr) ? (last($emailArr)['email'] ?? null) : null;
+    }
+
+    public function parseInsuredPersonPhone($phoneArr)
+    {
+        $phone = is_array($phoneArr) && count($phoneArr) ? (last($phoneArr)['phoneNumber'] ?? null) : null;
+        if ($phone) {
+            $phone = Helper::formatPhone($phone);
+        }
+
+        return $phone;
+    }
+
+    public function formatDate($dateToFormat)
+    {
+        return Helper::formatDate($dateToFormat);
+    }
+
+    public function parseTransactionType($transactionArr)
+    {
+        // confirm with sir about space between type and subtype
+        $type = $transactionArr['policyRiskTransactionType']['transactionTypeScreenName'] ?? '';
+        $subType = $transactionArr['policyRiskTransactionSubType']['transactionSubTypeScreenName'] ?? '';
+
+        return trim($type.' '.$subType);
+    }
+
+    public function parseAppCodeNameToDisplayName($appCodeName)
+    {
+        return DB::table('tb_appcodes')
+            ->where('s_AppCodeName', $appCodeName)
+            ->value('s_AppCodeNameForDisplay');
     }
 }
