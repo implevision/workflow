@@ -311,6 +311,32 @@ class TbPotransaction
                 'jqFilter' => '.policy.policyTransaction.TbPolicy.renewalTypeCode',
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
+            'BillTo' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'TbPolicy' => [
+                            'accountMaster' => [
+                                'billToType' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policy.policyTransaction.TbPolicy.accountMaster.billToType',
+                'parseResultCallback' => 'parseBillTo',
+            ],
+            'UnderWriterApplicationStatus' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'TbPolicy' => [
+                            'policyApplicationMaster' => [
+                                'underwriterApplicationStatusTypeCode' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policy.policyTransaction.TbPolicy.policyApplicationMaster.underwriterApplicationStatusTypeCode',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
@@ -438,8 +464,30 @@ class TbPotransaction
 
     public function parseAppCodeNameToDisplayName($appCodeName)
     {
-        return DB::table('tb_appcodes')
+        $label = DB::table('tb_appcodes')
             ->where('s_AppCodeName', $appCodeName)
             ->value('s_AppCodeNameForDisplay');
+
+        return $label;
+    }
+
+    public function parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName)
+    {
+        $label = DB::table('tb_appcodes')
+            ->where('tb_appcodetypes.s_AppCodeTypeName', $ddGroup)
+            ->rightJoin('tb_appcodetypes', 'tb_appcodes.n_AppCodeTypeId_FK', '=',
+                'tb_appcodetypes.n_AppCodeTypeId_PK')
+            ->where('s_AppCodeName', $appCodeName)
+            ->get(columns: 's_AppCodeNameForDisplay');
+
+        return $label;
+    }
+
+    public function parseBillTo($appCodeName)
+    {
+        $ddGroup = 'BILLTOFLOOD'; // BILLTO for non flood product, discuss with sir
+        $label = $this->parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName);
+
+        return $label;
     }
 }
