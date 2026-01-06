@@ -122,7 +122,7 @@ class TbPotransaction
                 'jqFilter' => '.policy.policyTransaction.id',
                 'parseResultCallback' => 'parsePotentialDiscountLostIndicator',
             ],
-            'WyoAgencyAgentCode' => [
+            'WYOAgencyAgentCode' => [
                 'GraphQLschemaToReplace' => [
                     'policyTransaction' => [
                         'TbPersoninfo' => [
@@ -478,7 +478,7 @@ class TbPotransaction
             ->rightJoin('tb_appcodetypes', 'tb_appcodes.n_AppCodeTypeId_FK', '=',
                 'tb_appcodetypes.n_AppCodeTypeId_PK')
             ->where('s_AppCodeName', $appCodeName)
-            ->get(columns: 's_AppCodeNameForDisplay');
+            ->value('s_AppCodeNameForDisplay');
 
         return $label;
     }
