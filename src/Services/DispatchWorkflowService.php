@@ -135,7 +135,7 @@ class DispatchWorkflowService
             ! $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['certainDateTime']
         ) {
             try {
-                $graphQLQuery[] = $this->workflowService->getQueryForEffectiveAction(
+                $graphQLQuery = $this->workflowService->getQueryForEffectiveAction(
                     $this->workflowInfo['detail']['module'],
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequency'],
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequencyType'],
@@ -147,13 +147,17 @@ class DispatchWorkflowService
             }
         }
 
-        $graphQLQuery = [];
         if ($this->recordIdentifier && ! $this->isManuallyInvoked) {
             try {
-                $graphQLQuery[] = $this->workflowService->getQueryForRecordIdentifier(
+                $queryToAppend = $this->workflowService->getQueryForRecordIdentifier(
                     $this->workflowInfo['detail']['module'],
                     $this->recordIdentifier
                 );
+                if (count($graphQLQuery)) {
+                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => $queryToAppend];
+                } else {
+                    $graphQLQuery = $queryToAppend;
+                }
             } catch (\Exception $e) {
                 throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
             }
@@ -187,9 +191,9 @@ class DispatchWorkflowService
                 }
 
                 if (count($graphQLQuery)) {
-                    $graphQLQuery[0]['AND'] = $conditionsToApply;
+                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => $conditionsToApply];
                 } else {
-                    $graphQLQuery[] = ['AND' => $conditionsToApply];
+                    $graphQLQuery = $conditionsToApply;
                 }
             }
 
@@ -266,7 +270,7 @@ class DispatchWorkflowService
                     // Handle GraphQL query execution
                     try {
                         // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        // \Log::info('WORKFLOW - GraphQL Request Payload: ' . $graphQLRequestPayload);
+                        \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
                         $graphQLClient = new GraphQLClient;
                         $response = $graphQLClient->query($graphQLRequestPayload);
                         // \Log::info('WORKFLOW - GraphQL Response: ', $response);

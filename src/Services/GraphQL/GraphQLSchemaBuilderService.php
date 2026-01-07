@@ -97,11 +97,11 @@ class GraphQLSchemaBuilderService
      * @param  array  $variables  Optional query variables
      * @return string Complete GraphQL query
      */
-    public function generateGraphQLQuery($data, $queryName, $variables = [])
+    public function generateGraphQLQuery($data, $queryName, $variable = [])
     {
         $fields = $this->arrayToGraphQLFields($data, 0);
 
-        $variablesStr = json_encode($variables);
+        $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
 
         return "query {\n  $queryName(where: ".$variablesStr."){\n".
             preg_replace('/^/m', '    ', $fields)."\n  }\n}";
@@ -173,5 +173,25 @@ class GraphQLSchemaBuilderService
         } else {
             return implode("\n", $result);
         }
+    }
+
+    public function arrayToGraphQLWhereCondition($variable)
+    {
+        if (array_key_exists('JOIN', $variable)) {
+            $variablesStr = sprintf(
+                '{ column: %s, operator: %s, value: "%s", %s: {column: %s, operator: %s, value: "%s"}}',
+                $variable['column'],
+                $variable['operator'],
+                $variable['value'],
+                $variable['JOIN']['operator'],
+                $variable['JOIN']['condition']['column'],
+                $variable['JOIN']['condition']['operator'],
+                $variable['JOIN']['condition']['value']
+            );
+        } else {
+            $variablesStr = sprintf('{ column: %s, operator: %s, value: "%s" }', $variable['column'], $variable['operator'], $variable['value']);
+        }
+
+        return $variablesStr;
     }
 }
