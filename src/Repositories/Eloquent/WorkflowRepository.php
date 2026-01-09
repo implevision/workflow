@@ -17,7 +17,7 @@ class WorkflowRepository implements WorkflowRepositoryInterface
 
     public function all(): ?Collection
     {
-        return $this->model->all(['id', 'module', 'name', 'description']);
+        return $this->model->all(['id', 'module', 'name', 'description', 'is_active']);
     }
 
     public function create(array $data): Workflow
@@ -51,7 +51,13 @@ class WorkflowRepository implements WorkflowRepositoryInterface
     {
         $workflow = $this->model->findOrFail($id);
         $workflow->update($data);
-        $workflow->calculateAndUpdateNextExecution();
+        if (
+            ! empty($data['date_time_info_to_execute_workflow']['recurringFrequency']) ||
+            ! empty($data['date_time_info_to_execute_workflow']['executionEffectiveDate']) ||
+            ! empty($data['custom_date_time_info_to_execute_workflow']['cronMinutes'])
+        ) {
+            $workflow->calculateAndUpdateNextExecution();
+        }
 
         return $workflow;
     }
@@ -79,8 +85,14 @@ class WorkflowRepository implements WorkflowRepositoryInterface
     {
         $query = $this->model
             ->where('module', $entityType)
-            ->where('record_action_to_execute_workflow', $entityAction)
-            ->where('effective_action_to_execute_workflow', 'ON_RECORD_ACTION')
+            ->where(function ($query) use ($entityAction) {
+                $query->where('record_action_to_execute_workflow', $entityAction)
+                    ->orWhere('odyssey_action_to_execute_workflow', $entityAction);
+            })
+            ->where(function ($query) {
+                $query->where('effective_action_to_execute_workflow', 'ON_RECORD_ACTION')
+                    ->orWhere('effective_action_to_execute_workflow', 'ODYSSEY_ACTION');
+            })
             ->where('is_active', true)
             ->with([
                 'conditions' => function ($query) use ($withDeleted) {

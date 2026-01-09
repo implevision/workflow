@@ -26,6 +26,11 @@ class Http
 
         $options = ['headers' => $headers];
 
+        if (config('app.env') != 'production') {
+            \Log::info('WORKFLOW - Request header.', $headers);
+            \Log::info('WORKFLOW - Request body.', $body);
+        }
+
         $contentType = strtolower($headers['Content-Type']);
         switch ($contentType) {
             case 'application/json':

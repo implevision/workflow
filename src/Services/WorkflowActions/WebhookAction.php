@@ -78,18 +78,18 @@ class WebhookAction extends AbstractWorkflowAction
     {
         // TODO: Need to come from DB. HARDCODED for farmers release
         return [
-            'PremiumDue',
-            'PolicyNumber',
-            'AgencyName',
-            'AgencyCode',
             'Type',
+            'DueDate',
             'SubType',
-            'Reason',
+            'ReasonCode',
+            'CreatedAt',
             'Task',
             'DocumentName',
+            'PolicyNumber',
             'SourceSystem',
-            'PotentialDiscountLostIndicator',
             'WyoAgencyAgentCode',
+            'PremiumDue',
+            'PremiumCapDiscountAmount',
         ];
     }
 
@@ -141,6 +141,7 @@ class WebhookAction extends AbstractWorkflowAction
             return false;
         }
 
+        $webhookRequestHeaders = $this->replacePlaceholders($webhookRequestHeaders, ['UUID' => \Str::uuid()->toString()]);
         $this->handleAuthorization();
         $webhookRequestHeaders = $this->updateHeadersWithAuthResponse($webhookRequestHeaders);
 
@@ -149,7 +150,6 @@ class WebhookAction extends AbstractWorkflowAction
             foreach ($data as $placeHolderData) {
                 $requestUrl = $this->replacePlaceholders($webhookRequestUrl, $placeHolderData);
                 $requestPayload = $this->replacePlaceholders($webhookRequestPayload, $placeHolderData);
-
                 try {
                     Http::makeRequest($webhookRequestMethod, $requestUrl, $webhookRequestHeaders, $requestPayload);
                 } catch (\Exception $e) {
@@ -170,7 +170,7 @@ class WebhookAction extends AbstractWorkflowAction
         return preg_replace_callback('/{{\s*(.*?)\s*}}/', function ($matches) use ($placeholders) {
             $placeholder = $matches[1];
 
-            return isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : '';
+            return isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : '{{'.$placeholder.'}}';
         }, $input);
     }
 
