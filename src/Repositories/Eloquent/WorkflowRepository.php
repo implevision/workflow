@@ -106,4 +106,12 @@ class WorkflowRepository implements WorkflowRepositoryInterface
 
         return $query->get()->toArray();
     }
+    
+        public function getByModule(string $module): Collection
+    {
+        return $this->model
+            ->where('module', $module)
+            ->select('id', 'module', 'name', 'description', 'is_active')
+            ->get();
+    }
 }

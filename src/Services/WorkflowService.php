@@ -701,4 +701,16 @@ class WorkflowService
             return [];
         }
     }
+
+public function getCategoryWorkflows(string $moduleKey)
+{
+    $moduleClass = config("workflow.modules.$moduleKey");
+
+    if (! $moduleClass) {
+        return collect(); 
+    }
+
+    return $this->workflowRepo->getByModule($moduleClass);
 }
+}
+
