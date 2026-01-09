@@ -129,7 +129,7 @@ class TbPotransaction
                 // then extracts the first docInfo.docurl value.
                 'jqFilter' => '
                 [
-                      .policy.policy.docuploadinfo[]
+                      .policyQuery.policy.docuploadinfo[]
                       | select(
                       .doctypes.docTypeCode == "DECLARATION"
                       and
