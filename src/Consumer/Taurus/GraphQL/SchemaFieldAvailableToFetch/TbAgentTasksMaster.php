@@ -292,12 +292,12 @@ class TbAgentTasksMaster
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
                     'policyTransaction' => [
-                        'TbPolicy' => [
+                        'policy' => [
                             'policyNumber' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.TbPolicy.policyNumber',
+                'jqFilter' => '.agentTask.policyTransaction.policy.policyNumber',
             ],
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
