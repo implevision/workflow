@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Taurus\Workflow\Consumer\Taurus\Helper;
+
 class TbPotransaction
 {
     /**
@@ -119,6 +121,27 @@ class TbPotransaction
                 'jqFilter' => '.policyQuery.TbPersoninfo.additionalInfo.wyoAgencyAgentCode',
                 'parseResultCallback' => 'parseWyoAgencyAgentCode',
             ],
+            'AttachDecPage' => [
+                'GraphQLschemaToReplace' => [
+                    'docurl' => null,
+                ],
+                // This finds the correct DECLARATION document,
+                // then extracts the first docInfo.docurl value.
+                'jqFilter' => '
+                [
+                      .policy.policy.docuploadinfo[]
+                      | select(
+                      .doctypes.docTypeCode == "DECLARATION"
+                      and
+                      (.docUploadDocInfoRel[].docUploadReference.tableMasters.tableName == "tb_potransactions")
+                      )
+                      | .docUploadDocInfoRel[]
+                      | .docInfo[]
+                      | .docPath
+                      ]
+                ',
+                'parseResultCallback' => 'generatePresignedUrl',
+            ],
         ];
 
         return $fieldMapping;
@@ -166,5 +189,16 @@ class TbPotransaction
     public function parseWyoAgencyAgentCode($agentCode)
     {
         return (strlen($agentCode) === 7) ? substr_replace($agentCode, '', 4, 1) : $agentCode;
+    }
+
+    public function generatePresignedUrl(array $paths): array
+    {
+        $presigned = [];
+
+        foreach ($paths as $path) {
+            $presigned[] = Helper::generatePresignedUrl($path);
+        }
+
+        return $presigned;
     }
 }
