@@ -65,15 +65,6 @@ class WorkflowRepository implements WorkflowRepositoryInterface
         return $this->model->where('id', $id)->restore() > 0;
     }
 
-    public function getScheduledForToday(): array
-    {
-        return $this->model
-            ->whereDate('workflow_next_date_to_execute', today())
-            ->where('is_active', true)
-            ->get()
-            ->toArray();
-    }
-
     public function getMatchingWorkflow($entityType, $entityAction, $withDeleted = false): ?array
     {
         $query = $this->model

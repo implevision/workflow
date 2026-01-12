@@ -22,7 +22,6 @@ class Workflow extends Model
         'custom_date_time_info_to_execute_workflow',
         'odyssey_action_to_execute_workflow',
         'workflow_execution_frequency',
-        'workflow_next_date_to_execute',
         'is_active',
         'aws_event_bridge_arn',
     ];
@@ -30,7 +29,6 @@ class Workflow extends Model
     protected $casts = [
         'custom_date_time_info_to_execute_workflow' => 'json',
         'date_time_info_to_execute_workflow' => 'json',
-        'workflow_next_date_to_execute' => 'datetime',
         'odyssey_action_to_execute_workflow' => 'json',
     ];
 

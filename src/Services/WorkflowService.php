@@ -58,14 +58,10 @@ class WorkflowService
         DB::beginTransaction();
         try {
             $data = $data->toArray();
-            $workflowNextDateToExecute = null;
             $workflowExecutionFrequency = 'ONCE';
             if ($data['when']['effectiveActionToExecuteWorkflow'] == 'ON_DATE_TIME') {
                 if (! empty($data['when']['dateTimeInfoToExecuteWorkflow']['recurringFrequency'])) {
-                    $workflowNextDateToExecute = date('Y-m-d', strtotime('+1 day'));
                     $workflowExecutionFrequency = 'RECURRING';
-                } elseif (! empty($data['when']['dateTimeInfoToExecuteWorkflow']['executionEffectiveDate'])) {
-                    $workflowNextDateToExecute = date('Y-m-d', strtotime($data['when']['dateTimeInfoToExecuteWorkflow']['executionEffectiveDate']));
                 }
             }
 
@@ -79,7 +75,6 @@ class WorkflowService
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
                 'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? [],
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
-                'workflow_next_date_to_execute' => $workflowNextDateToExecute,
                 'is_active' => $data['detail']['isActive'] ?? true,
             ]);
 
@@ -201,7 +196,6 @@ class WorkflowService
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
                 'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? [],
-                // TODO: UPDATE workflow_execution_frequency & workflow_next_date_to_execute
             ]);
 
             // get existing condition IDs
@@ -378,11 +372,6 @@ class WorkflowService
         }
     }
 
-    public function getWorkflowsExecutingToday(): array
-    {
-        return $this->workflowRepo->getScheduledForToday();
-    }
-
     /**
      * Retrieves the matching workflow for the given entity type, entity action, and entity.
      *
@@ -524,22 +513,6 @@ class WorkflowService
                             'aws_event_bridge_arn' => $scheduleObj['ScheduleArn'] ?? null,
                         ]);
                     }
-                }
-
-                if (! empty($workflow['date_time_info_to_execute_workflow']['recurringFrequency'])) {
-                    if ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'WEEK') { // SCHEDULE RECURRING WORKFLOW
-                        $nextDateToRun = Carbon::now()->modify('next Monday')->format('Y-m-d '); // At 00:00 on every Monday
-                    } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'MONTH') {
-                        $nextDateToRun = Carbon::now()->modify('next Month')->startOfMonth()->format('Y-m-d'); // At 00:00 on the first day of every month
-                    } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'YEAR') {
-                        $nextDateToRun = Carbon::now()->modify('first day of January next year')->format('Y-m-d'); // At 00:00 on the first day of January every year
-                    } else {
-                        $nextDateToRun = Carbon::now()->modify('next day')->format('Y-m-d'); // At 00:00 every day
-                    }
-
-                    $this->workflowRepo->update($workflow['id'], [
-                        'workflow_next_date_to_execute' => $nextDateToRun,
-                    ]);
                 }
             }
         }
