@@ -378,13 +378,6 @@ class WorkflowService
         }
     }
 
-    public function calculateAndUpdateNextExecution(int $workflowId): ?string
-    {
-        $workflow = $this->workflowRepo->getById($workflowId);
-
-        return $workflow->calculateAndUpdateNextExecution()->toDateTimeString();
-    }
-
     public function getWorkflowsExecutingToday(): array
     {
         return $this->workflowRepo->getScheduledForToday();

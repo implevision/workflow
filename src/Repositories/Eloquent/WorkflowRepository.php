@@ -51,13 +51,6 @@ class WorkflowRepository implements WorkflowRepositoryInterface
     {
         $workflow = $this->model->findOrFail($id);
         $workflow->update($data);
-        if (
-            ! empty($data['date_time_info_to_execute_workflow']['recurringFrequency']) ||
-            ! empty($data['date_time_info_to_execute_workflow']['executionEffectiveDate']) ||
-            ! empty($data['custom_date_time_info_to_execute_workflow']['cronMinutes'])
-        ) {
-            $workflow->calculateAndUpdateNextExecution();
-        }
 
         return $workflow;
     }

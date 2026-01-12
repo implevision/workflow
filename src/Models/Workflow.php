@@ -47,61 +47,6 @@ class Workflow extends Model
         return $this->hasMany(WorkflowCondition::class, 'workflow_id');
     }
 
-    public function calculateAndUpdateNextExecution(): string
-    {
-        $next = null;
-
-        try {
-            if (! empty($this->date_time_info_to_execute_workflow['recurringFrequency'] ?? null)) {
-                $frequency = $this->date_time_info_to_execute_workflow['recurringFrequency'];
-                $next = $this->getNextExecution($frequency);
-            } elseif (! empty($this->date_time_info_to_execute_workflow['executionEffectiveDate'] ?? null)) {
-                $next = $this->date_time_info_to_execute_workflow['executionEffectiveDate'];
-            } elseif (
-                ! empty($this->custom_date_time_info_to_execute_workflow['cronMinutes'] ?? null) &&
-                ! empty($this->custom_date_time_info_to_execute_workflow['cronHours'] ?? null) &&
-                ! empty($this->custom_date_time_info_to_execute_workflow['cronDayOfMonth'] ?? null) &&
-                ! empty($this->custom_date_time_info_to_execute_workflow['cronMonth'] ?? null) &&
-                ! empty($this->custom_date_time_info_to_execute_workflow['cronDayOfWeek'] ?? null) &&
-                ! empty($this->custom_date_time_info_to_execute_workflow['cronYear'] ?? null)
-            ) {
-                // Build cron string from custom_date_time_info_to_execute_workflow
-                $cron = sprintf(
-                    '%s %s %s %s %s %s',
-                    $this->custom_date_time_info_to_execute_workflow['cronMinutes'],
-                    $this->custom_date_time_info_to_execute_workflow['cronHours'],
-                    $this->custom_date_time_info_to_execute_workflow['cronDayOfMonth'],
-                    $this->custom_date_time_info_to_execute_workflow['cronMonth'],
-                    $this->custom_date_time_info_to_execute_workflow['cronDayOfWeek'],
-                    $this->custom_date_time_info_to_execute_workflow['cronYear']
-                );
-
-                try {
-                    $cronExp = \Cron\CronExpression::factory($cron);
-                    $nextDate = $cronExp->getNextRunDate();
-                    $next = $nextDate->format('Y-m-d H:i:s');
-                } catch (\Exception $e) {
-                    throw new \InvalidArgumentException('Invalid cron expression: '.$cron.' - '.$e->getMessage(), 0, $e);
-                }
-            }
-
-            $this->update(['workflow_next_date_to_execute' => $next]);
-
-            return $next;
-        } catch (\Exception $e) {
-            \Log::error('WORKFLOW: Error calculating next execution date: ', [
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'trace' => $e->getTraceAsString(),
-                'workflow_id' => $this->id,
-                'cron_data' => $this->custom_date_time_info_to_execute_workflow,
-            ]);
-
-            return $next;
-        }
-    }
-
     public function getNextExecution(string $frequency): string
     {
         return match (strtoupper(trim($frequency))) {
