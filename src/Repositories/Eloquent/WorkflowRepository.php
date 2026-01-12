@@ -107,7 +107,16 @@ class WorkflowRepository implements WorkflowRepositoryInterface
         return $query->get()->toArray();
     }
     
-        public function getByModule(string $module): Collection
+    /**
+    * Get workflows by module name.
+    *
+    * This method fetches all workflow records that belong to the given module.
+    * Only required columns are selected to optimize query performance.
+    *
+    * @param  string  $module  
+    * @return Collection  
+    */
+    public function getByModule(string $module): Collection
     {
         return $this->model
             ->where('module', $module)
