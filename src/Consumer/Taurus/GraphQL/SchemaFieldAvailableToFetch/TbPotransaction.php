@@ -197,6 +197,7 @@ class TbPotransaction
                         'todaysDate' => null,
                     ],
                 ],
+                'jqFilter' => '.policyQuery.policy.todaysDate',
                 'parseResultCallback' => 'getTodaysDate',
             ],
             'AgentName' => [
