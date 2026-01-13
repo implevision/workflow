@@ -450,8 +450,12 @@ class TbPotransaction
     {
         $label = DB::table('tb_appcodes')
             ->where('tb_appcodetypes.s_AppCodeTypeName', $ddGroup)
-            ->rightJoin('tb_appcodetypes', 'tb_appcodes.n_AppCodeTypeId_FK', '=',
-                'tb_appcodetypes.n_AppCodeTypeId_PK')
+            ->join(
+                'tb_appcodetypes',
+                'tb_appcodes.n_AppCodeTypeId_FK',
+                '=',
+                'tb_appcodetypes.n_AppCodeTypeId_PK'
+            )
             ->where('s_AppCodeName', $appCodeName)
             ->value('s_AppCodeNameForDisplay');
 
