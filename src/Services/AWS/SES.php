@@ -92,6 +92,8 @@ class SES
             ];
         }
 
+        // $attachments = $payload['attachments'];
+
         try {
 
             $bulkEmailPayload = [
@@ -105,6 +107,7 @@ class SES
                             'Text' => $textContent ?: strip_tags($htmlContent),
                         ],
                         'TemplateData' => '{}',
+                        // 'Attachments' => self::processAttachment($attachments),
                     ],
                 ],
                 'BulkEmailEntries' => $bulkEmailEntries,
@@ -171,6 +174,8 @@ class SES
             }
         }
 
+        $attachments = $payload['attachments'];
+
         try {
             $response = $sesClient->sendEmail([
                 ...(! empty($configurationSetName) ? ['ConfigurationSetName' => $configurationSetName] : []),
@@ -185,6 +190,7 @@ class SES
                             'Text' => $textContent ?: strip_tags($htmlContent),
                         ],
                         'TemplateData' => json_encode(array_replace($placeHolders, $payload)),
+                        'Attachments' => self::processAttachment($attachments),
                     ],
                 ],
                 'FromEmailAddress' => $from,
@@ -193,7 +199,7 @@ class SES
             ]);
 
             if ($jobWorkflowId) {
-                self::updateStat($jobWorkflowId, count($payload));
+                self::updateState($jobWorkflowId, count($payload));
             }
 
             return $response['MessageId'] ?? 0;
@@ -202,7 +208,7 @@ class SES
         }
     }
 
-    private static function updateStat($jobWorkflowId, $processedRecord)
+    private static function updateState($jobWorkflowId, $processedRecord)
     {
         $jobWorkflowRepo = app(JobWorkflowRepository::class);
 
@@ -235,5 +241,41 @@ class SES
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());
         }
+    }
+
+    public static function processAttachment($attachments): array
+    {
+        if (empty($attachments) || ! is_array($attachments)) {
+            return [];
+        }
+
+        $processed = [];
+
+        foreach ($attachments as $file) {
+            /*if (!isset($file['path']) || !file_exists($file['path'])) {
+                continue;
+            }*/
+
+            $filePath = $file['path'];
+            $fileName = $file['name'] ?? basename($filePath);
+
+            if (strlen($fileName) > 255) {
+                $fileName = substr($fileName, -255);
+            }
+
+            $rawContent = file_get_contents($filePath);
+
+            $processed[] = [
+                'ContentDescription' => $fileName,
+                'ContentDisposition' => 'ATTACHMENT',
+                // "ContentId"                => uniqid("cid_"),
+                'ContentTransferEncoding' => 'BASE64',
+                "ContentType"              => "application/pdf",
+                'FileName' => $fileName,
+                'RawContent' => $rawContent,
+            ];
+        }
+
+        return $processed;
     }
 }

@@ -19,7 +19,5 @@ interface WorkflowRepositoryInterface
 
     public function restore(int $workflowId): bool;
 
-    public function getScheduledForToday(): ?array;
-
     public function getMatchingWorkflow($entityType, $entityAction): ?array;
 }

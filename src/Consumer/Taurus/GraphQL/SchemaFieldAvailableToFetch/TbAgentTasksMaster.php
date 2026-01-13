@@ -292,12 +292,12 @@ class TbAgentTasksMaster
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
                     'policyTransaction' => [
-                        'TbPolicy' => [
+                        'policy' => [
                             'policyNumber' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.TbPolicy.policyNumber',
+                'jqFilter' => '.agentTask.policyTransaction.policy.policyNumber',
             ],
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
@@ -331,6 +331,15 @@ class TbAgentTasksMaster
                 ],
                 'jqFilter' => '.agentTask.policyTransaction.id',
                 'parseResultCallback' => 'parsePotentialDiscountLostIndicator',
+            ],
+            'PremiumCapDiscountAmount' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'id' => null,
+                    ],
+                ],
+                'jqFilter' => '.agentTask.policyTransaction.id',
+                'parseResultCallback' => 'parsePremiumCapDiscountAmount',
             ],
             'WyoAgencyAgentCode' => [
                 'GraphQLschemaToReplace' => [
@@ -379,7 +388,7 @@ class TbAgentTasksMaster
             $premiumDue = $premiumChange + $policyFees;
         }
 
-        return $premiumDue;
+        return number_format($premiumDue, 2);
     }
 
     public function parseMetadata($metadata, $key)
@@ -467,6 +476,13 @@ class TbAgentTasksMaster
         $coverageAmount = $this->parsePotentialDiscountLost($transactionId, 'ANNUALCAPDISC');
 
         return $coverageAmount > 0 ? true : false;
+    }
+
+    public function parsePremiumCapDiscountAmount($transactionId)
+    {
+        $coverageAmount = $this->parsePotentialDiscountLost($transactionId, 'ANNUALCAPDISC');
+
+        return number_format($coverageAmount, 2);
     }
 
     public function getUUID()

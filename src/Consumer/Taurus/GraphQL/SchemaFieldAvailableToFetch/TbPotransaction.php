@@ -25,7 +25,7 @@ class TbPotransaction
     public function __construct()
     {
         $this->fieldMapping = $this->initializeFieldMapping();
-        $this->queryName = 'policy';
+        $this->queryName = 'policyQuery';
     }
 
     /**
@@ -71,69 +71,78 @@ class TbPotransaction
         $fieldMapping = [
             'PremiumDue' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'premiumChange' => null,
-                        'policyFees' => null,
-                    ],
+                    'premiumChange' => null,
+                    'policyFees' => null,
                 ],
-                'jqFilter' => '.policy.policyTransaction',
+                'jqFilter' => '.policyQuery',
                 'parseResultCallback' => 'parsePremiumDue',
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'policyNumber' => null,
-                        ],
+                    'policy' => [
+                        'policyNumber' => null,
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.TbPolicy.policyNumber',
+                'jqFilter' => '.policyQuery.policy.policyNumber',
             ],
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'tbAccountMaster' => [
-                            'TbPersoninfo' => [
-                                'fullName' => null,
-                            ],
+                    'tbAccountMaster' => [
+                        'TbPersoninfo' => [
+                            'fullName' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.tbAccountMaster.TbPersoninfo.fullName',
+                'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.fullName',
             ],
             'AgencyCode' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'tbAccountMaster' => [
-                            'TbPersoninfo' => [
-                                'personUniqueId' => null,
-                            ],
+                    'tbAccountMaster' => [
+                        'TbPersoninfo' => [
+                            'personUniqueId' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.tbAccountMaster.TbPersoninfo.personUniqueId',
+                'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.personUniqueId',
             ],
             'PotentialDiscountLostIndicator' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'id' => null,
-                    ],
+                    'id' => null,
                 ],
-                'jqFilter' => '.policy.policyTransaction.id',
+                'jqFilter' => '.policyQuery.id',
                 'parseResultCallback' => 'parsePotentialDiscountLostIndicator',
             ],
             'WYOAgencyAgentCode' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPersoninfo' => [
-                            'additionalInfo' => [
-                                'wyoAgencyAgentCode' => null,
-                            ],
+                    'TbPersoninfo' => [
+                        'additionalInfo' => [
+                            'wyoAgencyAgentCode' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.TbPersoninfo.additionalInfo.wyoAgencyAgentCode',
+                'jqFilter' => '.policyQuery.TbPersoninfo.additionalInfo.wyoAgencyAgentCode',
                 'parseResultCallback' => 'parseWyoAgencyAgentCode',
+            ],
+            'AttachDecPage' => [
+                'GraphQLschemaToReplace' => [
+                    'docurl' => null,
+                ],
+                // This finds the correct DECLARATION document,
+                // then extracts the first docInfo.docurl value.
+                'jqFilter' => '
+                [
+                      .policyQuery.policy.docuploadinfo[]
+                      | select(
+                      .doctypes.docTypeCode == "DECLARATION"
+                      and
+                      (.docUploadDocInfoRel[].docUploadReference.tableMasters.tableName == "tb_potransactions")
+                      )
+                      | .docUploadDocInfoRel[]
+                      | .docInfo[]
+                      | .docPath
+                      ]
+                ',
+                'parseResultCallback' => 'generatePresignedUrl',
             ],
             'InsuredName' => [
                 'GraphQLschemaToReplace' => [
@@ -489,5 +498,16 @@ class TbPotransaction
         $label = $this->parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName);
 
         return $label;
+    }
+
+    public function generatePresignedUrl(array $paths): array
+    {
+        $presigned = [];
+
+        foreach ($paths as $path) {
+            $presigned[] = Helper::generatePresignedUrl($path);
+        }
+
+        return $presigned;
     }
 }

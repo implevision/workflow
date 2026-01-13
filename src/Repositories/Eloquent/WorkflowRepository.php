@@ -51,7 +51,6 @@ class WorkflowRepository implements WorkflowRepositoryInterface
     {
         $workflow = $this->model->findOrFail($id);
         $workflow->update($data);
-        $workflow->calculateAndUpdateNextExecution();
 
         return $workflow;
     }
@@ -64,15 +63,6 @@ class WorkflowRepository implements WorkflowRepositoryInterface
     public function restore(int $id): bool
     {
         return $this->model->where('id', $id)->restore() > 0;
-    }
-
-    public function getScheduledForToday(): array
-    {
-        return $this->model
-            ->whereDate('workflow_next_date_to_execute', today())
-            ->where('is_active', true)
-            ->get()
-            ->toArray();
     }
 
     public function getMatchingWorkflow($entityType, $entityAction, $withDeleted = false): ?array
