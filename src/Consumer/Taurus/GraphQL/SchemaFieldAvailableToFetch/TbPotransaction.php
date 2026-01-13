@@ -112,7 +112,7 @@ class TbPotransaction
                 'jqFilter' => '.policyQuery.id',
                 'parseResultCallback' => 'parsePotentialDiscountLostIndicator',
             ],
-            'WYOAgencyAgentCode' => [
+            'WyoAgencyAgentCode' => [
                 'GraphQLschemaToReplace' => [
                     'TbPersoninfo' => [
                         'additionalInfo' => [
@@ -146,211 +146,181 @@ class TbPotransaction
             ],
             'InsuredName' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'insuredPersonInfo' => [
-                                'fullName' => null,
-                            ],
+                    'policy' => [
+                        'insuredPersonInfo' => [
+                            'fullName' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.TbPolicy.insuredPersonInfo.fullName',
+                'jqFilter' => '.policyQuery.policy.insuredPersonInfo.fullName',
             ],
             'InsuredPropertyAddress' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'insuredPersonInfo' => [
-                                'TbPersonaddress' => [
-                                    'addressTypeCode' => null,
-                                    'houseNo' => null,
-                                    'streetName' => null,
-                                    'addressLine1' => null,
-                                    'addressLine2' => null,
-                                    'addressLine3' => null,
-                                    'addressLine4' => null,
-                                    'postalCode' => null,
-                                    'postalCodeSuffix' => null,
-                                    'tbCity' => [
-                                        'name' => null,
-                                    ],
-                                    'tbState' => [
-                                        'name' => null,
-                                    ],
-                                    'tbCountry' => [
-                                        'name' => null,
-                                    ],
-                                    'isDefaultAddress' => null,
+                    'policy' => [
+                        'insuredPersonInfo' => [
+                            'TbPersonaddress' => [
+                                'addressTypeCode' => null,
+                                'houseNo' => null,
+                                'streetName' => null,
+                                'addressLine1' => null,
+                                'addressLine2' => null,
+                                'addressLine3' => null,
+                                'addressLine4' => null,
+                                'postalCode' => null,
+                                'postalCodeSuffix' => null,
+                                'tbCity' => [
+                                    'name' => null,
                                 ],
+                                'tbState' => [
+                                    'name' => null,
+                                ],
+                                'tbCountry' => [
+                                    'name' => null,
+                                ],
+                                'isDefaultAddress' => null,
                             ],
                         ],
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.TbPolicy.insuredPersonInfo.TbPersonaddress[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Location")',
+                'jqFilter' => '.policyQuery.policy.insuredPersonInfo.TbPersonaddress[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Location")',
                 'parseResultCallback' => 'parsePropertyAddress',
             ],
             'PolicyExpirationDate' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'transactionEffectiveToDate' => null,
-                    ],
+                    'transactionEffectiveToDate' => null,
                 ],
-                'jqFilter' => '.policy.policyTransaction.transactionEffectiveToDate',
+                'jqFilter' => '.policyQuery.transactionEffectiveToDate',
             ],
             // Need to confirm with sir
             // 'TodaysDate' => [
             //     'GraphQLschemaToReplace' => [
-            //         'policyTransaction' => [
-            //             'TbPolicy' => [],
-            //         ],
+            //         'policy' => [],
             //     ],
-            //     'jqFilter' => '.policy.policyTransaction.TbPolicy',
+            //     'jqFilter' => '.policyQuery.policy',
             // ],
             'AgentName' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'agentInfo' => [
-                                'fullName' => null,
-                            ],
+                    'policy' => [
+                        'agentInfo' => [
+                            'fullName' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.TbPolicy.agentInfo.fullName',
+                'jqFilter' => '.policyQuery.policy.agentInfo.fullName',
             ],
             'InsuredEmail' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'insuredPersonInfo' => [
-                                'emailInfo' => [
-                                    'email' => null,
-                                    'isDefault' => null,
-                                ],
+                    'policy' => [
+                        'insuredPersonInfo' => [
+                            'emailInfo' => [
+                                'email' => null,
+                                'isDefault' => null,
                             ],
                         ],
                     ],
                 ],
-                'jqFilter' => '[.policy.policyTransaction.TbPolicy.insuredPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
+                'jqFilter' => '[.policyQuery.policy.insuredPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
                 'parseResultCallback' => 'parseInsuredPersonEmail',
             ],
             'InsuredPhoneNumber' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'insuredPersonInfo' => [
-                                'phoneInfo' => [
-                                    'phoneNumber' => null,
-                                    'isDefault' => null,
-                                ],
+                    'policy' => [
+                        'insuredPersonInfo' => [
+                            'phoneInfo' => [
+                                'phoneNumber' => null,
+                                'isDefault' => null,
                             ],
                         ],
                     ],
                 ],
-                'jqFilter' => '[.policy.policyTransaction.TbPolicy.insuredPersonInfo.phoneInfo[0] | select(.isDefault == "Y")]',
+                'jqFilter' => '[.policyQuery.policy.insuredPersonInfo.phoneInfo[0] | select(.isDefault == "Y")]',
                 'parseResultCallback' => 'parseInsuredPersonPhone',
             ],
             // 'TermStartDate' => [
             //     'GraphQLschemaToReplace' => [
-            //         'policyTransaction' => [
-            //             'policyTermMaster' => [
-            //                 'termStartDate' => null,
-            //             ],
+            //         'policyTermMaster' => [
+            //             'termStartDate' => null,
             //         ],
             //     ],
-            //     'jqFilter' => '.policy.policyTransaction.policyTermMaster.termStartDate',
+            //     'jqFilter' => '.policyQuery.policyTermMaster.termStartDate',
             //     'parseResultCallback' => 'formatDate',
             // ],
             // 'TermEndDate' => [
             //     'GraphQLschemaToReplace' => [
-            //         'policyTransaction' => [
-            //             'policyTermMaster' => [
-            //                 'termEndDate' => null,
-            //             ],
+            //         'policyTermMaster' => [
+            //             'termEndDate' => null,
             //         ],
             //     ],
-            //     'jqFilter' => '.policy.policyTransaction.policyTermMaster.termEndDate',
+            //     'jqFilter' => '.policyQuery.policyTermMaster.termEndDate',
             //     'parseResultCallback' => 'formatDate',
             // ],
             'ProductName' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'product' => [
-                                'productName' => null,
-                            ],
+                    'policy' => [
+                        'product' => [
+                            'productName' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.TbPolicy.product.productName',
+                'jqFilter' => '.policyQuery.policy.product.productName',
             ],
             // 'TransactionType' => [
             //     'GraphQLschemaToReplace' => [
-            //         'policyTransaction' => [
-            //             'policyRiskTransactionType' => [
-            //                 'transactionTypeScreenName' => null,
-            //             ],
-            //             'policyRiskTransactionSubType' => [
-            //                 'transactionSubTypeScreenName' => null,
-            //             ],
+            //         'policyRiskTransactionType' => [
+            //             'transactionTypeScreenName' => null,
+            //         ],
+            //         'policyRiskTransactionSubType' => [
+            //             'transactionSubTypeScreenName' => null,
             //         ],
             //     ],
-            //     'jqFilter' => '.policy.policyTransaction',
+            //     'jqFilter' => '.policyQuery',
             //     'parseResultCallback' => 'parseTransactionType',
             // ],
             'WaitingPeriod' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'riskAdditionalFloodInfo' => [
-                            'policyWaitingPeriod' => null,
-                        ],
+                    'riskAdditionalFloodInfo' => [
+                        'policyWaitingPeriod' => null,
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.riskAdditionalFloodInfo.policyWaitingPeriod',
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.policyWaitingPeriod',
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'RenewalIndicator' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'renewalTypeCode' => null,
-                        ],
+                    'policy' => [
+                        'renewalTypeCode' => null,
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.TbPolicy.renewalTypeCode',
+                'jqFilter' => '.policyQuery.policy.renewalTypeCode',
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'BillTo' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'accountMaster' => [
-                                'billToType' => null,
-                            ],
+                    'policy' => [
+                        'accountMaster' => [
+                            'billToType' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.TbPolicy.accountMaster.billToType',
+                'jqFilter' => '.policyQuery.policy.accountMaster.billToType',
                 'parseResultCallback' => 'parseBillTo',
             ],
             'UnderWriterApplicationStatus' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'policyApplicationMaster' => [
-                                'underwriterApplicationStatusTypeCode' => null,
-                            ],
+                    'policy' => [
+                        'policyApplicationMaster' => [
+                            'underwriterApplicationStatusTypeCode' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policy.policyTransaction.TbPolicy.policyApplicationMaster.underwriterApplicationStatusTypeCode',
+                'jqFilter' => '.policyQuery.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode',
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
             'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
-            'jqFilter' => '.policy.policyTransaction.TbPolicy.insuredPersonInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => '.policyQuery.policy.insuredPersonInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
             'parseResultCallback' => 'parseMailingAddress',
         ];
 
