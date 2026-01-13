@@ -191,13 +191,14 @@ class TbPotransaction
                 ],
                 'jqFilter' => '.policyQuery.transactionEffectiveToDate',
             ],
-            // Need to confirm with sir
-            // 'TodaysDate' => [
-            //     'GraphQLschemaToReplace' => [
-            //         'policy' => [],
-            //     ],
-            //     'jqFilter' => '.policyQuery.policy',
-            // ],
+            'TodaysDate' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'todaysDate' => null,
+                    ],
+                ],
+                'parseResultCallback' => 'getTodaysDate',
+            ],
             'AgentName' => [
                 'GraphQLschemaToReplace' => [
                     'policy' => [
@@ -236,24 +237,24 @@ class TbPotransaction
                 'jqFilter' => '[.policyQuery.policy.insuredPersonInfo.phoneInfo[0] | select(.isDefault == "Y")]',
                 'parseResultCallback' => 'parseInsuredPersonPhone',
             ],
-            // 'TermStartDate' => [
-            //     'GraphQLschemaToReplace' => [
-            //         'policyTermMaster' => [
-            //             'termStartDate' => null,
-            //         ],
-            //     ],
-            //     'jqFilter' => '.policyQuery.policyTermMaster.termStartDate',
-            //     'parseResultCallback' => 'formatDate',
-            // ],
-            // 'TermEndDate' => [
-            //     'GraphQLschemaToReplace' => [
-            //         'policyTermMaster' => [
-            //             'termEndDate' => null,
-            //         ],
-            //     ],
-            //     'jqFilter' => '.policyQuery.policyTermMaster.termEndDate',
-            //     'parseResultCallback' => 'formatDate',
-            // ],
+            'TermStartDate' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTermMaster' => [
+                        'termStartDate' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.policyTermMaster.termStartDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'TermEndDate' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTermMaster' => [
+                        'termEndDate' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.policyTermMaster.termEndDate',
+                'parseResultCallback' => 'formatDate',
+            ],
             'ProductName' => [
                 'GraphQLschemaToReplace' => [
                     'policy' => [
@@ -264,18 +265,22 @@ class TbPotransaction
                 ],
                 'jqFilter' => '.policyQuery.policy.product.productName',
             ],
-            // 'TransactionType' => [
-            //     'GraphQLschemaToReplace' => [
-            //         'policyRiskTransactionType' => [
-            //             'transactionTypeScreenName' => null,
-            //         ],
-            //         'policyRiskTransactionSubType' => [
-            //             'transactionSubTypeScreenName' => null,
-            //         ],
-            //     ],
-            //     'jqFilter' => '.policyQuery',
-            //     'parseResultCallback' => 'parseTransactionType',
-            // ],
+            'TransactionType' => [
+                'GraphQLschemaToReplace' => [
+                    'policyRiskTransactionType' => [
+                        'transactionTypeScreenName' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.policyRiskTransactionType.transactionTypeScreenName',
+            ],
+            'TransactionSubType' => [
+                'GraphQLschemaToReplace' => [
+                    'policyRiskTransactionSubType' => [
+                        'transactionSubTypeScreenName' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.policyRiskTransactionSubType.transactionSubTypeScreenName',
+            ],
             'WaitingPeriod' => [
                 'GraphQLschemaToReplace' => [
                     'riskAdditionalFloodInfo' => [
@@ -407,9 +412,9 @@ class TbPotransaction
         return $this->parseAddress($addressArr);
     }
 
-    public function getTodayDate(): string
+    public function getTodaysDate(): string
     {
-        return Carbon::now()->toDateString();
+        return Carbon::now()->format('m/d/Y');
     }
 
     public function parseInsuredPersonEmail($emailArr)
@@ -430,15 +435,6 @@ class TbPotransaction
     public function formatDate($dateToFormat)
     {
         return Helper::formatDate($dateToFormat);
-    }
-
-    public function parseTransactionType($transactionArr)
-    {
-        // confirm with sir about space between type and subtype
-        $type = $transactionArr['policyRiskTransactionType']['transactionTypeScreenName'] ?? '';
-        $subType = $transactionArr['policyRiskTransactionSubType']['transactionSubTypeScreenName'] ?? '';
-
-        return trim($type.' '.$subType);
     }
 
     public function parseAppCodeNameToDisplayName($appCodeName)
