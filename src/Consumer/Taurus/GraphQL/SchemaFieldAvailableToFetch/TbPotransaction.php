@@ -190,6 +190,7 @@ class TbPotransaction
                     'transactionEffectiveToDate' => null,
                 ],
                 'jqFilter' => '.policyQuery.transactionEffectiveToDate',
+                'parseResultCallback' => 'formatDate',
             ],
             'TodaysDate' => [
                 'GraphQLschemaToReplace' => [
