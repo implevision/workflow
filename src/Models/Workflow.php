@@ -104,4 +104,15 @@ class Workflow extends Model
             default => throw new \InvalidArgumentException("Unknown schedule type: {$frequency}"),
         };
     }
+
+    /**
+    * Scope to retrieve only active workflows.
+    *
+    * @param $query
+    * @return \Illuminate\Database\Eloquent\Builder
+    */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', 1);
+    }
 }

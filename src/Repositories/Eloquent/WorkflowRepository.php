@@ -15,10 +15,17 @@ class WorkflowRepository implements WorkflowRepositoryInterface
         $this->model = $model;
     }
 
-    public function all(): ?Collection
-    {
-        return $this->model->all(['id', 'module', 'name', 'description', 'is_active']);
+public function all(bool $onlyActive = false): Collection
+{
+    $query = $this->model
+        ->select('id', 'module', 'name', 'description', 'is_active');
+
+    if ($onlyActive) {
+        $query->active();
     }
+
+    return $query->get();
+}
 
     public function create(array $data): Workflow
     {
@@ -120,7 +127,8 @@ class WorkflowRepository implements WorkflowRepositoryInterface
     {
         return $this->model
             ->where('module', $module)
-            ->select('id', 'module', 'name', 'description', 'is_active')
+            ->active()   
+            ->select('id', 'name', 'description')
             ->get();
     }
 }
