@@ -268,9 +268,8 @@ class SES
             $processed[] = [
                 'ContentDescription' => $fileName,
                 'ContentDisposition' => 'ATTACHMENT',
-                // "ContentId"                => uniqid("cid_"),
                 'ContentTransferEncoding' => 'BASE64',
-                "ContentType"              => "application/pdf",
+                'ContentType' => 'application/pdf',
                 'FileName' => $fileName,
                 'RawContent' => $rawContent,
             ];

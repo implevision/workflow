@@ -2,7 +2,6 @@
 
 namespace Taurus\Workflow\Services;
 
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 use Taurus\Workflow\Consumer\ConsumerService;
