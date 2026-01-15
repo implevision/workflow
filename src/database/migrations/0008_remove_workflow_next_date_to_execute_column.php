@@ -32,7 +32,7 @@ return new class extends Migration
         $workflowTable = "{$tablePrefix}_workflows";
 
         if (Schema::hasTable($workflowTable)) {
-            if (!Schema::hasColumn($workflowTable, 'workflow_next_date_to_execute')) {
+            if (! Schema::hasColumn($workflowTable, 'workflow_next_date_to_execute')) {
                 Schema::table($workflowTable, function (Blueprint $table) {
                     $table->timestamp('workflow_next_date_to_execute')->nullable();
                 });

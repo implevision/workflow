@@ -368,7 +368,7 @@ class DispatchWorkflowService
                                 $emailPlaceHolderValue = $action['payload']['customEmailRecipients'];
                             } else {
                                 $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
-                                $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
+                                $emailPlaceHolderValue = ! empty($data[$index][$emailPlaceHolder]) ? $data[$index][$emailPlaceHolder] : '';
                             }
 
                             \Log::info('WORKFLOW - Actual email address: '.$emailPlaceHolderValue);
@@ -377,8 +377,10 @@ class DispatchWorkflowService
                                 $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
                                 if ($sendAllEmailsTo) {
-                                    $emailPlaceHolderValue = explode(',', $sendAllEmailsTo);
+                                    $emailPlaceHolderValue = $sendAllEmailsTo;
                                 }
+
+                                $emailPlaceHolderValue = explode(',', $emailPlaceHolderValue);
 
                                 $executeEmailAction = false;
                                 $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));
@@ -387,7 +389,8 @@ class DispatchWorkflowService
                                 }
 
                                 $allowedEmailAddressList2 = [];
-                                foreach (config('workflow.allowed_receiver.ends_with') as $endsWith) {
+                                $allowedEmailShouldEndsWithInNonProduction = array_merge(['@thinktaurus.com'], config('workflow.allowed_receiver.ends_with'));
+                                foreach ($allowedEmailShouldEndsWithInNonProduction as $endsWith) {
                                     foreach ((array) $emailPlaceHolderValue as $singleEmail) {
                                         if (str_ends_with($singleEmail, $endsWith)) {
                                             $executeEmailAction = true;
