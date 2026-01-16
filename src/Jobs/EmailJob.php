@@ -17,6 +17,8 @@ class EmailJob implements ShouldQueue
 
     private $actionPayload;
 
+    public $jobEnum;
+
     /**
      * Create a new job instance.
      */
@@ -28,6 +30,7 @@ class EmailJob implements ShouldQueue
         $queue = config('workflow.email_queue');
         $defaultQueue = getDefaultQueue();
         $this->onQueue($queue ?? $defaultQueue);
+        $this->jobEnum = "SEND_EMAIL_FOR_WORKFLOW";
     }
 
     /**
