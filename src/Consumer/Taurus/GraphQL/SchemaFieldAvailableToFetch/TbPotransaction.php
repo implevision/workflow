@@ -211,6 +211,30 @@ class TbPotransaction
                 ],
                 'jqFilter' => '.policyQuery.policy.agentInfo.fullName',
             ],
+            'AgentEmail' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'agentInfo' => [
+                            'emailInfo' => [
+                                'email' => null,
+                                'isDefault' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.policyQuery.policy.agentInfo.emailInfo[0] | select(.isDefault == "Y")]',
+                'parseResultCallback' => 'parseInsuredPersonEmail',
+            ],
+            'AgentId' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'agentInfo' => [
+                            'personUniqueId' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.policy.agentInfo.personUniqueId',
+            ],
             'InsuredEmail' => [
                 'GraphQLschemaToReplace' => [
                     'policy' => [
