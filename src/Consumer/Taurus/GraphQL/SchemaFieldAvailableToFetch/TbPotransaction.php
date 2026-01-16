@@ -144,7 +144,7 @@ class TbPotransaction
                 ',
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
-            'InsuredName' => [
+            'NameAsOnTitle' => [
                 'GraphQLschemaToReplace' => [
                     'policy' => [
                         'insuredPersonInfo' => [
@@ -323,6 +323,262 @@ class TbPotransaction
                 'jqFilter' => '.policyQuery.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode',
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
+            'TransactionEffectiveDate' => [
+                'GraphQLschemaToReplace' => [
+                    'transactionEffectiveFromDate' => null,
+                ],
+                'jqFilter' => '.policyQuery.transactionEffectiveFromDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'TotalPremium' => [
+                'GraphQLschemaToReplace' => [
+                    'totalPremium' => null,
+                ],
+                'jqFilter' => '.policyQuery.totalPremium',
+                'parseResultCallback' => 'formatCurrency',
+            ],
+            'ReplacementCost' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'replacementCost' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.replacementCost',
+                'parseResultCallback' => 'formatCurrency',
+            ],
+            'IsPolicyholderOwnerOrTenant' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'isPolicyholderOwnerOrTenant' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.isPolicyholderOwnerOrTenant',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+            'IsPolicyRentalProperty' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'isRentalProperty' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.isRentalProperty',
+                'parseResultCallback' => 'parseYesNoDisplayName',
+            ],
+            'IsPolicyholderCondominiumAssociation' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'condoOwnership' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.condoOwnership',
+                'parseResultCallback' => 'parseYesNoDisplayName',
+            ],
+            'CommunityNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'communityNumber' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.communityNumber',
+            ],
+            'PanelNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'panelNumber' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.panelNumber',
+            ],
+            'MapSuffix' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'mapSuffix' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.mapSuffix',
+            ],
+            'FloodZone' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'floodZone' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.floodZone',
+            ],
+            'CountyName' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'countyName' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.countyName',
+            ],
+            'InitialFirmDate' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'initialFirmDate' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.initialFirmDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'CurrentFirmDate' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'currentFirmDate' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.currentFirmDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'CurrentBaseFloodElevation' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'baseElevation' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.baseElevation',
+            ],
+            'IsBuildingLocatedInCoastalBarrierResourcesSystemArea' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'isCBRSorOPA' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.isCBRSorOPA',
+                'parseResultCallback' => 'parseYesNoDisplayName',
+            ],
+            'ConstructionDate' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'dateOfConstruction' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.dateOfConstruction',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'OccupancyType' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'occupancyType' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.occupancyType',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+            'BuildingDescription' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'buildingUse' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.buildingUse',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+            'FoundationType' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'foundationType' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.foundationType',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+            'TotalSquareFootage' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'totalSquareFootage' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.totalSquareFootage',
+                'parseResultCallback' => 'formatNumber',
+            ],
+            'NumberOfFloors' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'numberOfFloors' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.numberOfFloors',
+                'parseResultCallback' => 'formatNumber',
+            ],
+            'LoanClosingDate' => [
+                'GraphQLschemaToReplace' => [
+                    'riskAdditionalFloodInfo' => [
+                        'floodLoanClosingDate' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.floodLoanClosingDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'ECCertificateSignatureDate' => [
+                'GraphQLschemaToReplace' => [
+                    'elevationCertificate' => [
+                        'certificateDate' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.elevationCertificate.certificateDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'DiagramNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'elevationCertificate' => [
+                        'buildingDiagramNoCode' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.elevationCertificate.buildingDiagramNoCode',
+            ],
+            'TopOfBottomFloorInFeet' => [
+                'GraphQLschemaToReplace' => [
+                    'elevationCertificate' => [
+                        'topOfBottomFloor' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.elevationCertificate.topOfBottomFloor',
+            ],
+            'TopOfNextHigherFloorInFeet' => [
+                'GraphQLschemaToReplace' => [
+                    'elevationCertificate' => [
+                        'topOfNextHigherFloor' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.elevationCertificate.topOfNextHigherFloor',
+            ],
+            'LowestAdjacentGrade' => [
+                'GraphQLschemaToReplace' => [
+                    'elevationCertificate' => [
+                        'lowestAdjacentGrade' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.elevationCertificate.lowestAdjacentGrade',
+            ],
+            'AccountingDate' => [
+                'GraphQLschemaToReplace' => [
+                    'accountingDate' => null,
+                ],
+                'jqFilter' => '.policyQuery.accountingDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'EffectiveDate' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTermMaster' => [
+                        'termStartDate' => null,
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.policyTermMaster.termStartDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            // 'IssuedBuildingCoverage' => [
+            //     'GraphQLschemaToReplace' => [
+            //         'policy' => [
+            //             'policyApplicationMaster' => [
+            //                 'underwriterApplicationStatusTypeCode' => null,
+            //             ],
+            //         ],
+            //     ],
+            //     'jqFilter' => '.policyQuery.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode',
+            //     'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            // ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
@@ -344,7 +600,7 @@ class TbPotransaction
             $premiumDue = $premiumChange + $policyFees;
         }
 
-        return $premiumDue;
+        return $this->formatCurrency($premiumDue);
     }
 
     public function parsePotentialDiscountLost($transactionId, $coverageCode)
@@ -481,5 +737,44 @@ class TbPotransaction
         }
 
         return $presigned;
+    }
+
+    public function parseYesNoDisplayName($value)
+    {
+        if (strtoupper($value) === 'YES') {
+            return 'Yes';
+        } elseif (strtoupper($value) === 'NO') {
+            return 'No';
+        } else {
+            return '';
+        }
+    }
+
+    /**
+     * Formats a number to US dollar currency format (e.g., $1,234.56)
+     *
+     * @param  float|int|string  $amount
+     */
+    public function formatCurrency($amount)
+    {
+        if (! is_numeric($amount)) {
+            return '';
+        }
+
+        return '$'.number_format((float) $amount, 2);
+    }
+
+    /**
+     * Formats a number with grouped thousands (e.g., 1,234,567)
+     *
+     * @param  float|int|string  $number
+     */
+    public function formatNumber($number)
+    {
+        if (! is_numeric($number)) {
+            return '';
+        }
+
+        return number_format((float) $number);
     }
 }
