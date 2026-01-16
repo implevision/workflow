@@ -133,25 +133,19 @@ class GraphQLSchemaBuilderService
             return $str;
         }
 
-        $str = str_replace('_', '', $str);
-        $result = '';
-
-        // Handle first character separately (no underscore before it)
-        $result .= $str[0];
-
-        // Process remaining characters
-        for ($i = 1; $i < strlen($str); $i++) {
-            $char = $str[$i];
-
-            // If character is uppercase, add underscore before it
-            if (ctype_upper($char)) {
-                $result .= '_'.$char;
-            } else {
-                $result .= $char;
+        // Split by underscores, then process each segment
+        $segments = explode('_', $str);
+        $convertedSegments = [];
+        foreach ($segments as $segment) {
+            if ($segment === '') {
+                continue;
             }
+            // Insert underscores before uppercase letters (except first letter), then uppercase all
+            $converted = preg_replace('/([A-Z])/', '_$1', ucfirst($segment));
+            $convertedSegments[] = strtoupper(ltrim($converted, '_'));
         }
 
-        return $result;
+        return implode('_', $convertedSegments);
     }
 
     public function extractValue($data, $jqFilter)
