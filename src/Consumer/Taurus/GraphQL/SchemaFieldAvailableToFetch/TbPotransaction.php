@@ -594,6 +594,21 @@ class TbPotransaction
                 'jqFilter' => '.policyQuery.policyTermMaster.termStartDate',
                 'parseResultCallback' => 'formatDate',
             ],
+            'WYOCompanyName' => [
+                'GraphQLschemaToReplace' => [
+                    'tbAccountMaster' => [
+                        'TbPersoninfo' => [
+                            'brandedCompany' => [
+                                'company' => [
+                                    'companyName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
+                'parseResultCallback' => 'parseCompanyName',
+            ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
@@ -747,5 +762,14 @@ class TbPotransaction
     public function formatNumber($number)
     {
         return Helper::formatNumber($number);
+    }
+
+    public function parseCompanyName($brandedCompanyArr)
+    {
+        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['companyName'])) {
+            return $brandedCompanyArr['company']['companyName'];
+        }
+
+        return null;
     }
 }
