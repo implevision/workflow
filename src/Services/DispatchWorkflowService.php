@@ -9,6 +9,7 @@ use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 use Taurus\Workflow\Services\WorkflowActions\EmailAction;
 use Taurus\Workflow\Services\WorkflowActions\WebhookAction;
+use Taurus\Workflow\Models\WorkflowLog;
 
 /**
  * Class DispatchWorkflowService
@@ -125,6 +126,16 @@ class DispatchWorkflowService
 
         setModuleForCurrentWorkflow($this->workflowInfo['detail']['module']);
         $allConditions = $this->workflowInfo['workFlowConditions'];
+
+        // Workflow Log 
+        $workflowLog = WorkflowLog::create([
+            'job_workflow_id'   => $jobWorkflowId ?: null,
+            'workflow_id'       => $this->workflowId,
+            'record_identifier' => $this->recordIdentifier ?? null,
+            'module'            => $this->workflowInfo['detail']['module'],
+            'status'            => WorkflowLog::STATUS_IN_PROGRESS,
+            ]);
+        \Log::info('WORKFLOW - Created entry in JOB WORKFLOW table with ID '.$workflowLog);
 
         $graphQLQuery = [];
         // NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
@@ -429,6 +440,7 @@ class DispatchWorkflowService
                     continue;
                 }
             }
+            WorkflowLog::markWorkflowCompleted($this->workflowId, $jobWorkflowId);
         }
 
         return true;
