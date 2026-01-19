@@ -142,8 +142,6 @@ class Helper
 
     /**
      * Get today's date formatted as m/d/Y.
-     *
-     * @return string
      */
     public static function getTodaysDate(): string
     {
@@ -153,7 +151,7 @@ class Helper
     /**
      * Get the display name for a given application code name from the database.
      *
-     * @param string $appCodeName
+     * @param  string  $appCodeName
      * @return string|null
      */
     public static function parseAppCodeNameToDisplayName($appCodeName)
@@ -168,8 +166,8 @@ class Helper
     /**
      * Get the display name for a given application code name and dropdown group from the database.
      *
-     * @param string $ddGroup
-     * @param string $appCodeName
+     * @param  string  $ddGroup
+     * @param  string  $appCodeName
      * @return string|null
      */
     public static function parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName)
@@ -191,7 +189,7 @@ class Helper
     /**
      * Convert a YES/NO/Y/N value to a display-friendly string ('Yes', 'No', or '').
      *
-     * @param mixed $value
+     * @param  mixed  $value
      * @return string
      */
     public static function parseYesNoDisplayName($value)
