@@ -594,17 +594,6 @@ class TbPotransaction
                 'jqFilter' => '.policyQuery.policyTermMaster.termStartDate',
                 'parseResultCallback' => 'formatDate',
             ],
-            // 'IssuedBuildingCoverage' => [
-            //     'GraphQLschemaToReplace' => [
-            //         'policy' => [
-            //             'policyApplicationMaster' => [
-            //                 'underwriterApplicationStatusTypeCode' => null,
-            //             ],
-            //         ],
-            //     ],
-            //     'jqFilter' => '.policyQuery.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode',
-            //     'parseResultCallback' => 'parseAppCodeNameToDisplayName',
-            // ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
