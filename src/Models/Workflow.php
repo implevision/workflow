@@ -29,7 +29,6 @@ class Workflow extends Model
     protected $casts = [
         'custom_date_time_info_to_execute_workflow' => 'json',
         'date_time_info_to_execute_workflow' => 'json',
-        'odyssey_action_to_execute_workflow' => 'json',
     ];
 
     public function __construct(array $attributes = [])

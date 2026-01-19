@@ -48,7 +48,7 @@ class WorkflowRequest extends FormRequest
             'when.recordActionToExecuteWorkflow' => ['nullable', new ValidRecordAction],
             'when.dateTimeInfoToExecuteWorkflow' => ['nullable', new ValidDateTimeInfo],
             'when.customDateTimeInfoToExecuteWorkflow' => ['nullable', new ValidCustomDateTimeInfo],
-            'when.odysseyActionToExecuteWorkflow' => ['nullable', new ValidOdysseyAction],
+            'when.odysseyActionToExecuteWorkflow' => "required_if:when.effectiveActionToExecuteWorkflow,ODYSSEY_ACTION|string",
             'workFlowConditions' => 'required|array',
             'workFlowConditions.*.id' => 'sometimes|nullable|exists:'.$workflowConditionTable.',id',
             'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN,CUSTOM_FEED',
