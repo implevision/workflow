@@ -2,8 +2,6 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbPotransaction
@@ -462,6 +460,7 @@ class TbPotransaction
                     ],
                 ],
                 'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.baseElevation',
+                'parseResultCallback' => 'formatNumber',
             ],
             'IsBuildingLocatedInCoastalBarrierResourcesSystemArea' => [
                 'GraphQLschemaToReplace' => [
@@ -559,6 +558,7 @@ class TbPotransaction
                     ],
                 ],
                 'jqFilter' => '.policyQuery.elevationCertificate.topOfBottomFloor',
+                'parseResultCallback' => 'formatNumber',
             ],
             'TopOfNextHigherFloorInFeet' => [
                 'GraphQLschemaToReplace' => [
@@ -567,6 +567,7 @@ class TbPotransaction
                     ],
                 ],
                 'jqFilter' => '.policyQuery.elevationCertificate.topOfNextHigherFloor',
+                'parseResultCallback' => 'formatNumber',
             ],
             'LowestAdjacentGrade' => [
                 'GraphQLschemaToReplace' => [
@@ -575,6 +576,7 @@ class TbPotransaction
                     ],
                 ],
                 'jqFilter' => '.policyQuery.elevationCertificate.lowestAdjacentGrade',
+                'parseResultCallback' => 'formatNumber',
             ],
             'AccountingDate' => [
                 'GraphQLschemaToReplace' => [
@@ -630,7 +632,7 @@ class TbPotransaction
     public function parsePotentialDiscountLost($transactionId, $coverageCode)
     {
         // TODO: TMP fix. Need to covert to actual one
-        $coverageData = DB::select(
+        $coverageData = \DB::select(
             'SELECT cvgt.n_CvgSegmentGrossPremium AS coverage_premium
                 from tb_potransactions pot
                 left join tb_policies pol on pol.n_PolicyNoId_PK = pot.n_PolicyMaster_FK
@@ -696,7 +698,7 @@ class TbPotransaction
 
     public function getTodaysDate(): string
     {
-        return Carbon::now()->format('m/d/Y');
+        return Helper::getTodaysDate();
     }
 
     public function parseInsuredPersonEmail($emailArr)
@@ -721,33 +723,13 @@ class TbPotransaction
 
     public function parseAppCodeNameToDisplayName($appCodeName)
     {
-        $label = DB::table('tb_appcodes')
-            ->where('s_AppCodeName', $appCodeName)
-            ->value('s_AppCodeNameForDisplay');
-
-        return $label;
-    }
-
-    public function parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName)
-    {
-        $label = DB::table('tb_appcodes')
-            ->where('tb_appcodetypes.s_AppCodeTypeName', $ddGroup)
-            ->join(
-                'tb_appcodetypes',
-                'tb_appcodes.n_AppCodeTypeId_FK',
-                '=',
-                'tb_appcodetypes.n_AppCodeTypeId_PK'
-            )
-            ->where('s_AppCodeName', $appCodeName)
-            ->value('s_AppCodeNameForDisplay');
-
-        return $label;
+        return Helper::parseAppCodeNameToDisplayName($appCodeName);
     }
 
     public function parseBillTo($appCodeName)
     {
-        $ddGroup = 'BILLTOFLOOD'; // BILLTO for non flood product, discuss with sir
-        $label = $this->parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName);
+        $ddGroup = 'BILLTOFLOOD'; // TODO: Confirm whether 'BILLTO' should be used for non-flood products
+        $label = Helper::parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName);
 
         return $label;
     }
@@ -765,40 +747,16 @@ class TbPotransaction
 
     public function parseYesNoDisplayName($value)
     {
-        if (strtoupper($value) === 'YES') {
-            return 'Yes';
-        } elseif (strtoupper($value) === 'NO') {
-            return 'No';
-        } else {
-            return '';
-        }
+        return Helper::parseYesNoDisplayName($value);
     }
 
-    /**
-     * Formats a number to US dollar currency format (e.g., $1,234.56)
-     *
-     * @param  float|int|string  $amount
-     */
     public function formatCurrency($amount)
     {
-        if (! is_numeric($amount)) {
-            return '';
-        }
-
-        return '$'.number_format((float) $amount, 2);
+        return Helper::formatCurrency($amount);
     }
 
-    /**
-     * Formats a number with grouped thousands (e.g., 1,234,567)
-     *
-     * @param  float|int|string  $number
-     */
     public function formatNumber($number)
     {
-        if (! is_numeric($number)) {
-            return '';
-        }
-
-        return number_format((float) $number);
+        return Helper::formatNumber($number);
     }
 }

@@ -139,4 +139,99 @@ class Helper
             now()->addMinutes($expiry)
         );
     }
+
+    /**
+     * Get today's date formatted as m/d/Y.
+     *
+     * @return string
+     */
+    public static function getTodaysDate(): string
+    {
+        return self::formatDate(Carbon::now());
+    }
+
+    /**
+     * Get the display name for a given application code name from the database.
+     *
+     * @param string $appCodeName
+     * @return string|null
+     */
+    public static function parseAppCodeNameToDisplayName($appCodeName)
+    {
+        $label = \DB::table('tb_appcodes')
+            ->where('s_AppCodeName', $appCodeName)
+            ->value('s_AppCodeNameForDisplay');
+
+        return $label;
+    }
+
+    /**
+     * Get the display name for a given application code name and dropdown group from the database.
+     *
+     * @param string $ddGroup
+     * @param string $appCodeName
+     * @return string|null
+     */
+    public static function parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName)
+    {
+        $label = \DB::table('tb_appcodes')
+            ->where('tb_appcodetypes.s_AppCodeTypeName', $ddGroup)
+            ->join(
+                'tb_appcodetypes',
+                'tb_appcodes.n_AppCodeTypeId_FK',
+                '=',
+                'tb_appcodetypes.n_AppCodeTypeId_PK'
+            )
+            ->where('s_AppCodeName', $appCodeName)
+            ->value('s_AppCodeNameForDisplay');
+
+        return $label;
+    }
+
+    /**
+     * Convert a YES/NO/Y/N value to a display-friendly string ('Yes', 'No', or '').
+     *
+     * @param mixed $value
+     * @return string
+     */
+    public static function parseYesNoDisplayName($value)
+    {
+        $normalized = strtoupper(trim((string) $value));
+
+        if ($normalized === 'YES' || $normalized === 'Y') {
+            return 'Yes';
+        } elseif ($normalized === 'NO' || $normalized === 'N') {
+            return 'No';
+        } else {
+            return '';
+        }
+    }
+
+    /**
+     * Formats a number to US dollar currency format (e.g., $1,234.56)
+     *
+     * @param  float|int|string  $amount
+     */
+    public static function formatCurrency($amount)
+    {
+        if (! is_numeric($amount)) {
+            return '';
+        }
+
+        return '$'.number_format((float) $amount, 2);
+    }
+
+    /**
+     * Formats a number with grouped thousands (e.g., 1,234,567)
+     *
+     * @param  float|int|string  $number
+     */
+    public static function formatNumber($number)
+    {
+        if (! is_numeric($number)) {
+            return '';
+        }
+
+        return number_format((float) $number);
+    }
 }
