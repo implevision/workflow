@@ -299,11 +299,23 @@ class TbPotransaction
             ],
             'TransactionSubType' => [
                 'GraphQLschemaToReplace' => [
+                    'policyRiskTransactionType' => [
+                        'policyRiskTransactionTypeCode' => null,
+                    ],
                     'policyRiskTransactionSubType' => [
                         'transactionSubTypeScreenName' => null,
                     ],
+                    'floodTransactionSubType' => [
+                        'reasonCode' => null,
+                    ],
+                    'policy' => [
+                        'product' => [
+                            'productCode' => null,
+                        ],
+                    ],
                 ],
-                'jqFilter' => '.policyQuery.policyRiskTransactionSubType.transactionSubTypeScreenName',
+                'jqFilter' => '.policyQuery',
+                'parseResultCallback' => 'transactionSubTypeScreenNameResolver',
             ],
             'WaitingPeriod' => [
                 'GraphQLschemaToReplace' => [
@@ -771,5 +783,39 @@ class TbPotransaction
         }
 
         return null;
+    }
+
+    public function transactionSubTypeScreenNameResolver($policyData)
+    {
+        $productCode = $policyData['policy']['product']['productCode'] ?? null;
+        $isNfipProduct = Helper::isNfipProduct($productCode);
+
+        if (
+            $policyData['policyRiskTransactionType']['policyRiskTransactionTypeCode'] === 'ENDORSE'
+            &&
+            $isNfipProduct
+        ) {
+            $reasonCode = $policyData['floodTransactionSubType']['reasonCode'] ?? '';
+
+            $reasonCodeArray = explode(',', $reasonCode);
+            $displayNameArray = [];
+
+            foreach ($reasonCodeArray as $trrpMapping) {
+                $ddGroup = 'FLENDORSEMENTTRANSUBTYPE';
+                $appCodeNameForDisplay = Helper::parseAppCodeNameToDisplayNameUsingDDGroup(
+                    $ddGroup,
+                    $trrpMapping,
+                    's_TRRPMapping'
+                );
+
+                $displayNameArray[] = $appCodeNameForDisplay;
+            }
+
+            $reasonString = implode(', ', $displayNameArray);
+
+            return $reasonString;
+        } else {
+            return $policyData['policyRiskTransactionSubType']['transactionSubTypeScreenName'] ?? null;
+        }
     }
 }
