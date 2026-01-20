@@ -13,7 +13,7 @@ class WorkflowLog extends Model
         'record_identifier',
         'module',
         'status',
-        'job_workflow_id',  
+        'job_workflow_id',
     ];
 
     protected $casts = [
@@ -39,5 +39,15 @@ class WorkflowLog extends Model
         self::where('workflow_id', $workflowId)
             ->where('job_workflow_id', $jobWorkflowId)
             ->update(['status' => self::STATUS_COMPLETED]);
+    }
+
+    /**
+     * Get the workflow associated with this workflow log.
+     *
+     * @return BelongsTo
+     */
+    public function workflow()
+    {
+        return $this->belongsTo(Workflow::class,'workflow_id','id');
     }
 }
