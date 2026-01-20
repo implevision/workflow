@@ -10,7 +10,6 @@ use Taurus\Workflow\Http\Rules\ValidApplyConditionRules;
 use Taurus\Workflow\Http\Rules\ValidCustomDateTimeInfo;
 use Taurus\Workflow\Http\Rules\ValidDateTimeInfo;
 use Taurus\Workflow\Http\Rules\ValidInstanceActions;
-use Taurus\Workflow\Http\Rules\ValidOdysseyAction;
 use Taurus\Workflow\Http\Rules\ValidRecordAction;
 
 class WorkflowRequest extends FormRequest
@@ -48,7 +47,7 @@ class WorkflowRequest extends FormRequest
             'when.recordActionToExecuteWorkflow' => ['nullable', new ValidRecordAction],
             'when.dateTimeInfoToExecuteWorkflow' => ['nullable', new ValidDateTimeInfo],
             'when.customDateTimeInfoToExecuteWorkflow' => ['nullable', new ValidCustomDateTimeInfo],
-            'when.odysseyActionToExecuteWorkflow' => "required_if:when.effectiveActionToExecuteWorkflow,ODYSSEY_ACTION|string",
+            'when.odysseyActionToExecuteWorkflow' => 'required_if:when.effectiveActionToExecuteWorkflow,ODYSSEY_ACTION|string',
             'workFlowConditions' => 'required|array',
             'workFlowConditions.*.id' => 'sometimes|nullable|exists:'.$workflowConditionTable.',id',
             'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN,CUSTOM_FEED',
