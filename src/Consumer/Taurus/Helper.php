@@ -168,10 +168,14 @@ class Helper
      *
      * @param  string  $ddGroup
      * @param  string  $appCodeName
+     * @param  string  $columnNameToMatchWith
      * @return string|null
      */
-    public static function parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName)
-    {
+    public static function parseAppCodeNameToDisplayNameUsingDDGroup(
+        $ddGroup,
+        $appCodeName,
+        $columnNameToMatchWith = 's_AppCodeName'
+    ) {
         $label = \DB::table('tb_appcodes')
             ->where('tb_appcodetypes.s_AppCodeTypeName', $ddGroup)
             ->join(
@@ -180,7 +184,7 @@ class Helper
                 '=',
                 'tb_appcodetypes.n_AppCodeTypeId_PK'
             )
-            ->where('s_AppCodeName', $appCodeName)
+            ->where($columnNameToMatchWith, $appCodeName)
             ->value('s_AppCodeNameForDisplay');
 
         return $label;
@@ -231,5 +235,25 @@ class Helper
         }
 
         return number_format((float) $number);
+    }
+
+    /**
+     * Returns true if the given product code is an NFIP product.
+     *
+     * @param  string  $productCode
+     * @return bool
+     */
+    public static function isNfipProduct($productCode)
+    {
+        $NFIP_PRODUCT_CODES = [
+            'FLOOD',
+            'SRL',
+            'GFIP',
+            'HP',
+            'D2C',
+        ];
+        $isNfipProduct = in_array($productCode, $NFIP_PRODUCT_CODES, true);
+
+        return $isNfipProduct;
     }
 }
