@@ -245,14 +245,8 @@ class Helper
      */
     public static function isNfipProduct($productCode)
     {
-        $NFIP_PRODUCT_CODES = [
-            'FLOOD',
-            'SRL',
-            'GFIP',
-            'HP',
-            'D2C',
-        ];
-        $isNfipProduct = in_array($productCode, $NFIP_PRODUCT_CODES, true);
+        $nfipProductCodes = getConstantValues('policy','nfip_products_code') ?? [];
+        $isNfipProduct = in_array($productCode, $nfipProductCodes, true);
 
         return $isNfipProduct;
     }
