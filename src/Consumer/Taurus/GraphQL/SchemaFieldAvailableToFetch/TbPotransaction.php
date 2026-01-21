@@ -66,6 +66,28 @@ class TbPotransaction
      */
     private function initializeFieldMapping()
     {
+        $addressStructure = [
+            'addressTypeCode' => null,
+            'houseNo' => null,
+            'streetName' => null,
+            'addressLine1' => null,
+            'addressLine2' => null,
+            'addressLine3' => null,
+            'addressLine4' => null,
+            'postalCode' => null,
+            'postalCodeSuffix' => null,
+            'tbCity' => [
+                'name' => null,
+            ],
+            'tbState' => [
+                'name' => null,
+            ],
+            'tbCountry' => [
+                'name' => null,
+            ],
+            'isDefaultAddress' => null,
+        ];
+
         $fieldMapping = [
             'PremiumDue' => [
                 'GraphQLschemaToReplace' => [
@@ -156,27 +178,7 @@ class TbPotransaction
                 'GraphQLschemaToReplace' => [
                     'policy' => [
                         'insuredPersonInfo' => [
-                            'TbPersonaddress' => [
-                                'addressTypeCode' => null,
-                                'houseNo' => null,
-                                'streetName' => null,
-                                'addressLine1' => null,
-                                'addressLine2' => null,
-                                'addressLine3' => null,
-                                'addressLine4' => null,
-                                'postalCode' => null,
-                                'postalCodeSuffix' => null,
-                                'tbCity' => [
-                                    'name' => null,
-                                ],
-                                'tbState' => [
-                                    'name' => null,
-                                ],
-                                'tbCountry' => [
-                                    'name' => null,
-                                ],
-                                'isDefaultAddress' => null,
-                            ],
+                            'TbPersonaddress' => $addressStructure,
                         ],
                     ],
                 ],
@@ -629,6 +631,56 @@ class TbPotransaction
             'parseResultCallback' => 'parseMailingAddress',
         ];
 
+        $fieldMapping['PrimaryMortgageeName'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'mortgageePersonInfo' => [
+                        'fullName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'parseResultCallback' => 'parsePrimaryMortgageeName',
+        ];
+
+        $fieldMapping['PrimaryMortgageeLoanNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'loanNumber' => null,
+                ],
+            ],
+            'jqFilter' => '.policyQuery.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'parseResultCallback' => 'parseLoanNumber',
+        ];
+
+        $fieldMapping['PrimaryMortgageeAddress'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'mortgageeAddress' => $addressStructure,
+                ],
+            ],
+            'jqFilter' => '.policyQuery.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'parseResultCallback' => 'parsePrimaryMortgageeAddress',
+        ];
+
+        $fieldMapping['MortgageeInfo'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'loanNumber' => null,
+                    'mortgageeAddress' => $addressStructure,
+                    'mortgageePersonInfo' => [
+                        'fullName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.mortgageeInfo[]',
+            'parseResultCallback' => 'parseMortgageeInfo',
+        ];
+
         return $fieldMapping;
     }
 
@@ -817,5 +869,66 @@ class TbPotransaction
         } else {
             return $policyData['policyRiskTransactionSubType']['transactionSubTypeScreenName'] ?? null;
         }
+    }
+
+    public function parsePrimaryMortgageeName($mortgagee)
+    {
+        return $mortgagee['mortgageePersonInfo']['fullName'] ?? null;
+    }
+
+    public function parseLoanNumber($mortgagee)
+    {
+        return $mortgagee['loanNumber'] ?? null;
+    }
+
+    public function parsePrimaryMortgageeAddress($mortgagee)
+    {
+        return $this->parseAddress($mortgagee['mortgageeAddress'] ?? []);
+    }
+
+    public function parseMortgageeInfo($mortgagees)
+    {
+        if (is_string($mortgagees)) {
+            // Handle case where multiple JSON objects are concatenated without an array wrapper
+            $objects = [];
+            $pattern = '/\{(?:[^{}]|(?R))*\}/m';
+            if (preg_match_all($pattern, $mortgagees, $matches)) {
+                foreach ($matches[0] as $jsonObj) {
+                    $decoded = json_decode($jsonObj, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $objects[] = $decoded;
+                    }
+                }
+                $mortgagees = $objects;
+            } else {
+                // fallback: wrap as single element array
+                $decoded = json_decode($mortgagees, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $mortgagees = [$decoded];
+                } else {
+                    $mortgagees = [$mortgagees];
+                }
+            }
+        }
+
+        $mortgageesList = [];
+
+        foreach ($mortgagees as $mortgagee) {
+            $mortgageeType = $mortgagee['mortgageeType'] ?? null;
+            $loanNumber = $mortgagee['loanNumber'] ?? null;
+            $mortgageeFullName = $mortgagee['mortgageePersonInfo']['fullName'] ?? null;
+            $mortgageeAddress = $this->parseAddress($mortgagee['mortgageeAddress'] ?? []);
+
+            $mortgageeParts = [
+                'mortgageeType' => $mortgageeType,
+                'loanNumber' => $loanNumber,
+                'mortgageeFullName' => $mortgageeFullName,
+                'mortgageeAddress' => $mortgageeAddress,
+            ];
+
+            $mortgageesList[] = $mortgageeParts;
+        }
+
+        return $mortgageesList;
     }
 }
