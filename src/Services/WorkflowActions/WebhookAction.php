@@ -172,7 +172,7 @@ class WebhookAction extends AbstractWorkflowAction
 
             $defaultValue = $replaceWithEmptySpaceIfNotAvailable ? '' : '{{'.$placeholder.'}}';
 
-            return array_key_exists($placeholder, $placeholders) ? $placeholders[$placeholder] : $defaultValue;
+            return isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : $defaultValue;
         }, $input);
     }
 
