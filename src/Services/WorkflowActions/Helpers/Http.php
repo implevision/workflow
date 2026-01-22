@@ -46,6 +46,9 @@ class Http
         try {
             $response = $client->request($method, $url, $options);
 
+            \Log::info('WORKFLOW - Response status code: '.$response->getStatusCode());
+            \Log::info('WORKFLOW - Response ', json_decode($response->getBody(), true));
+
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
             throw new \Exception('HTTP Request failed: '.$e->getMessage());
