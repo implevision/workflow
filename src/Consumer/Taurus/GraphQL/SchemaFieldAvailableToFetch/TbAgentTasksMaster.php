@@ -298,6 +298,7 @@ class TbAgentTasksMaster
                     ],
                 ],
                 'jqFilter' => '.agentTask.policyTransaction.policy.policyNumber',
+                'parseResultCallback' => 'parsePolicyNumber',
             ],
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
@@ -509,5 +510,10 @@ class TbAgentTasksMaster
     public function parseWyoAgencyAgentCode($agentCode)
     {
         return (strlen($agentCode) === 7) ? substr_replace($agentCode, '', 4, 1) : $agentCode;
+    }
+
+    public function parsePolicyNumber($policyNumber)
+    {
+        return str_replace('FLD', '', $policyNumber);
     }
 }
