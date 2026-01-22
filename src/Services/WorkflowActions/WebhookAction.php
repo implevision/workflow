@@ -170,7 +170,7 @@ class WebhookAction extends AbstractWorkflowAction
         return preg_replace_callback('/{{\s*(.*?)\s*}}/', function ($matches) use ($placeholders) {
             $placeholder = $matches[1];
 
-            return isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : '{{'.$placeholder.'}}';
+            return array_key_exists($placeholder, $placeholders) ? $placeholders[$placeholder] : '{{'.$placeholder.'}}';
         }, $input);
     }
 
