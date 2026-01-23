@@ -135,7 +135,7 @@ class DispatchWorkflowService
             ! $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['certainDateTime']
         ) {
             try {
-                $graphQLQuery[] = $this->workflowService->getQueryForEffectiveAction(
+                $graphQLQuery = $this->workflowService->getQueryForEffectiveAction(
                     $this->workflowInfo['detail']['module'],
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequency'],
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequencyType'],
@@ -147,13 +147,17 @@ class DispatchWorkflowService
             }
         }
 
-        $graphQLQuery = [];
         if ($this->recordIdentifier && ! $this->isManuallyInvoked) {
             try {
-                $graphQLQuery[] = $this->workflowService->getQueryForRecordIdentifier(
+                $queryToAppend = $this->workflowService->getQueryForRecordIdentifier(
                     $this->workflowInfo['detail']['module'],
                     $this->recordIdentifier
                 );
+                if (count($graphQLQuery)) {
+                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => $queryToAppend];
+                } else {
+                    $graphQLQuery = $queryToAppend;
+                }
             } catch (\Exception $e) {
                 throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
             }
@@ -176,9 +180,21 @@ class DispatchWorkflowService
                 }
             }
 
-            if ($condition['applyRuleTo'] == 'CERTAIN') {
-                // GET DATA BASED ON CERTAIN CONDITION
-                // APPEND IN $graphQLQuery
+            if ($condition['applyRuleTo'] == 'CERTAIN' && ! $this->isManuallyInvoked) {
+                $conditionsToApply = [];
+                foreach ($condition['applyConditionRules']['children'] as $certainCondition) {
+                    $conditionsToApply[] = GraphQLSchemaBuilderService::getQueryMapping(
+                        $certainCondition['field'],
+                        $certainCondition['comparator'],
+                        $certainCondition['expectedValue']
+                    );
+                }
+
+                if (count($graphQLQuery)) {
+                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => $conditionsToApply];
+                } else {
+                    $graphQLQuery = $conditionsToApply;
+                }
             }
 
             foreach ($condition['instanceActions'] as $action) {
@@ -254,7 +270,7 @@ class DispatchWorkflowService
                     // Handle GraphQL query execution
                     try {
                         // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        // \Log::info('WORKFLOW - GraphQL Request Payload: ' . $graphQLRequestPayload);
+                        // \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
                         $graphQLClient = new GraphQLClient;
                         $response = $graphQLClient->query($graphQLRequestPayload);
                         // \Log::info('WORKFLOW - GraphQL Response: ', $response);
@@ -352,7 +368,7 @@ class DispatchWorkflowService
                                 $emailPlaceHolderValue = $action['payload']['customEmailRecipients'];
                             } else {
                                 $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
-                                $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
+                                $emailPlaceHolderValue = ! empty($data[$index][$emailPlaceHolder]) ? $data[$index][$emailPlaceHolder] : '';
                             }
 
                             \Log::info('WORKFLOW - Actual email address: '.$emailPlaceHolderValue);
@@ -361,8 +377,10 @@ class DispatchWorkflowService
                                 $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
                                 if ($sendAllEmailsTo) {
-                                    $emailPlaceHolderValue = explode(',', $sendAllEmailsTo);
+                                    $emailPlaceHolderValue = $sendAllEmailsTo;
                                 }
+
+                                $emailPlaceHolderValue = explode(',', $emailPlaceHolderValue);
 
                                 $executeEmailAction = false;
                                 $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));
@@ -371,7 +389,8 @@ class DispatchWorkflowService
                                 }
 
                                 $allowedEmailAddressList2 = [];
-                                foreach (config('workflow.allowed_receiver.ends_with') as $endsWith) {
+                                $allowedEmailShouldEndsWithInNonProduction = array_merge(['@thinktaurus.com'], config('workflow.allowed_receiver.ends_with'));
+                                foreach ($allowedEmailShouldEndsWithInNonProduction as $endsWith) {
                                     foreach ((array) $emailPlaceHolderValue as $singleEmail) {
                                         if (str_ends_with($singleEmail, $endsWith)) {
                                             $executeEmailAction = true;

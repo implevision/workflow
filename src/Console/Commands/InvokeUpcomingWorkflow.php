@@ -44,7 +44,7 @@ class InvokeUpcomingWorkflow extends Command
             $this->selfTest();
         } else {
             $this->info('Executing workflow...');
-            $workflows = $this->workflowService->getWorkflowsExecutingToday();
+            $workflows = [];
             if (empty($workflows)) {
                 $this->info('No workflows to execute today.');
 

@@ -11,7 +11,7 @@ class WorkflowWhenData extends Data
         public ?string $recordActionToExecuteWorkflow,
         public WorkflowDateTimeInfoData $dateTimeInfoToExecuteWorkflow,
         public WorkflowCustomDateTimeInfoData $customDateTimeInfoToExecuteWorkflow,
-        public WorkflowOdysseyActionData $odysseyActionToExecuteWorkflow,
+        public string $odysseyActionToExecuteWorkflow,
     ) {}
 
     public static function fromArray(array $data): self
@@ -21,7 +21,7 @@ class WorkflowWhenData extends Data
             recordActionToExecuteWorkflow: $data['recordActionToExecuteWorkflow'],
             dateTimeInfoToExecuteWorkflow: WorkflowDateTimeInfoData::from($data['dateTimeInfoToExecuteWorkflow']),
             customDateTimeInfoToExecuteWorkflow: WorkflowCustomDateTimeInfoData::fromArray($data['customDateTimeInfoToExecuteWorkflow'] ?? []),
-            odysseyActionToExecuteWorkflow: WorkflowOdysseyActionData::fromArray($data['odysseyActionToExecuteWorkflow'] ?? []),
+            odysseyActionToExecuteWorkflow: $data['odysseyActionToExecuteWorkflow'] ?? '',
         );
     }
 }

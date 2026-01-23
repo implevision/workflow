@@ -97,13 +97,13 @@ class GraphQLSchemaBuilderService
      * @param  array  $variables  Optional query variables
      * @return string Complete GraphQL query
      */
-    public function generateGraphQLQuery($data, $queryName, $variables = [])
+    public function generateGraphQLQuery($data, $queryName, $variable = [])
     {
         $fields = $this->arrayToGraphQLFields($data, 0);
 
-        $variablesStr = implode('\n', $variables);
+        $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
 
-        return "query {\n  $queryName(where: {".$variablesStr."}){\n".
+        return "query {\n  $queryName(where: ".$variablesStr."){\n".
             preg_replace('/^/m', '    ', $fields)."\n  }\n}";
     }
 
@@ -123,10 +123,7 @@ class GraphQLSchemaBuilderService
         if (! is_array($column)) {
             $column = strtoupper(self::convertToUnderscore($column));
 
-            return '
-            AND: [
-                { column: '.$column.', operator: '.$operator.', value: '.$value.' }      
-            ]';
+            return ['column' => $column, 'operator' => $operator, 'value' => $value];
         }
     }
 
@@ -136,25 +133,19 @@ class GraphQLSchemaBuilderService
             return $str;
         }
 
-        $str = str_replace('_', '', $str);
-        $result = '';
-
-        // Handle first character separately (no underscore before it)
-        $result .= $str[0];
-
-        // Process remaining characters
-        for ($i = 1; $i < strlen($str); $i++) {
-            $char = $str[$i];
-
-            // If character is uppercase, add underscore before it
-            if (ctype_upper($char)) {
-                $result .= '_'.$char;
-            } else {
-                $result .= $char;
+        // Split by underscores, then process each segment
+        $segments = explode('_', $str);
+        $convertedSegments = [];
+        foreach ($segments as $segment) {
+            if ($segment === '') {
+                continue;
             }
+            // Insert underscores before uppercase letters (except first letter), then uppercase all
+            $converted = preg_replace('/([A-Z])/', '_$1', ucfirst($segment));
+            $convertedSegments[] = strtoupper(ltrim($converted, '_'));
         }
 
-        return $result;
+        return implode('_', $convertedSegments);
     }
 
     public function extractValue($data, $jqFilter)
@@ -176,5 +167,25 @@ class GraphQLSchemaBuilderService
         } else {
             return implode("\n", $result);
         }
+    }
+
+    public function arrayToGraphQLWhereCondition($variable)
+    {
+        if (array_key_exists('JOIN', $variable)) {
+            $variablesStr = sprintf(
+                '{ column: %s, operator: %s, value: "%s", %s: {column: %s, operator: %s, value: "%s"}}',
+                $variable['column'],
+                $variable['operator'],
+                $variable['value'],
+                $variable['JOIN']['operator'],
+                $variable['JOIN']['condition']['column'],
+                $variable['JOIN']['condition']['operator'],
+                $variable['JOIN']['condition']['value']
+            );
+        } else {
+            $variablesStr = sprintf('{ column: %s, operator: %s, value: "%s" }', $variable['column'], $variable['operator'], $variable['value']);
+        }
+
+        return $variablesStr;
     }
 }

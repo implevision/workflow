@@ -26,6 +26,11 @@ class Http
 
         $options = ['headers' => $headers];
 
+        if (config('app.env') != 'production') {
+            \Log::info('WORKFLOW - Request header.', $headers);
+            \Log::info('WORKFLOW - Request body.', $body);
+        }
+
         $contentType = strtolower($headers['Content-Type']);
         switch ($contentType) {
             case 'application/json':
@@ -40,6 +45,9 @@ class Http
 
         try {
             $response = $client->request($method, $url, $options);
+
+            \Log::info('WORKFLOW - Response status code: '.$response->getStatusCode());
+            \Log::info('WORKFLOW - Response ', json_decode($response->getBody(), true));
 
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {

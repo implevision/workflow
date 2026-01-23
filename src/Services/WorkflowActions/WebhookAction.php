@@ -78,18 +78,18 @@ class WebhookAction extends AbstractWorkflowAction
     {
         // TODO: Need to come from DB. HARDCODED for farmers release
         return [
-            'PremiumDue',
-            'PolicyNumber',
-            'AgencyName',
-            'AgencyCode',
             'Type',
+            'DueDate',
             'SubType',
-            'Reason',
+            'ReasonCode',
+            'CreatedAt',
             'Task',
             'DocumentName',
+            'PolicyNumber',
             'SourceSystem',
-            'PotentialDiscountLostIndicator',
             'WyoAgencyAgentCode',
+            'PremiumDue',
+            'PremiumCapDiscountAmount',
         ];
     }
 
@@ -141,15 +141,15 @@ class WebhookAction extends AbstractWorkflowAction
             return false;
         }
 
+        $webhookRequestHeaders = $this->replacePlaceholders($webhookRequestHeaders, ['UUID' => \Str::uuid()->toString()]);
         $this->handleAuthorization();
         $webhookRequestHeaders = $this->updateHeadersWithAuthResponse($webhookRequestHeaders);
 
         if ($data) {
             preg_match_all('/{{\s*(.*?)\s*}}/', $webhookRequestUrl, $webhookRequestUrlPlaceholderMatches);
             foreach ($data as $placeHolderData) {
-                $requestUrl = $this->replacePlaceholders($webhookRequestUrl, $placeHolderData);
-                $requestPayload = $this->replacePlaceholders($webhookRequestPayload, $placeHolderData);
-
+                $requestUrl = $this->replacePlaceholders($webhookRequestUrl, $placeHolderData, true);
+                $requestPayload = $this->replacePlaceholders($webhookRequestPayload, $placeHolderData, true);
                 try {
                     Http::makeRequest($webhookRequestMethod, $requestUrl, $webhookRequestHeaders, $requestPayload);
                 } catch (\Exception $e) {
@@ -159,18 +159,20 @@ class WebhookAction extends AbstractWorkflowAction
         }
     }
 
-    private function replacePlaceholders($input, $placeholders)
+    private function replacePlaceholders($input, $placeholders, $replaceWithEmptySpaceIfNotAvailable = false)
     {
         if (is_array($input)) {
-            return array_map(function ($item) use ($placeholders) {
-                return $this->replacePlaceholders($item, $placeholders);
+            return array_map(function ($item) use ($placeholders, $replaceWithEmptySpaceIfNotAvailable) {
+                return $this->replacePlaceholders($item, $placeholders, $replaceWithEmptySpaceIfNotAvailable);
             }, $input);
         }
 
-        return preg_replace_callback('/{{\s*(.*?)\s*}}/', function ($matches) use ($placeholders) {
+        return preg_replace_callback('/{{\s*(.*?)\s*}}/', function ($matches) use ($placeholders, $replaceWithEmptySpaceIfNotAvailable) {
             $placeholder = $matches[1];
 
-            return isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : '';
+            $defaultValue = $replaceWithEmptySpaceIfNotAvailable ? '' : '{{'.$placeholder.'}}';
+
+            return isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : $defaultValue;
         }, $input);
     }
 

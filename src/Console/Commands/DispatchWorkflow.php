@@ -40,7 +40,7 @@ class DispatchWorkflow extends Command
         $this->info("Workflow Id provided: $workflowId");
 
         setRunningWorkflowId($workflowId);
-        setRunningJobWorkflowId($recordIdentifier);
+        setRecordIdentifierForRunningWorkflow($recordIdentifier);
 
         try {
             \Log::info('WORKFLOW - Dispatching workflow with ID '.$workflowId);

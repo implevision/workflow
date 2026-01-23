@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbAgentTasksMaster
@@ -292,12 +293,23 @@ class TbAgentTasksMaster
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
                     'policyTransaction' => [
-                        'TbPolicy' => [
+                        'policy' => [
                             'policyNumber' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.TbPolicy.policyNumber',
+                'jqFilter' => '.agentTask.policyTransaction.policy.policyNumber',
+            ],
+            'PolicyNumberWithoutPrefix' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'policy' => [
+                            'policyNumber' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.agentTask.policyTransaction.policy.policyNumber',
+                'parseResultCallback' => 'parsePolicyNumberWithoutPrefix',
             ],
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
@@ -331,6 +343,15 @@ class TbAgentTasksMaster
                 ],
                 'jqFilter' => '.agentTask.policyTransaction.id',
                 'parseResultCallback' => 'parsePotentialDiscountLostIndicator',
+            ],
+            'PremiumCapDiscountAmount' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'id' => null,
+                    ],
+                ],
+                'jqFilter' => '.agentTask.policyTransaction.id',
+                'parseResultCallback' => 'parsePremiumCapDiscountAmount',
             ],
             'WyoAgencyAgentCode' => [
                 'GraphQLschemaToReplace' => [
@@ -379,7 +400,7 @@ class TbAgentTasksMaster
             $premiumDue = $premiumChange + $policyFees;
         }
 
-        return $premiumDue;
+        return number_format($premiumDue, 2, '.', '');
     }
 
     public function parseMetadata($metadata, $key)
@@ -469,6 +490,13 @@ class TbAgentTasksMaster
         return $coverageAmount > 0 ? true : false;
     }
 
+    public function parsePremiumCapDiscountAmount($transactionId)
+    {
+        $coverageAmount = $this->parsePotentialDiscountLost($transactionId, 'ANNUALCAPDISC');
+
+        return number_format($coverageAmount, 2, '.', '');
+    }
+
     public function getUUID()
     {
         return (string) \Str::uuid();
@@ -493,5 +521,16 @@ class TbAgentTasksMaster
     public function parseWyoAgencyAgentCode($agentCode)
     {
         return (strlen($agentCode) === 7) ? substr_replace($agentCode, '', 4, 1) : $agentCode;
+    }
+
+    public function parsePolicyNumberWithoutPrefix($policyNumber)
+    {
+        $policyNoInitials = DB::table('tb_products')
+            ->pluck('s_PolicyNoInitial') // Fetch the column values
+            ->toArray();
+
+        $regex = '/^('.implode('|', $policyNoInitials).')/';
+
+        return preg_replace($regex, '', $policyNumber);
     }
 }

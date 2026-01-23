@@ -17,7 +17,7 @@ return new class extends Migration
         if (Schema::hasTable($workflowTable)) {
             if (! Schema::hasColumn($workflowTable, 'odyssey_action_to_execute_workflow')) {
                 Schema::table($workflowTable, function (Blueprint $table) {
-                    $table->json('odyssey_action_to_execute_workflow')->nullable();
+                    $table->string('odyssey_action_to_execute_workflow')->nullable();
                 });
             }
 
