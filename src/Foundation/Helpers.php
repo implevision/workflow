@@ -200,18 +200,3 @@ function getDefaultQueue()
 {
     return config('queue.connections.'.config('queue.default').'.queue');
 }
-
-/**
- * Determine if a rule's comparator allows an empty expected value.
- *
- * @param array $rule The rule array, must contain 'comparator' key.
- * @return bool True if the comparator allows empty expected value, false otherwise.
- */
-function isExpectedValueAllowedToBeEmptyForGivenRule($rule)
-{
-    if (!is_array($rule) || empty($rule['comparator'])) {
-        return false;
-    }
-    static $emptyAllowedComparators = ['IS_NULL', 'IS_NOT_NULL'];
-    return in_array($rule['comparator'], $emptyAllowedComparators, true);
-}
