@@ -90,6 +90,7 @@ class WebhookAction extends AbstractWorkflowAction
             'WyoAgencyAgentCode',
             'PremiumDue',
             'PremiumCapDiscountAmount',
+            'PolicyNumberWithoutPrefix',
         ];
     }
 
