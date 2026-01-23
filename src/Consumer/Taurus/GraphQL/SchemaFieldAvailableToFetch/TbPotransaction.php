@@ -681,6 +681,19 @@ class TbPotransaction
             'parseResultCallback' => 'parseMortgageeInfo',
         ];
 
+        $fieldMapping['AdditionalInsuredName'] = [
+            'GraphQLschemaToReplace' => [
+                'additionalInterestInfo' => [
+                    'partyInterestCode' => null,
+                    'additionalPersonInfo' => [
+                        'fullname' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.additionalInterestInfo[] | select(.partyInterestCode == "ADDITIONALINSURED")',
+            'parseResultCallback' => 'parseAdditionalInsuredName',
+        ];
+
         return $fieldMapping;
     }
 
@@ -930,5 +943,10 @@ class TbPotransaction
         }
 
         return $mortgageesList;
+    }
+
+    public function parseAdditionalInsuredName($additionalInterest)
+    {
+        return $additionalInterest['additionalPersonInfo']['fullname'] ?? null;
     }
 }
