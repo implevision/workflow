@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbAgentTasksMaster
@@ -298,7 +299,17 @@ class TbAgentTasksMaster
                     ],
                 ],
                 'jqFilter' => '.agentTask.policyTransaction.policy.policyNumber',
-                'parseResultCallback' => 'parsePolicyNumber',
+            ],
+            'PolicyNumberWithoutPrefix' => [
+                'GraphQLschemaToReplace' => [
+                    'policyTransaction' => [
+                        'policy' => [
+                            'policyNumber' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.agentTask.policyTransaction.policy.policyNumber',
+                'parseResultCallback' => 'parsePolicyNumberWithoutPrefix',
             ],
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
@@ -389,7 +400,7 @@ class TbAgentTasksMaster
             $premiumDue = $premiumChange + $policyFees;
         }
 
-        return number_format($premiumDue, 2);
+        return number_format($premiumDue, 2, '.', '');
     }
 
     public function parseMetadata($metadata, $key)
@@ -483,7 +494,7 @@ class TbAgentTasksMaster
     {
         $coverageAmount = $this->parsePotentialDiscountLost($transactionId, 'ANNUALCAPDISC');
 
-        return number_format($coverageAmount, 2);
+        return number_format($coverageAmount, 2, '.', '');
     }
 
     public function getUUID()
@@ -512,8 +523,14 @@ class TbAgentTasksMaster
         return (strlen($agentCode) === 7) ? substr_replace($agentCode, '', 4, 1) : $agentCode;
     }
 
-    public function parsePolicyNumber($policyNumber)
+    public function parsePolicyNumberWithoutPrefix($policyNumber)
     {
-        return str_replace('FLD', '', $policyNumber);
+        $policyNoInitials = DB::table('tb_products')
+            ->pluck('s_PolicyNoInitial') // Fetch the column values
+            ->toArray();
+
+        $regex = '/^('.implode('|', $policyNoInitials).')/';
+
+        return preg_replace($regex, '', $policyNumber);
     }
 }
