@@ -66,23 +66,23 @@ class GraphQLSchemaBuilderService
                     // Indexed array - use first element as template
                     if (! empty($value) && is_array($value[0])) {
                         $nestedFields = $this->arrayToGraphQLFields($value[0], $indent + 1);
-                        $fields[] = $indentStr.$key." {\n".$nestedFields."\n".$indentStr.'}';
+                        $fields[] = $indentStr . $key . " {\n" . $nestedFields . "\n" . $indentStr . '}';
                     } else {
                         // Simple array of scalars
-                        $fields[] = $indentStr.$key;
+                        $fields[] = $indentStr . $key;
                     }
                 } else {
                     // Associative array
                     $nestedFields = $this->arrayToGraphQLFields($value, $indent + 1);
                     if ($nestedFields) {
-                        $fields[] = $indentStr.$key." {\n".$nestedFields."\n".$indentStr.'}';
+                        $fields[] = $indentStr . $key . " {\n" . $nestedFields . "\n" . $indentStr . '}';
                     } else {
-                        $fields[] = $indentStr.$key;
+                        $fields[] = $indentStr . $key;
                     }
                 }
             } else {
                 // Scalar value
-                $fields[] = $indentStr.$key;
+                $fields[] = $indentStr . $key;
             }
         }
 
@@ -103,8 +103,8 @@ class GraphQLSchemaBuilderService
 
         $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
 
-        return "query {\n  $queryName(where: ".$variablesStr."){\n".
-            preg_replace('/^/m', '    ', $fields)."\n  }\n}";
+        return "query {\n  $queryName(where: " . $variablesStr . "){\n" .
+            preg_replace('/^/m', '    ', $fields) . "\n  }\n}";
     }
 
     /**
@@ -157,8 +157,8 @@ class GraphQLSchemaBuilderService
         }
 
         // Use jq to filter the JSON data
-        $command = 'echo '.escapeshellarg($json).' | jq -r '.escapeshellarg($jqFilter);
-        exec($command.' 2>&1', $result, $returnCode);
+        $command = 'echo ' . escapeshellarg($json) . ' | jq -r ' . escapeshellarg($jqFilter);
+        exec($command . ' 2>&1', $result, $returnCode);
 
         if ($returnCode !== 0) {
             // echo "Command failed with return code: " . $returnCode;
@@ -169,23 +169,52 @@ class GraphQLSchemaBuilderService
         }
     }
 
-    public function arrayToGraphQLWhereCondition($variable)
+    public function arrayToGraphQLWhereCondition(array $variable): string
     {
-        if (array_key_exists('JOIN', $variable)) {
-            $variablesStr = sprintf(
-                '{ column: %s, operator: %s, value: "%s", %s: {column: %s, operator: %s, value: "%s"}}',
-                $variable['column'],
-                $variable['operator'],
-                $variable['value'],
-                $variable['JOIN']['operator'],
-                $variable['JOIN']['condition']['column'],
-                $variable['JOIN']['condition']['operator'],
-                $variable['JOIN']['condition']['value']
-            );
-        } else {
-            $variablesStr = sprintf('{ column: %s, operator: %s, value: "%s" }', $variable['column'], $variable['operator'], $variable['value']);
+
+        if (($variable['type'] ?? null) === 'group') {
+            $variable = [
+                'operator'   => $variable['operator'],
+                'conditions' => $variable['children'] ?? [],
+            ];
         }
 
-        return $variablesStr;
+        if (($variable['type'] ?? null) === 'rule') {
+            $variable = [
+                'column'   => strtoupper($variable['field']),
+                'operator' => strtoupper($variable['comparator']),
+                'value'    => $variable['expectedValue'],
+            ];
+        }
+
+        if (isset($variable['operator'], $variable['conditions'])) {
+            $operator = strtoupper($variable['operator']);
+            if (!in_array($operator, ['AND', 'OR'], true)) {
+                throw new \InvalidArgumentException("Invalid logical operator: {$operator}");
+            }
+            $children = [];
+            foreach ($variable['conditions'] as $condition) {
+                $children[] = $this->arrayToGraphQLWhereCondition($condition);
+            }
+            return sprintf(
+                '%s: [%s]',
+                $operator,
+                implode(', ', $children)
+            );
+        }
+
+        if (!isset($variable['column'], $variable['operator'], $variable['value'])) {
+            throw new \InvalidArgumentException('Invalid where condition node');
+        }
+
+        $value = is_bool($variable['value'])
+            ? ($variable['value'] ? 'true' : 'false')
+            : '"' . addslashes((string) $variable['value']) . '"';
+        return sprintf(
+            '{ column: %s, operator: %s, value: %s }',
+            $variable['column'],
+            strtoupper($variable['operator']),
+            $value
+        );
     }
 }
