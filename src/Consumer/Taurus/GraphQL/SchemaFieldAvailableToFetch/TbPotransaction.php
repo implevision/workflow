@@ -681,6 +681,12 @@ class TbPotransaction
             'parseResultCallback' => 'parseMortgageeInfo',
         ];
 
+        $fieldMapping['InsuredPortal'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'getInsuredPortalUrl',
+        ];
+
         return $fieldMapping;
     }
 
@@ -930,5 +936,10 @@ class TbPotransaction
         }
 
         return $mortgageesList;
+    }
+
+    public function getInsuredPortalUrl()
+    {
+        return Helper::createPortalURL('InsuredPortal');
     }
 }
