@@ -32,7 +32,7 @@ class ValidApplyConditionRules implements ValidationRule
         // If applyRuleTo is 'CERTAIN', validate each condition
         if ($applyRuleTo === 'CERTAIN') {
             foreach ($value as $condition) {
-                if ($condition['field'] === 'rule') {
+                if ($condition['type'] === 'rule') {
                     if (
                         ! isset($condition['field']) ||
                         $condition['field'] === '' ||
