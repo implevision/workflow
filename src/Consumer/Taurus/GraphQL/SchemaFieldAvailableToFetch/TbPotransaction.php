@@ -687,6 +687,19 @@ class TbPotransaction
             'parseResultCallback' => 'getInsuredPortalUrl',
         ];
 
+        $fieldMapping['AdditionalInsuredName'] = [
+            'GraphQLschemaToReplace' => [
+                'additionalInterestInfo' => [
+                    'partyInterestCode' => null,
+                    'additionalPersonInfo' => [
+                        'fullname' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.additionalInterestInfo[] | select(.partyInterestCode == "ADDITIONALINSURED")',
+            'parseResultCallback' => 'parseAdditionalInsuredName',
+        ];
+
         return $fieldMapping;
     }
 
@@ -941,5 +954,10 @@ class TbPotransaction
     public function getInsuredPortalUrl()
     {
         return Helper::createPortalURL('InsuredPortal');
+    }
+
+    public function parseAdditionalInsuredName($additionalInterest)
+    {
+        return $additionalInterest['additionalPersonInfo']['fullname'] ?? null;
     }
 }

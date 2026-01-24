@@ -20,8 +20,8 @@ class WorkflowWhenData extends Data
             effectiveActionToExecuteWorkflow: $data['effectiveActionToExecuteWorkflow'],
             recordActionToExecuteWorkflow: $data['recordActionToExecuteWorkflow'],
             dateTimeInfoToExecuteWorkflow: WorkflowDateTimeInfoData::from($data['dateTimeInfoToExecuteWorkflow']),
-            customDateTimeInfoToExecuteWorkflow: WorkflowCustomDateTimeInfoData::fromArray($data['customDateTimeInfoToExecuteWorkflow']),
-            odysseyActionToExecuteWorkflow: $data['odysseyActionToExecuteWorkflow'],
+            customDateTimeInfoToExecuteWorkflow: WorkflowCustomDateTimeInfoData::fromArray($data['customDateTimeInfoToExecuteWorkflow'] ?? []),
+            odysseyActionToExecuteWorkflow: $data['odysseyActionToExecuteWorkflow'] ?? '',
         );
     }
 }
