@@ -166,6 +166,19 @@ class TbPotransaction
                 ],
                 // This finds the correct DECLARATION document,
                 // then extracts the first docInfo.docurl value.
+                'jqFilter' => '
+                [
+                      .policyQuery.policy.docuploadinfo[]
+                      | select(
+                      .doctypes.docTypeCode == "DECLARATION"
+                      and
+                      (.docUploadDocInfoRel[].docUploadReference.tableMasters.tableName == "tb_potransactions")
+                      )
+                      | .docUploadDocInfoRel[]
+                      | .docInfo[]
+                      | .docPath
+                      ]
+                ',
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
             'NameAsOnTitle' => [
