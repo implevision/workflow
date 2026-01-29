@@ -100,24 +100,61 @@ class TbClaim
                 'jqFilter' => '.claim.dateOfLoss',
                 'parseResultCallback' => 'formatDate',
             ],
-            'InsuredName' => [
+            'PolicyHolderName' => [
                 'GraphQLschemaToReplace' => [
                     'insuredName' => null,
                 ],
-                'jqFilter' => '.claim.insuredName',
+                'jqFilter' => '.claim.policyholderName',
             ],
-            'ClaimantEmail' => [
+            'UpdatedByDate' => [
                 'GraphQLschemaToReplace' => [
-                    'claimCommunication' => [
-                        'isAcceptEmail' => null,
-                        'primaryEmail' => null,
-                        'secondaryEmail' => null,
-                    ],
+                    'updatedDate' => null,
                 ],
-                'jqFilter' => '.claim.claimCommunication',
-                'parseResultCallback' => 'parseClaimCommunication',
+                'jqFilter' => '.claim.updatedDate',
+                'parseResultCallback' => 'formatDate',
             ],
+
+
         ];
+
+        $fieldMapping['ClaimCommunication'] = [
+            'GraphQLschemaToReplace' => [
+                'claimCommunication' => [
+                    'addressLine1' => null,
+                    'addressLine2' => null,
+                    'addressLine3' => null,
+                    'postalCode' => null,
+                    'postalCodeSuffix' => null,
+                    'city' => ['name' => null],
+                    'state' => ['name' => null],
+                    'country' => ['name' => null],
+                ],
+            ],
+            'jqFilter' => '.claim.claimCommunication',
+            'parseResultCallback' => 'parseClaimCommunication',
+        ];
+
+        $fieldMapping['TemporaryPhone'] = [
+            'GraphQLschemaToReplace' => [
+                'claimCommunication' => [
+                    'temporaryPhone' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.claimCommunication',
+            'parseResultCallback' => 'parseTemporaryPhone',
+        ];
+
+        $fieldMapping['TemporaryEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'claimCommunication' => [
+                    'temporaryEmail' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.claimCommunication',
+            'parseResultCallback' => 'parseTemporaryEmail',
+        ];
+
+
 
         $fieldMapping['InsuredPropertyAddress'] = [
             'GraphQLschemaToReplace' => [
@@ -167,7 +204,25 @@ class TbClaim
             'parseResultCallback' => 'parseAdjustingFirmName',
         ];
 
-        $fieldMapping['AdjustingFirmAddress'] = [
+        $fieldMapping['AdjustingFirmName'] = [
+            'GraphQLschemaToReplace' => [
+                'allocatedTo' => [
+                    'screenName' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.allocatedTo.screenName',
+        ];
+
+        $fieldMapping['AdjusterFirmFCN'] = [
+            'GraphQLschemaToReplace' => [
+                'allocatedTo' => [
+                    'fcn' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.allocatedTo.fcn',
+        ];
+
+        $fieldMapping['AdjustingFirmMailingAddress'] = [
             'GraphQLschemaToReplace' => [
                 'adjustingFirm' => [
                     'personInfo' => [
@@ -196,7 +251,7 @@ class TbClaim
                 ],
             ],
             'jqFilter' => '[.claim.adjustingFirm[].personInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")]',
-            'parseResultCallback' => 'parseAdjustingFirmAddress',
+            'parseResultCallback' => 'parseAdjustingFirmMailingAddress',
         ];
 
         $fieldMapping['AdjustingFirmEmail'] = [
@@ -281,11 +336,145 @@ class TbClaim
             'parseResultCallback' => 'parseCompanyName',
         ];
 
-        $fieldMapping['InsuredPortal'] = [
+        $fieldMapping['InsuredPortalUrl'] = [
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
             'parseResultCallback' => 'getInsuredPortalUrl',
         ];
+
+        $fieldMapping['ContactInformation'] = [
+            'GraphQLschemaToReplace' => [
+                'insuredPerson' => [
+                    'phoneInfo' => [
+                        'phoneNumber' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.claim.insuredPerson.phoneInfo[0]',
+            'parseResultCallback' => 'parseContactInformation',
+        ];
+
+        $fieldMapping['EmailAddress'] = [
+            'GraphQLschemaToReplace' => [
+                'insuredPerson' => [
+                    'emailInfo' => [
+                        'email' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.claim.insuredPerson.emailInfo[0]',
+            'parseResultCallback' => 'parseEmailAddress',
+        ];
+
+        $fieldMapping['DateAssigned'] = [
+            'GraphQLschemaToReplace' => [
+                'dateAllocated' => null,
+            ],
+            'jqFilter' => '.claim.dateAllocated',
+            'parseResultCallback' => 'parseDateAssigned',
+        ];
+
+        $fieldMapping['TemporaryAddress'] = [
+            'GraphQLschemaToReplace' => [
+                'addInfo' => [
+                    'claim_detail_json' => [
+                        'newScreenData' => [
+                            'temporaryAddress' => [
+                                'addressLine1' => null,
+                                'cityName' => null,
+                                'stateCode' => null,
+                                'stateName' => null,
+                                'zipCode' => null,
+                                'zipCodeSuffix' => null,
+                                'countyName' => null,
+                                'isForeignAddress' => null,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.claim.addInfo.claim_detail_json.newScreenData.temporaryAddress',
+            'parseResultCallback' => 'parseTemporaryAddress',
+        ];
+
+        $fieldMapping['AdjustingFirm'] = [
+            'GraphQLschemaToReplace' => [
+                'agency' => [
+                    'fullName' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.agency.fullName',
+        ];
+
+        $fieldMapping['UpdatedByName'] = [
+            'GraphQLschemaToReplace' => [
+                'updatedBy' => [
+                    'screenName' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.updatedBy.screenName',
+        ];
+
+        $fieldMapping['ClaimEnteredByName'] = [
+            'GraphQLschemaToReplace' => [
+                'claimEnteredBy' => [
+                    'screenName' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.claimEnteredBy.screenName',
+        ];
+
+        $fieldMapping['ClaimEnteredByCreatedDate'] = [
+            'GraphQLschemaToReplace' => [
+                'claimCommunication' => [
+                    'createdDate' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.claimCommunication.createdDate',
+            'parseResultCallback' => 'formatDate',
+        ];
+
+
+        $fieldMapping['WaiverReceiptDate'] = [
+            'GraphQLschemaToReplace' => [
+                'addInfo' => [
+                    'claim_detail_json' => [
+                        'waiverRecieptDate' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.claim.addInfo.claim_detail_json.waiverRecieptDate',
+            'parseResultCallback' => 'formatDate',
+        ];
+
+        $fieldMapping['DateContacted'] = [
+            'GraphQLschemaToReplace' => [
+                'addInfo' => [
+                    'claim_detail_json' => [
+                        'insuredContactDate' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.claim.addInfo.claim_detail_json.insuredContactDate',
+            'parseResultCallback' => 'formatDate',
+        ];
+
+        $fieldMapping['LossInspectedDate'] = [
+            'GraphQLschemaToReplace' => [
+                'addInfo' => [
+                    'claim_detail_json' => [
+                        'claimLossCorrectionA' => [
+                            'claimReportingDTO' => [
+                                'lossInspectedDate' => null,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.claim.addInfo.claim_detail_json.claimLossCorrectionA.claimReportingDTO.lossInspectedDate',
+            'parseResultCallback' => 'formatDate',
+        ];
+
 
         return $fieldMapping;
     }
@@ -302,7 +491,7 @@ class TbClaim
         }
 
         $address = [
-            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'addressLine1' => ($addressArr['houseNo'] ?? '') . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
             'city' => $addressArr['tbCity']['name'] ?? null,
             // 'county' => $addressArr['tbCounty']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
@@ -310,7 +499,7 @@ class TbClaim
         ];
 
         if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
-            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
+            $address['postalCode'] .= ' - ' . $addressArr['postalCodeSuffix'];
         }
 
         $address = array_filter(array_map('trim', $address), function ($item) {
@@ -325,7 +514,7 @@ class TbClaim
         return last($nameArr);
     }
 
-    public function parseAdjustingFirmAddress($addressArr)
+    public function parseAdjustingFirmMailingAddress($addressArr)
     {
         return $this->parseAddress(last($addressArr));
     }
@@ -355,18 +544,48 @@ class TbClaim
         return $phone;
     }
 
-    public function parseClaimCommunication($claimCommunication)
+    public function parseClaimCommunication($data)
     {
-        if (empty($claimCommunication)) {
+        if (empty($data)) {
             return null;
         }
 
-        $email = $claimCommunication['primaryEmail'] ?? null;
-        if (empty($email)) {
-            $email = $claimCommunication['secondaryEmail'] ?? null;
+        $parts = [];
+
+        // Phone (priority: temporary > secondary)
+        $addressParts = [];
+
+        foreach (['addressLine1', 'addressLine2', 'addressLine3'] as $line) {
+            if (!empty($data[$line])) {
+                $addressParts[] = trim($data[$line]);
+            }
         }
 
-        return $email;
+        if (!empty($data['city']['name'])) {
+            $addressParts[] = $data['city']['name'];
+        }
+
+        if (!empty($data['state']['name'])) {
+            $addressParts[] = $data['state']['name'];
+        }
+
+        if (!empty($data['postalCode'])) {
+            $zip = $data['postalCode'];
+            if (!empty($data['postalCodeSuffix'])) {
+                $zip .= '-' . $data['postalCodeSuffix'];
+            }
+            $addressParts[] = $zip;
+        }
+
+        if (!empty($data['country']['name'])) {
+            $addressParts[] = $data['country']['name'];
+        }
+
+        if (!empty($addressParts)) {
+            $parts[] = 'Address: ' . implode(', ', $addressParts);
+        }
+
+        return implode(' | ', $parts);
     }
 
     public function parseExaminerEmail($emailArr)
@@ -408,7 +627,7 @@ class TbClaim
 
         // From gfs-saas-infra/src/Foundation/Helpers.php
         $path = removeS3HostAndBucketFromURL($logo);
-        \Log::info('WORKFLOW - S3 path for company logo: '.$path);
+        \Log::info('WORKFLOW - S3 path for company logo: ' . $path);
 
         if (str_starts_with($path, 'http')) {
             return $path;
@@ -437,5 +656,75 @@ class TbClaim
         $tenant = getTenant();
 
         return sprintf('%s%s%s', ucfirst(substr($tenant, 0, 1)), $holdingCompanyDetail['naic_number'], $referenceNo);
+    }
+    public function parseContactInformation($phoneArr)
+    {
+        if (empty($phoneArr['phoneNumber'])) {
+            return null;
+        }
+
+        return Helper::formatPhone($phoneArr['phoneNumber']);
+    }
+
+    public function parseEmailAddress($emailArr)
+    {
+        return $emailArr['email'] ?? null;
+    }
+
+    public function parseDateAssigned($dateToFormat)
+    {
+        return Helper::formatDate($dateToFormat);
+    }
+    public function parseTemporaryAddress($address)
+    {
+        if (empty($address)) {
+            return null;
+        }
+
+        $parts = [];
+
+        if (!empty($address['addressLine1'])) {
+            $parts[] = trim($address['addressLine1']);
+        }
+
+        if (!empty($address['cityName'])) {
+            $parts[] = $address['cityName'];
+        }
+
+        if (!empty($address['stateCode'])) {
+            $parts[] = $address['stateCode'];
+        } elseif (!empty($address['stateName'])) {
+            $parts[] = $address['stateName'];
+        }
+
+        if (!empty($address['zipCode'])) {
+            $zip = $address['zipCode'];
+
+            if (!empty($address['zipCodeSuffix'])) {
+                $zip .= '-' . $address['zipCodeSuffix'];
+            }
+
+            $parts[] = $zip;
+        }
+
+        if (!empty($address['countyName'])) {
+            $parts[] = $address['countyName'];
+        }
+
+        return implode(', ', $parts);
+    }
+
+    public function parseTemporaryPhone($data)
+    {
+        if (empty($data['temporaryPhone'])) {
+            return null;
+        }
+
+        return Helper::formatPhone($data['temporaryPhone']);
+    }
+
+    public function parseTemporaryEmail($data)
+    {
+        return $data['temporaryEmail'] ?? null;
     }
 }
