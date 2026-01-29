@@ -175,6 +175,7 @@ class SES
         }
 
         $attachments = $payload['attachments'];
+        unset($payload['attachments']);
 
         try {
             $response = $sesClient->sendEmail([
