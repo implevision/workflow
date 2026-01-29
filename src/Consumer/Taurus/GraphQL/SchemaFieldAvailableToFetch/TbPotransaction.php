@@ -157,8 +157,8 @@ class TbPotransaction
                                     ]
                                 ],
                                 'docInfo' => [
-                                    'docurl' => null,
                                     'docPath' => null,
+                                    'docName' => null
                                 ]
                             ]
                         ]
@@ -176,8 +176,11 @@ class TbPotransaction
                       )
                       | .docUploadDocInfoRel[]
                       | .docInfo[]
-                      | .docPath
-                      ]
+                      | { 
+                          name: .docName, 
+                          path: .docPath
+                        }
+                    ]
                 ',
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
@@ -838,16 +841,16 @@ class TbPotransaction
         return $label;
     }
 
-    public function generatePresignedUrl(array $paths): array
+    public function generatePresignedUrl(array $documents): array
     {
-        $presigned = [];
-
-        foreach ($paths as $path) {
-            $presigned[] = Helper::generatePresignedUrl($path);
-        }
-
-        return $presigned;
+        return array_map(function ($doc) {
+            return [
+                'name' => $this->formatFileName($doc['name']),
+                'path' => Helper::generatePresignedUrl($doc['path']),
+            ];
+        }, $documents);
     }
+
 
     public function parseYesNoDisplayName($value)
     {
@@ -976,5 +979,14 @@ class TbPotransaction
     public function parseAdditionalInsuredName($additionalInterest)
     {
         return $additionalInterest['additionalPersonInfo']['fullname'] ?? null;
+    }
+
+    public static function formatFileName(?string $fileName): string
+    {
+        if (empty($fileName)) {
+            return '';
+        }
+
+        return pathinfo($fileName, PATHINFO_FILENAME);
     }
 }
