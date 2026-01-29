@@ -145,7 +145,24 @@ class TbPotransaction
             ],
             'AttachDecPage' => [
                 'GraphQLschemaToReplace' => [
-                    'docurl' => null,
+                    'policy' => [
+                        'docuploadinfo' => [
+                            'doctypes' => [
+                                'docTypeCode' => null,
+                            ],
+                            'docUploadDocInfoRel' => [
+                                'docUploadReference' => [
+                                    'tableMasters' => [
+                                        'tableName' => null,
+                                    ]
+                                ],
+                                'docInfo' => [
+                                    'docurl' => null,
+                                    'docPath' => null,
+                                ]
+                            ]
+                        ]
+                    ],
                 ],
                 // This finds the correct DECLARATION document,
                 // then extracts the first docInfo.docurl value.
