@@ -250,4 +250,52 @@ class Helper
 
         return $isNfipProduct;
     }
+
+    /**
+     * Check for company logo in branded company array, if not found get from holding company details.
+     * 
+     * @param mixed $brandedCompanyArr  
+     */
+    public static function parseCompanyLogo($brandedCompanyArr)
+    {
+        $logo = '';
+        $logoHasPublicUrl = false;
+
+        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['logo'])) {
+            $logo = $brandedCompanyArr['company']['logo'];
+        }
+
+        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['publicLogo'])) {
+            $logo = $brandedCompanyArr['company']['publicLogo'];
+            $logoHasPublicUrl = true;
+        }
+
+        if (! $logo) {
+            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+            $logo = $holdingCompanyDetail['logo'] ?? null;
+
+            if ($holdingCompanyDetail['public_logo']) {
+                $logo = $holdingCompanyDetail['public_logo'];
+                $logoHasPublicUrl = true;
+            }
+        }
+
+        if (! $logo) {
+            \Log::info('WORKFLOW - failed to fetch logo ', (array) $brandedCompanyArr);
+        }
+
+        if ($logoHasPublicUrl) {
+            return $logo;
+        }
+
+        // From gfs-saas-infra/src/Foundation/Helpers.php
+        $path = removeS3HostAndBucketFromURL($logo);
+        \Log::info('WORKFLOW - S3 path for company logo: '.$path);
+
+        if (str_starts_with($path, 'http')) {
+            return $path;
+        }
+
+        return \Storage::disk('s3')->temporaryUrl($path, Carbon::now()->addMinutes(4320));
+    }
 }
