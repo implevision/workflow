@@ -2,7 +2,6 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
-use Carbon\Carbon;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbClaim
@@ -376,7 +375,7 @@ class TbClaim
 
     public function resolveCompanyLogoUrl($brandedCompanyArr)
     {
-      return Helper::parseCompanyLogo($brandedCompanyArr);
+        return Helper::parseCompanyLogo($brandedCompanyArr);
     }
 
     public function parseCompanyName($brandedCompanyArr)

@@ -253,8 +253,8 @@ class Helper
 
     /**
      * Check for company logo in branded company array, if not found get from holding company details.
-     * 
-     * @param mixed $brandedCompanyArr  
+     *
+     * @param  mixed  $brandedCompanyArr
      */
     public static function parseCompanyLogo($brandedCompanyArr)
     {

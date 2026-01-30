@@ -154,14 +154,14 @@ class TbPotransaction
                                 'docUploadReference' => [
                                     'tableMasters' => [
                                         'tableName' => null,
-                                    ]
+                                    ],
                                 ],
                                 'docInfo' => [
                                     'docPath' => null,
-                                    'docName' => null
-                                ]
-                            ]
-                        ]
+                                    'docName' => null,
+                                ],
+                            ],
+                        ],
                     ],
                 ],
                 // This finds the correct DECLARATION document,
@@ -792,7 +792,7 @@ class TbPotransaction
         }
 
         $address = [
-            'addressLine1' => ($addressArr['houseNo'] ?? '') . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
             'city' => $addressArr['tbCity']['name'] ?? null,
             // 'county' => $addressArr['tbCounty']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
@@ -800,7 +800,7 @@ class TbPotransaction
         ];
 
         if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
-            $address['postalCode'] .= ' - ' . $addressArr['postalCodeSuffix'];
+            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
         }
 
         $address = array_filter(array_map('trim', $address), function ($item) {
@@ -867,7 +867,6 @@ class TbPotransaction
             ];
         }, $documents);
     }
-
 
     public function parseYesNoDisplayName($value)
     {
