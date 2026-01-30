@@ -147,7 +147,7 @@ class EmailClient
         foreach ($payload as $key => $value) {
             // Case-insensitive check for keys starting with "attachment"
             if (preg_match('/^attach/i', $key)) {
-                $attachments[$key] = $value;
+                $attachments[$key] = $value[0];
             }
         }
 
