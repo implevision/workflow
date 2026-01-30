@@ -154,14 +154,14 @@ class TbPotransaction
                                 'docUploadReference' => [
                                     'tableMasters' => [
                                         'tableName' => null,
-                                    ]
+                                    ],
                                 ],
                                 'docInfo' => [
                                     'docPath' => null,
-                                    'docName' => null
-                                ]
-                            ]
-                        ]
+                                    'docName' => null,
+                                ],
+                            ],
+                        ],
                     ],
                 ],
                 // This finds the correct DECLARATION document,
@@ -720,6 +720,23 @@ class TbPotransaction
             'parseResultCallback' => 'parseAdditionalInsuredName',
         ];
 
+        $fieldMapping['CompanyLogo'] = [
+            'GraphQLschemaToReplace' => [
+                'tbAccountMaster' => [
+                    'TbPersoninfo' => [
+                        'brandedCompany' => [
+                            'company' => [
+                                'logo' => null,
+                                'publicLogo' => null,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
+            'parseResultCallback' => 'resolveCompanyLogoUrl',
+        ];
+
         return $fieldMapping;
     }
 
@@ -850,7 +867,6 @@ class TbPotransaction
             ];
         }, $documents);
     }
-
 
     public function parseYesNoDisplayName($value)
     {
@@ -988,5 +1004,10 @@ class TbPotransaction
         }
 
         return pathinfo($fileName, PATHINFO_FILENAME);
+    }
+
+    public function resolveCompanyLogoUrl($brandedCompanyArr)
+    {
+        return Helper::parseCompanyLogo($brandedCompanyArr);
     }
 }

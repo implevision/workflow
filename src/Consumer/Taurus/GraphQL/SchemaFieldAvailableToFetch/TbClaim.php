@@ -2,7 +2,6 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
-use Carbon\Carbon;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbClaim
@@ -264,7 +263,7 @@ class TbClaim
                 ],
             ],
             'jqFilter' => '.claim.agency.brandedCompany[]',
-            'parseResultCallback' => 'parseCompanyLogo',
+            'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
         $fieldMapping['WYOCompanyName'] = [
@@ -374,47 +373,9 @@ class TbClaim
         return is_array($emailArr) && count($emailArr) ? ($emailArr[0]['email'] ?? null) : null;
     }
 
-    public function parseCompanyLogo($brandedCompanyArr)
+    public function resolveCompanyLogoUrl($brandedCompanyArr)
     {
-        $logo = '';
-        $logoHasPublicUrl = false;
-
-        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['logo'])) {
-            $logo = $brandedCompanyArr['company']['logo'];
-        }
-
-        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['publicLogo'])) {
-            $logo = $brandedCompanyArr['company']['publicLogo'];
-            $logoHasPublicUrl = true;
-        }
-
-        if (! $logo) {
-            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
-            $logo = $holdingCompanyDetail['logo'] ?? null;
-
-            if ($holdingCompanyDetail['public_logo']) {
-                $logo = $holdingCompanyDetail['public_logo'];
-                $logoHasPublicUrl = true;
-            }
-        }
-
-        if (! $logo) {
-            \Log::info('WORKFLOW - failed to fetch logo ', (array) $brandedCompanyArr);
-        }
-
-        if ($logoHasPublicUrl) {
-            return $logo;
-        }
-
-        // From gfs-saas-infra/src/Foundation/Helpers.php
-        $path = removeS3HostAndBucketFromURL($logo);
-        \Log::info('WORKFLOW - S3 path for company logo: '.$path);
-
-        if (str_starts_with($path, 'http')) {
-            return $path;
-        }
-
-        return \Storage::disk('s3')->temporaryUrl($path, Carbon::now()->addMinutes(4320));
+        return Helper::parseCompanyLogo($brandedCompanyArr);
     }
 
     public function parseCompanyName($brandedCompanyArr)
