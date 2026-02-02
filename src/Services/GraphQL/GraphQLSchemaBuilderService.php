@@ -97,13 +97,14 @@ class GraphQLSchemaBuilderService
      * @param  array  $variables  Optional query variables
      * @return string Complete GraphQL query
      */
-    public function generateGraphQLQuery($data, $queryName, $variable = [])
+    public function generateGraphQLQuery($data, $queryName, $variable = [], $otherVariables = [])
     {
         $fields = $this->arrayToGraphQLFields($data, 0);
 
         $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
+        $otherVariablesStr = $this->arrayToGraphQLWhereHasCondition($otherVariables);
 
-        return "query {\n  $queryName(where: ".$variablesStr."){\n".
+        return "query {\n  $queryName(where: ".$variablesStr.' '.$otherVariablesStr."){\n".
             preg_replace('/^/m', '    ', $fields)."\n  }\n}";
     }
 
@@ -125,6 +126,55 @@ class GraphQLSchemaBuilderService
 
             return ['column' => $column, 'operator' => $operator, 'value' => $value];
         }
+    }
+
+    public static function getQueryMappingForHasConditions($operator, $value, $relation)
+    {
+        // $relation is a string: "conditionName.columnName"
+        $parts = explode('.', trim($relation), 2);
+        $column = isset($parts[0]) ? $parts[0] : '';
+        $column = strtoupper(self::convertToUnderscore($column));
+        $conditionName = isset($parts[1]) ? $parts[1] : '';
+
+        return [
+            'conditionName' => $conditionName,
+            'column' => $column,
+            'operator' => $operator,
+            'value' => $value,
+        ];
+    }
+
+    public static function arrayToGraphQLWhereHasCondition($otherVariables)
+    {
+        // If not an array or empty, return empty string
+        if (! is_array($otherVariables) || empty($otherVariables)) {
+            return '';
+        }
+
+        $conditions = [];
+        // If associative array with conditionName, treat as single condition
+        if (isset($otherVariables['conditionName'])) {
+            $otherVariables = [$otherVariables];
+        }
+
+        foreach ($otherVariables as $condition) {
+            if (
+                isset($condition['conditionName']) &&
+                isset($condition['column']) &&
+                isset($condition['operator']) &&
+                isset($condition['value'])
+            ) {
+                $conditions[] = sprintf(
+                    '%s: { column: %s, operator: %s, value: "%s" }',
+                    $condition['conditionName'],
+                    $condition['column'],
+                    $condition['operator'],
+                    $condition['value']
+                );
+            }
+        }
+
+        return implode(' ', $conditions);
     }
 
     public static function convertToUnderscore($str)

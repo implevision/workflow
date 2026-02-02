@@ -182,18 +182,34 @@ class DispatchWorkflowService
 
             if ($condition['applyRuleTo'] == 'CERTAIN' && ! $this->isManuallyInvoked) {
                 $conditionsToApply = [];
+                $graphQLQueryForHasConditions = [];
+
                 foreach ($condition['applyConditionRules']['children'] as $certainCondition) {
-                    $conditionsToApply[] = GraphQLSchemaBuilderService::getQueryMapping(
-                        $certainCondition['field'],
-                        $certainCondition['comparator'],
-                        $certainCondition['expectedValue']
-                    );
+                    $relation = $certainCondition['relation'] ?? '';
+                    $parts = explode('.', trim($relation), 2);
+                    $hasConditionName = isset($parts[1]) ? (bool) $parts[1] : '';
+
+                    if ($hasConditionName) {
+                        $graphQLQueryForHasConditions[] = GraphQLSchemaBuilderService::getQueryMappingForHasConditions(
+                            $certainCondition['comparator'],
+                            $certainCondition['expectedValue'],
+                            $certainCondition['relation'],
+                        );
+                    } else {
+                        $conditionsToApply[] = GraphQLSchemaBuilderService::getQueryMapping(
+                            $certainCondition['field'],
+                            $certainCondition['comparator'],
+                            $certainCondition['expectedValue']
+                        );
+                    }
                 }
 
-                if (count($graphQLQuery)) {
-                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => $conditionsToApply];
-                } else {
-                    $graphQLQuery = $conditionsToApply;
+                if (count($conditionsToApply)) {
+                    if (count($graphQLQuery)) {
+                        $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => $conditionsToApply];
+                    } else {
+                        $graphQLQuery = $conditionsToApply;
+                    }
                 }
             }
 
@@ -260,7 +276,7 @@ class DispatchWorkflowService
                             $graphQLSchemaBuilder->addField($placeHolder);
                         }
                         $schemaData = $graphQLSchemaBuilder->getSchema();
-                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery);
+                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery, $graphQLQueryForHasConditions);
                     } catch (\Exception $e) {
                         \Log::error('WORKFLOW - Error while preparing GraphQL query payload - '.$e->getMessage());
 
