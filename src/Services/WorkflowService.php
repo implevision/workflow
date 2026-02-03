@@ -713,14 +713,14 @@ class WorkflowService
     * @return Collection
     */
     public function getCategoryWorkflows(string $moduleKey)
-    {   
+    {
         $moduleClass = config("workflow.modules.$moduleKey");
 
         if (! $moduleClass) {
             return collect();
      }
 
-        return $this->workflowRepo->all(true)->where('module', $moduleClass)->values();
+        return $this->workflowRepo->all(true)->where('module', $moduleClass)->load(['conditions.actions' ])->values();
     }
 }
 

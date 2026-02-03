@@ -115,4 +115,16 @@ class Workflow extends Model
     {
         return $query->where('is_active', 1);
     }
+
+       public function actions()
+    {
+        return $this->hasManyThrough(
+            WorkflowAction::class,
+            WorkflowCondition::class,
+            'workflow_id',   // FK on workflow_conditions table
+            'condition_id',  // FK on workflow_actions table
+            'id',            // PK on workflows table
+            'id'             // PK on workflow_conditions table
+        );
+    }
 }
