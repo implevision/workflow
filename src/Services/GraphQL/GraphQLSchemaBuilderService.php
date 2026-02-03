@@ -169,23 +169,54 @@ class GraphQLSchemaBuilderService
         }
     }
 
-    public function arrayToGraphQLWhereCondition($variable)
+    public function arrayToGraphQLWhereCondition(array $variable): string
     {
-        if (array_key_exists('JOIN', $variable)) {
-            $variablesStr = sprintf(
-                '{ column: %s, operator: %s, value: "%s", %s: {column: %s, operator: %s, value: "%s"}}',
-                $variable['column'],
-                $variable['operator'],
-                $variable['value'],
-                $variable['JOIN']['operator'],
-                $variable['JOIN']['condition']['column'],
-                $variable['JOIN']['condition']['operator'],
-                $variable['JOIN']['condition']['value']
-            );
-        } else {
-            $variablesStr = sprintf('{ column: %s, operator: %s, value: "%s" }', $variable['column'], $variable['operator'], $variable['value']);
+
+        if (($variable['type'] ?? null) === 'group') {
+            $variable = [
+                'operator' => $variable['operator'],
+                'conditions' => $variable['children'] ?? [],
+            ];
         }
 
-        return $variablesStr;
+        if (($variable['type'] ?? null) === 'rule') {
+            $variable = [
+                'column' => strtoupper($variable['field']),
+                'operator' => strtoupper($variable['comparator']),
+                'value' => $variable['expectedValue'],
+            ];
+        }
+
+        if (isset($variable['operator'], $variable['conditions'])) {
+            $operator = strtoupper($variable['operator']);
+            if (! in_array($operator, ['AND', 'OR'], true)) {
+                throw new \InvalidArgumentException("Invalid logical operator: {$operator}");
+            }
+            $children = [];
+            foreach ($variable['conditions'] as $condition) {
+                $children[] = $this->arrayToGraphQLWhereCondition($condition);
+            }
+
+            return sprintf(
+                '%s: [%s]',
+                $operator,
+                implode(', ', $children)
+            );
+        }
+
+        if (! isset($variable['column'], $variable['operator'], $variable['value'])) {
+            throw new \InvalidArgumentException('Invalid where condition node');
+        }
+
+        $value = is_bool($variable['value'])
+            ? ($variable['value'] ? 'true' : 'false')
+            : '"'.addslashes((string) $variable['value']).'"';
+
+        return sprintf(
+            '{ column: %s, operator: %s, value: %s }',
+            $variable['column'],
+            strtoupper($variable['operator']),
+            $value
+        );
     }
 }
