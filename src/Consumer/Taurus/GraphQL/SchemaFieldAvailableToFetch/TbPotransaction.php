@@ -709,6 +709,22 @@ class TbPotransaction
             'parseResultCallback' => 'getInsuredPortalUrl',
         ];
 
+        $fieldMapping['InsuredPortal'] = [
+            'GraphQLschemaToReplace' => [
+                'tbAccountMaster' => [
+                    'TbPersoninfo' => [
+                        'brandedCompany' => [
+                            'company' => [
+                                'insuredPortal' => null,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[0].company.insuredPortal',
+            'parseResultCallback' => '',
+        ];
+
         $fieldMapping['AdditionalInsuredName'] = [
             'GraphQLschemaToReplace' => [
                 'additionalInterestInfo' => [
