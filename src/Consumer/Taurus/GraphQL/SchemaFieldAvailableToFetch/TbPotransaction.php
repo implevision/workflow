@@ -704,12 +704,6 @@ class TbPotransaction
         ];
 
         $fieldMapping['InsuredPortal'] = [
-            'GraphQLschemaToReplace' => [],
-            'jqFilter' => '',
-            'parseResultCallback' => 'getInsuredPortalUrl',
-        ];
-
-        $fieldMapping['InsuredPortal'] = [
             'GraphQLschemaToReplace' => [
                 'tbAccountMaster' => [
                     'TbPersoninfo' => [
@@ -1009,11 +1003,6 @@ class TbPotransaction
         }
 
         return $mortgageesList;
-    }
-
-    public function getInsuredPortalUrl()
-    {
-        return Helper::createPortalURL('InsuredPortal');
     }
 
     public function parseAdditionalInsuredName($additionalInterest)
