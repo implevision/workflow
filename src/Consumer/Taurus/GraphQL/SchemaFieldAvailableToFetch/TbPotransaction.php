@@ -175,10 +175,12 @@ class TbPotransaction
                       (.docUploadDocInfoRel[].docUploadReference.tableMasters.tableName == "tb_potransactions")
                       )
                       | .docUploadDocInfoRel[]
+                      | .docUploadReference.tableRefId as $tableRefId
                       | .docInfo[]
                       | { 
                           name: .docName, 
-                          path: .docPath
+                          path: .docPath,
+                          tableRefId: $tableRefId
                         }
                     ]
                 ',
@@ -860,12 +862,18 @@ class TbPotransaction
 
     public function generatePresignedUrl(array $documents): array
     {
-        return array_map(function ($doc) {
-            return [
-                'name' => $this->formatFileName($doc['name']),
-                'path' => Helper::generatePresignedUrl($doc['path']),
-            ];
-        }, $documents);
+        return array_values(array_map(
+            function ($doc) {
+                return [
+                    'name' => $this->formatFileName($doc['name']),
+                    'path' => Helper::generatePresignedUrl($doc['path']),
+                ];
+            },
+            array_filter($documents, function ($doc) {
+                return isset($doc['tableRefId'], $doc['name'])
+                    && str_contains($doc['name'], (string) $doc['tableRefId']);
+            })
+        ));
     }
 
     public function parseYesNoDisplayName($value)
