@@ -123,11 +123,13 @@ class GraphQLSchemaBuilderService
         if (! is_array($column)) {
             $column = strtoupper(self::convertToUnderscore($column));
 
+            $result = ['column' => $column, 'operator' => $operator, 'value' => $value];
+
             if ($relation) {
-                return ['column' => $column, 'operator' => $operator, 'value' => $value, 'relation' => $relation];
-            } else {
-                return ['column' => $column, 'operator' => $operator, 'value' => $value];
+                $result['relation'] = $relation;
             }
+
+            return $result;
         }
     }
 
@@ -178,7 +180,7 @@ class GraphQLSchemaBuilderService
      */
     private function formatGraphQLCondition(array $cond): string
     {
-        if (isset($cond['relation']) && $cond['relation'] !== null) {
+        if (isset($cond['relation'])) {
             return sprintf(
                 '{ HAS: { relation: "%s", condition: { column: %s, operator: %s, value: "%s" } } }',
                 $cond['relation'],
