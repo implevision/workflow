@@ -1036,9 +1036,9 @@ class TbPotransaction
         // Returns holding company website URL if insuredPortal is empty
         if (empty($insuredPortal)) {
             $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
-            return $holdingCompanyDetail['website_url'];
+            return $holdingCompanyDetail['insured_portal'];
         }
         // Otherwise, return insuredPortal
-        return $insuredPortal ?? "";
+        return $insuredPortal;
     }
 }
