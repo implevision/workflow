@@ -152,6 +152,7 @@ class TbPotransaction
                             ],
                             'docUploadDocInfoRel' => [
                                 'docUploadReference' => [
+                                    'tableRefId' => null,
                                     'tableMasters' => [
                                         'tableName' => null,
                                     ],
