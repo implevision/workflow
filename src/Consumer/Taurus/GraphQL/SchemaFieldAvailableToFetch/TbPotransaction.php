@@ -717,7 +717,7 @@ class TbPotransaction
                 ],
             ],
             'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[0].company.insuredPortal',
-            'parseResultCallback' => '',
+            'parseResultCallback' => 'getInsuredPortalUrl',
         ];
 
         $fieldMapping['AdditionalInsuredName'] = [
@@ -904,11 +904,18 @@ class TbPotransaction
 
     public function parseCompanyName($brandedCompanyArr)
     {
-        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['companyName'])) {
-            return $brandedCompanyArr['company']['companyName'];
+        // Ensure we are working with an array and 'company' key exists and is an array
+        if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
+            $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
+            if (! empty($companyName)) {
+                return $companyName;
+            }
         }
 
-        return null;
+        // Fallback to holding company name if not found
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+        return $holdingCompanyDetail['s_HoldingCompanyName'] ?? '';
     }
 
     public function transactionSubTypeScreenNameResolver($policyData)
@@ -1023,5 +1030,18 @@ class TbPotransaction
     public function resolveCompanyLogoUrl($brandedCompanyArr)
     {
         return Helper::parseCompanyLogo($brandedCompanyArr);
+    }
+
+    public function getInsuredPortalUrl($insuredPortal)
+    {
+        // Returns holding company website URL if insuredPortal is empty
+        if (empty($insuredPortal)) {
+            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+            return $holdingCompanyDetail['insured_portal'];
+        }
+
+        // Otherwise, return insuredPortal
+        return $insuredPortal;
     }
 }
