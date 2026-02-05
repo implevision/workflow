@@ -17,6 +17,7 @@ class Helper
             'public_logo' => $holdingCompanyDetail->public_logo_url,
             'wyo' => $holdingCompanyDetail->s_HoldingCompanyName,
             'naic_number' => $holdingCompanyDetail->naic_number,
+            'website_url' => $holdingCompanyDetail->website_url,
         ];
     }
 
