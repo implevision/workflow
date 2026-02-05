@@ -118,12 +118,18 @@ class GraphQLSchemaBuilderService
         return $this->arrayToGraphQLFields($data);
     }
 
-    public static function getQueryMapping($column, $operator, $value)
+    public static function getQueryMapping($column, $operator, $value, $relation = null)
     {
         if (! is_array($column)) {
             $column = strtoupper(self::convertToUnderscore($column));
 
-            return ['column' => $column, 'operator' => $operator, 'value' => $value];
+            $result = ['column' => $column, 'operator' => $operator, 'value' => $value];
+
+            if ($relation) {
+                $result['relation'] = $relation;
+            }
+
+            return $result;
         }
     }
 
@@ -169,21 +175,48 @@ class GraphQLSchemaBuilderService
         }
     }
 
+    /**
+     * Formats a single GraphQL condition (with optional relation)
+     */
+    private function formatGraphQLCondition(array $cond): string
+    {
+        if (isset($cond['relation'])) {
+            return sprintf(
+                '{ HAS: { relation: "%s", condition: { column: %s, operator: %s, value: "%s" } } }',
+                $cond['relation'],
+                $cond['column'],
+                $cond['operator'],
+                $cond['value']
+            );
+        } else {
+            return sprintf(
+                '{ column: %s, operator: %s, value: "%s" }',
+                $cond['column'],
+                $cond['operator'],
+                $cond['value']
+            );
+        }
+    }
+
     public function arrayToGraphQLWhereCondition($variable)
     {
         if (array_key_exists('JOIN', $variable)) {
+            $joinOperator = $variable['JOIN']['operator'];
+            $joinConditions = $variable['JOIN']['condition'];
+            $conditionStrs = [];
+            foreach ($joinConditions as $cond) {
+                $conditionStrs[] = $this->formatGraphQLCondition($cond);
+            }
             $variablesStr = sprintf(
-                '{ column: %s, operator: %s, value: "%s", %s: {column: %s, operator: %s, value: "%s"}}',
+                '{ column: %s, operator: %s, value: "%s", %s: [%s] }',
                 $variable['column'],
                 $variable['operator'],
                 $variable['value'],
-                $variable['JOIN']['operator'],
-                $variable['JOIN']['condition']['column'],
-                $variable['JOIN']['condition']['operator'],
-                $variable['JOIN']['condition']['value']
+                $joinOperator,
+                implode(', ', $conditionStrs)
             );
         } else {
-            $variablesStr = sprintf('{ column: %s, operator: %s, value: "%s" }', $variable['column'], $variable['operator'], $variable['value']);
+            $variablesStr = $this->formatGraphQLCondition($variable);
         }
 
         return $variablesStr;

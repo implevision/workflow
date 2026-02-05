@@ -183,10 +183,19 @@ class DispatchWorkflowService
             if ($condition['applyRuleTo'] == 'CERTAIN' && ! $this->isManuallyInvoked) {
                 $conditionsToApply = [];
                 foreach ($condition['applyConditionRules']['children'] as $certainCondition) {
+                    // The relation string is expected to be in the format "relation@column":
+                    // - The part before "@" is the relation name (e.g. the infra model relation).
+                    // - The part after "@" is the column/field within that relation to apply the condition to.
+                    $relation = $certainCondition['relation'] ?? '';
+                    $relationParts = explode('@', trim($relation), 2);
+                    $relationName = isset($relationParts[0]) ? $relationParts[0] : null;
+                    $relationColumn = isset($relationParts[1]) ? $relationParts[1] : '';
+
                     $conditionsToApply[] = GraphQLSchemaBuilderService::getQueryMapping(
-                        $certainCondition['field'],
+                        $relationColumn,
                         $certainCondition['comparator'],
-                        $certainCondition['expectedValue']
+                        $certainCondition['expectedValue'],
+                        $relationName,
                     );
                 }
 
