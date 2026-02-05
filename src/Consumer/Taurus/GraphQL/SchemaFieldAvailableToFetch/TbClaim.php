@@ -391,7 +391,7 @@ class TbClaim
         // Fallback to holding company name if not found
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
 
-        return $holdingCompanyDetail['s_HoldingCompanyName'] ?? '';
+        return $holdingCompanyDetail['wyo'] ?? '';
     }
 
     public function getInsuredPortalUrl()
