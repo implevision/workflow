@@ -98,7 +98,7 @@ function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
     return sprintf('%s %s %s', 'php artisan ', $command['command'], implode(', ', $command['options']));
 }
 
-function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [])
+function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [])
 {
     $data = json_encode((array) $data);
     if (isTenantBaseSystem()) {
@@ -109,7 +109,7 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data 
             'options' => [
                 'commandname' => 'taurus:dispatch-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier", "data=$data"],
+                '--option' => ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier", "data=$data", "appendPlaceHolders=$entityPlaceHoldersToAppend"],
             ],
         ];
     } else {
@@ -119,12 +119,13 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data 
                 '--workflowId' => $workflowId,
                 '--recordIdentifier' => $recordIdentifier,
                 '--data' => $data,
+                '--appendPlaceHolders' => $entityPlaceHoldersToAppend,
             ],
         ];
     }
 }
 
-function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [])
+function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [])
 {
     $entityData = json_encode((array) $entityData);
     if (isTenantBaseSystem()) {
@@ -135,7 +136,7 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
             'options' => [
                 'commandname' => 'taurus:invoke-matching-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData"],
+                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders"],
             ],
         ];
     } else {
@@ -146,6 +147,7 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
                 '--Entity' => $entity,
                 '--EntityType' => $entityType,
                 '--EntityData' => $entityData,
+                '--EntityPlaceHoldersToAppend' => $appendPlaceHolders,
             ],
         ];
     }
