@@ -805,7 +805,7 @@ class TbPotransaction
         }
 
         $address = [
-            'addressLine1' => ($addressArr['houseNo'] ?? '') . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
             'city' => $addressArr['tbCity']['name'] ?? null,
             // 'county' => $addressArr['tbCounty']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
@@ -813,7 +813,7 @@ class TbPotransaction
         ];
 
         if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
-            $address['postalCode'] .= ' - ' . $addressArr['postalCodeSuffix'];
+            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
         }
 
         $address = array_filter(array_map('trim', $address), function ($item) {
@@ -907,13 +907,14 @@ class TbPotransaction
         // Ensure we are working with an array and 'company' key exists and is an array
         if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
             $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
-            if (!empty($companyName)) {
+            if (! empty($companyName)) {
                 return $companyName;
             }
         }
 
         // Fallback to holding company name if not found
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
         return $holdingCompanyDetail['s_HoldingCompanyName'] ?? '';
     }
 
@@ -1036,8 +1037,10 @@ class TbPotransaction
         // Returns holding company website URL if insuredPortal is empty
         if (empty($insuredPortal)) {
             $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
             return $holdingCompanyDetail['insured_portal'];
         }
+
         // Otherwise, return insuredPortal
         return $insuredPortal;
     }

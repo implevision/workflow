@@ -383,13 +383,14 @@ class TbClaim
         // Ensure we are working with an array and 'company' key exists and is an array
         if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
             $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
-            if (!empty($companyName)) {
+            if (! empty($companyName)) {
                 return $companyName;
             }
         }
 
         // Fallback to holding company name if not found
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
         return $holdingCompanyDetail['s_HoldingCompanyName'] ?? '';
     }
 
