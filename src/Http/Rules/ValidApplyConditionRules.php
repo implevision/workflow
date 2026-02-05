@@ -29,36 +29,70 @@ class ValidApplyConditionRules implements ValidationRule
             array_keys($comparatorsConfig['boolean'] ?? [])
         );
 
-        // If applyRuleTo is 'CERTAIN', validate each condition
+        // If applyRuleTo is 'CERTAIN', validate each condition recursively
         if ($applyRuleTo === 'CERTAIN') {
-            foreach ($value as $condition) {
-                if ($condition['type'] === 'rule') {
-                    if (
-                        ! isset($condition['field']) ||
-                        $condition['field'] === '' ||
-                        $condition['field'] === null
-                    ) {
-                        $fail('A valid field value for rules is required for condition '.$conditionIndex);
-                    }
+            foreach ($value as $i => $condition) {
+                $this->validateRuleOrGroup($condition, $fail, $allowedComparators, $conditionIndex, $i + 1, []);
+            }
+        }
+    }
 
-                    if (
-                        ! isset($condition['comparator']) ||
-                        $condition['comparator'] === '' ||
-                        ! in_array($condition['comparator'], $allowedComparators)
-                    ) {
-                        $fail('A valid comparator value for rules is required for condition '.$conditionIndex);
-                    }
+    /**
+     * Recursively validate a rule or group condition.
+     *
+     * @param  array  $condition
+     * @param  Closure  $fail
+     * @param  array  $allowedComparators
+     * @param  int  $conditionIndex
+     */
+    private function validateRuleOrGroup($condition, $fail, $allowedComparators, $conditionIndex, $ruleNumber = null, $groupPath = [])
+    {
+        if (! isset($condition['type'])) {
+            return;
+        }
+        if ($condition['type'] === 'rule') {
+            $missingFields = [];
+            if (
+                ! isset($condition['field']) ||
+                $condition['field'] === '' ||
+                $condition['field'] === null
+            ) {
+                $missingFields[] = 'field';
+            }
 
-                    if (
-                        ! $this->isExpectedValueAllowedToBeEmptyForGivenRule($condition)
-                        && (! array_key_exists('expectedValue', $condition)
-                            || $condition['expectedValue'] === null
-                            || (is_string($condition['expectedValue']) && trim($condition['expectedValue']) === '')
-                        )
-                    ) {
-                        $fail('A valid expected value for rules is required for condition '.$conditionIndex);
-                    }
+            if (
+                ! isset($condition['comparator']) ||
+                $condition['comparator'] === '' ||
+                ! in_array($condition['comparator'], $allowedComparators)
+            ) {
+                $missingFields[] = 'comparator';
+            }
+
+            if (
+                ! $this->isExpectedValueAllowedToBeEmptyForGivenRule($condition)
+                && (! array_key_exists('expectedValue', $condition)
+                    || $condition['expectedValue'] === null
+                    || (
+                        is_string($condition['expectedValue']) &&
+                        trim($condition['expectedValue']) === ''
+                    )
+                )
+            ) {
+                $missingFields[] = 'expected value';
+            }
+
+            if (! empty($missingFields)) {
+                $groupStr = '';
+                if (! empty($groupPath)) {
+                    $groupStr = ' in group '.implode(' > ', $groupPath);
                 }
+                $fail('The following fields are required for rule '.$ruleNumber.$groupStr.' in condition '.$conditionIndex.': '.implode(', ', $missingFields).'.');
+            }
+        } elseif ($condition['type'] === 'group' && isset($condition['children']) && is_array($condition['children'])) {
+            // Add this group index to the path
+            $currentGroupPath = array_merge($groupPath, [$ruleNumber]);
+            foreach ($condition['children'] as $i => $child) {
+                $this->validateRuleOrGroup($child, $fail, $allowedComparators, $conditionIndex, $i + 1, $currentGroupPath);
             }
         }
     }
