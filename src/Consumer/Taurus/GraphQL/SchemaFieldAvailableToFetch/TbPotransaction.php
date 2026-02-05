@@ -805,7 +805,7 @@ class TbPotransaction
         }
 
         $address = [
-            'addressLine1' => ($addressArr['houseNo'] ?? '') . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
             'city' => $addressArr['tbCity']['name'] ?? null,
             // 'county' => $addressArr['tbCounty']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
@@ -813,7 +813,7 @@ class TbPotransaction
         ];
 
         if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
-            $address['postalCode'] .= ' - ' . $addressArr['postalCodeSuffix'];
+            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
         }
 
         $address = array_filter(array_map('trim', $address), function ($item) {
@@ -914,6 +914,7 @@ class TbPotransaction
 
         // Fallback to holding company name if not found
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
         return $holdingCompanyDetail['wyo'] ?? '';
     }
 

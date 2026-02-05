@@ -390,6 +390,7 @@ class TbClaim
 
         // Fallback to holding company name if not found
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
         return $holdingCompanyDetail['wyo'] ?? '';
     }
 
