@@ -33,5 +33,5 @@ class WorkflowCondition extends Model
     public function actions()
     {
         return $this->hasMany(WorkflowAction::class, 'condition_id');
-    }
+    }  
 }
