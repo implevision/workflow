@@ -2,11 +2,12 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbAgentTasksMasterMapping
 {
-   /**
+    /**
      * @var array
      *
      * This property holds the mapping of fields that are available to fetch.
@@ -15,7 +16,7 @@ class TbAgentTasksMasterMapping
      */
     protected $fieldMapping = [];
 
-   /**
+    /**
      * @var string|null The name of the query associated with this class.
      */
     protected $queryName;
@@ -175,7 +176,7 @@ class TbAgentTasksMasterMapping
 
             'Title' => [
                 'GraphQLschemaToReplace' => [
-                 'title' => null,
+                    'title' => null,
                 ],
                 'jqFilter' => '[.policyAgentTaskQuery.title]',
             ],
@@ -190,8 +191,8 @@ class TbAgentTasksMasterMapping
             ],
             'Type' => [
                 'GraphQLschemaToReplace' => [
-                        'task' => [
-                            'metadata' => null,
+                    'task' => [
+                        'metadata' => null,
                     ],
                 ],
                 'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
@@ -199,8 +200,8 @@ class TbAgentTasksMasterMapping
             ],
             'SubType' => [
                 'GraphQLschemaToReplace' => [
-                        'task' => [
-                            'metadata' => null,
+                    'task' => [
+                        'metadata' => null,
                     ],
                 ],
                 'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
@@ -208,8 +209,8 @@ class TbAgentTasksMasterMapping
             ],
             'Reason' => [
                 'GraphQLschemaToReplace' => [
-                        'task' => [
-                            'metadata' => null,
+                    'task' => [
+                        'metadata' => null,
                     ],
                 ],
                 'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
@@ -217,8 +218,8 @@ class TbAgentTasksMasterMapping
             ],
             'ReasonCode' => [
                 'GraphQLschemaToReplace' => [
-                        'task' => [
-                            'metadata' => null,
+                    'task' => [
+                        'metadata' => null,
                     ],
                 ],
                 'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
@@ -226,8 +227,8 @@ class TbAgentTasksMasterMapping
             ],
             'Task' => [
                 'GraphQLschemaToReplace' => [
-                        'task' => [
-                            'metadata' => null,
+                    'task' => [
+                        'metadata' => null,
                     ],
                 ],
                 'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
@@ -235,8 +236,8 @@ class TbAgentTasksMasterMapping
             ],
             'DocumentName' => [
                 'GraphQLschemaToReplace' => [
-                        'task' => [
-                            'metadata' => null,
+                    'task' => [
+                        'metadata' => null,
                     ],
                 ],
                 'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
@@ -244,8 +245,8 @@ class TbAgentTasksMasterMapping
             ],
             'SourceSystem' => [
                 'GraphQLschemaToReplace' => [
-                        'task' => [
-                            'metadata' => null,
+                    'task' => [
+                        'metadata' => null,
                     ],
                 ],
                 'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
@@ -253,8 +254,8 @@ class TbAgentTasksMasterMapping
             ],
             'DueDate' => [
                 'GraphQLschemaToReplace' => [
-                        'task' => [
-                            'metadata' => null,
+                    'task' => [
+                        'metadata' => null,
                     ],
                 ],
                 'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
@@ -262,9 +263,11 @@ class TbAgentTasksMasterMapping
             ],
             'PremiumDue' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'premiumChange' => null,
-                        'policyFees' => null,
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'premiumChange' => null,
+                            'policyFees' => null,
+                        ],
                     ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction',
@@ -272,20 +275,24 @@ class TbAgentTasksMasterMapping
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPolicy' => [
-                            'policyNumber' => null,
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'policyNumber' => null,
+                            ],
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.TbPolicy.policyNumber',
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.policyNumber',
             ],
-            
+
             'PolicyNumberWithoutPrefix' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'policy' => [
-                            'policyNumber' => null,
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'policyNumber' => null,
+                            ],
                         ],
                     ],
                 ],
@@ -295,10 +302,12 @@ class TbAgentTasksMasterMapping
 
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'tbAccountMaster' => [
-                            'TbPersoninfo' => [
-                                'fullName' => null,
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'tbAccountMaster' => [
+                                'TbPersoninfo' => [
+                                    'fullName' => null,
+                                ],
                             ],
                         ],
                     ],
@@ -307,10 +316,12 @@ class TbAgentTasksMasterMapping
             ],
             'AgencyCode' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'tbAccountMaster' => [
-                            'TbPersoninfo' => [
-                                'personUniqueId' => null,
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'tbAccountMaster' => [
+                                'TbPersoninfo' => [
+                                    'personUniqueId' => null,
+                                ],
                             ],
                         ],
                     ],
@@ -319,8 +330,10 @@ class TbAgentTasksMasterMapping
             ],
             'PotentialDiscountLostIndicator' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'id' => null,
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'id' => null,
+                        ],
                     ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.id',
@@ -328,8 +341,10 @@ class TbAgentTasksMasterMapping
             ],
             'PremiumCapDiscountAmount' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'id' => null,
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'id' => null,
+                        ],
                     ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.id',
@@ -337,10 +352,12 @@ class TbAgentTasksMasterMapping
             ],
             'WyoAgencyAgentCode' => [
                 'GraphQLschemaToReplace' => [
-                    'policyTransaction' => [
-                        'TbPersoninfo' => [
-                            'additionalInfo' => [
-                                'wyoAgencyAgentCode' => null,
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'TbPersoninfo' => [
+                                'additionalInfo' => [
+                                    'wyoAgencyAgentCode' => null,
+                                ],
                             ],
                         ],
                     ],
@@ -447,7 +464,7 @@ class TbAgentTasksMasterMapping
         return $this->parseMetadata($metadata, 'task');
     }
 
-        public function parsePotentialDiscountLost($transactionId, $coverageCode)
+    public function parsePotentialDiscountLost($transactionId, $coverageCode)
     {
         // TODO: TMP fix. Need to covert to actual one
         $coverageData = \DB::select(
