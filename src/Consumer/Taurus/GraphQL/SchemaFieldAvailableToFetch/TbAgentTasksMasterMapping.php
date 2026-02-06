@@ -172,111 +172,92 @@ class TbAgentTasksMasterMapping
                 'jqFilter' => '[.policyAgentTaskQuery.agentTask.agent.emailInfo[0] | select(.isDefault == "Y")]',
                 'parseResultCallback' => 'parseAssignedAgentEmail',
             ],
+
             'Title' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' => [
-                        'title' => null,
-                    ],
+                 'title' => null,
                 ],
-                'jqFilter' => '[.policyAgentTaskQuery.agentTask.taskMapping.title]',
+                'jqFilter' => '[.policyAgentTaskQuery.title]',
             ],
             'isEnabledForWorkflow' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' => [
-                        'task' => [
-                            'metadata' => null,
-                        ],
+                    'task' => [
+                        'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '[.policyAgentTaskQuery.agentTask.taskMapping[].task.metadata]',
+                'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
                 'parseResultCallback' => 'parseIsEnabledForWorkflow',
             ],
             'Type' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' => [
                         'task' => [
                             'metadata' => null,
-                        ],
                     ],
                 ],
-                'jqFilter' => '[.policyAgentTaskQuery.agentTask.taskMapping[].task.metadata]',
+                'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
                 'parseResultCallback' => 'parseTaskType',
             ],
             'SubType' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' => [
                         'task' => [
                             'metadata' => null,
-                        ],
                     ],
                 ],
-                'jqFilter' => '[.policyAgentTaskQuery.agentTask.taskMapping[].task.metadata]',
+                'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
                 'parseResultCallback' => 'parseTaskSubType',
             ],
             'Reason' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' => [
                         'task' => [
                             'metadata' => null,
-                        ],
                     ],
                 ],
-                'jqFilter' => '[.policyAgentTaskQuery.agentTask.taskMapping[].task.metadata]',
+                'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
                 'parseResultCallback' => 'parseTaskReason',
             ],
             'ReasonCode' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' => [
                         'task' => [
                             'metadata' => null,
-                        ],
                     ],
                 ],
-                'jqFilter' => '[.policyAgentTaskQuery.agentTask.taskMapping[].task.metadata]',
+                'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
                 'parseResultCallback' => 'parseTaskReasonCode',
             ],
             'Task' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' => [
                         'task' => [
                             'metadata' => null,
-                        ],
                     ],
                 ],
-                'jqFilter' => '[.policyAgentTaskQuery.agentTask.taskMapping[].task.metadata]',
+                'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
                 'parseResultCallback' => 'parseTaskDetails',
             ],
             'DocumentName' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' => [
                         'task' => [
                             'metadata' => null,
-                        ],
                     ],
                 ],
-                'jqFilter' => '[.policyAgentTaskQuery.agentTask.taskMapping[].task.metadata]',
+                'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
                 'parseResultCallback' => 'parseTaskDocumentName',
             ],
             'SourceSystem' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' => [
                         'task' => [
                             'metadata' => null,
-                        ],
                     ],
                 ],
-                'jqFilter' => '[.policyAgentTaskQuery.agentTask.taskMapping[].task.metadata]',
+                'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
                 'parseResultCallback' => 'parseSourceSystem',
             ],
             'DueDate' => [
                 'GraphQLschemaToReplace' => [
-                    'taskMapping' => [
                         'task' => [
                             'metadata' => null,
-                        ],
                     ],
                 ],
-                'jqFilter' => '[.policyAgentTaskQuery.agentTask.taskMapping[].task.metadata]',
+                'jqFilter' => '[.policyAgentTaskQuery.task.metadata]',
                 'parseResultCallback' => 'parseDueDate',
             ],
             'PremiumDue' => [
