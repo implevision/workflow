@@ -666,4 +666,26 @@ class WorkflowService
             return [];
         }
     }
+
+    /**
+    * Retrieve workflows for a given module key.
+    *
+    * Resolves the module class from configuration using the provided module key
+    * and fetches related workflows from the repository.
+    *
+    * @param  string  $moduleKey
+    *
+    * @return Collection
+    */
+    public function moduleWiseWorkflow(string $moduleKey)
+    {
+        $moduleClass = config("workflow.modules.$moduleKey");
+
+        if (! $moduleClass) {
+            return collect();
+     }
+
+        return $this->workflowRepo->all(true)->where('module', $moduleClass)->load(['conditions.actions' ])->values();
+    }
 }
+
