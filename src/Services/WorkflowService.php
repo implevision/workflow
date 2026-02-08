@@ -712,7 +712,7 @@ class WorkflowService
     *
     * @return Collection
     */
-    public function getCategoryWorkflows(string $moduleKey)
+    public function moduleWiseWorkflow(string $moduleKey)
     {
         $moduleClass = config("workflow.modules.$moduleKey");
 
