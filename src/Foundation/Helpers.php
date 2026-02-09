@@ -101,6 +101,7 @@ function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
 function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [])
 {
     $data = json_encode((array) $data);
+    $entityPlaceHoldersToAppend = json_encode((array) $entityPlaceHoldersToAppend);
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
 
