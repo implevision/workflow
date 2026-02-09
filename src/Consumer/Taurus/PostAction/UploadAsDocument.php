@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Consumer\Taurus\PostAction;
 
 use Avatar\Infrastructure\Models\Api\v1\DocumentUploadBatchModel;
 use Avatar\Infrastructure\Models\Api\v1\TbClaimLog;
+use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Illuminate\Support\Facades\Auth;
 
 class UploadAsDocument
@@ -21,7 +22,7 @@ class UploadAsDocument
 
         if (str_ends_with($module, 'TbPotransaction')) {
             $recordInfo = $module::find($recordIdentifier);
-            $referenceNo = $recordInfo->n_potransaction_PK ?? '';
+            $referenceNo = $recordInfo->s_PolicyQuoteNo ?? '';
             $module = 'Policy';
         }
 
