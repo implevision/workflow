@@ -56,17 +56,16 @@ class Workflow extends Model
     }
 
     /**
-    * Scope to retrieve only active workflows.
-    *
-    * @param $query
-    * @return \Illuminate\Database\Eloquent\Builder
-    */
+     * Scope to retrieve only active workflows.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeActive($query)
     {
         return $query->where('is_active', 1);
     }
 
-       public function actions()
+    public function actions()
     {
         return $this->hasManyThrough(
             WorkflowAction::class,

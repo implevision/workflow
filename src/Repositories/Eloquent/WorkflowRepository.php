@@ -15,17 +15,17 @@ class WorkflowRepository implements WorkflowRepositoryInterface
         $this->model = $model;
     }
 
-public function all(bool $onlyActive = false): Collection
-{
-    $query = $this->model
-        ->select('id', 'module', 'name', 'description', 'is_active');
+    public function all(bool $onlyActive = false): Collection
+    {
+        $query = $this->model
+            ->select('id', 'module', 'name', 'description', 'is_active');
 
-    if ($onlyActive) {
-        $query->active();
+        if ($onlyActive) {
+            $query->active();
+        }
+
+        return $query->get();
     }
-
-    return $query->get();
-}
 
     public function create(array $data): Workflow
     {
@@ -97,21 +97,18 @@ public function all(bool $onlyActive = false): Collection
 
         return $query->get()->toArray();
     }
-    
+
     /**
-    * Get workflows by module name.
-    *
-    * This method fetches all workflow records that belong to the given module.
-    * Only required columns are selected to optimize query performance.
-    *
-    * @param  string  $module  
-    * @return Collection  
-    */
+     * Get workflows by module name.
+     *
+     * This method fetches all workflow records that belong to the given module.
+     * Only required columns are selected to optimize query performance.
+     */
     public function getByModule(string $module): Collection
     {
         return $this->model
             ->where('module', $module)
-            ->active()   
+            ->active()
             ->select('id', 'name', 'description')
             ->get();
     }

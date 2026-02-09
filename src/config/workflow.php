@@ -77,8 +77,8 @@ return [
         'ses:SendBulkEmail' => 'Allows sending bulk emails (via SendBulkEmail API).',
     ],
 
-      'modules' => [
+    'modules' => [
         'claim' => Avatar\Infrastructure\Models\Api\v1\TbClaim::class,
         'policy' => Avatar\Infrastructure\Models\Api\v1\TbPolicy::class,
-    ]
+    ],
 ];
