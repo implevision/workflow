@@ -55,7 +55,7 @@ class InvokeMatchingWorkflowJob implements ShouldQueue
                 Log::info('WORKFLOW - Error dispatching matching workflow: '.$e->getMessage());
             }
         } catch (\Exception $e) {
-            Log::error('WORKFLOW - '.$e->getMessage());
+            Log::error('WORKFLOW - '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
         }
     }
 }
