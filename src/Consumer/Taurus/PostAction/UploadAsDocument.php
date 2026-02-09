@@ -4,7 +4,6 @@ namespace Taurus\Workflow\Consumer\Taurus\PostAction;
 
 use Avatar\Infrastructure\Models\Api\v1\DocumentUploadBatchModel;
 use Avatar\Infrastructure\Models\Api\v1\TbClaimLog;
-use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -29,6 +28,30 @@ class UploadAsDocument
                 ->value('tb_policies.PolicyNo');
             $referenceNo = $policyNo ?? '';
             $module = 'Policy';
+        }
+
+        if (str_ends_with($module, 'TbAgentTasksMaster')) {
+            // TODO:: get $referenceNo
+            $module = 'Policy';
+        }
+
+        if (str_ends_with($module, 'TbQuotepolicy')) {
+            // TODO:: get $referenceNo
+            // TODO: implement in infra/DocumentUploadBatchModel
+            // TODO: Need discussion
+            $module = '????';
+        }
+
+        if (str_ends_with($module, 'TbPersonInfo')) {
+            // TODO:: get $referenceNo
+            // TODO: implement in infra/DocumentUploadBatchModel
+            $module = 'Producer';
+        }
+
+        if (str_ends_with($module, 'TbPersonTbUserInfo')) {
+            // TODO:: get $referenceNo
+            // TODO: implement in infra/DocumentUploadBatchModel
+            $module = '?????';
         }
 
         $docTypeValue = $preparedData['docTypeValue'];
