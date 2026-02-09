@@ -48,7 +48,7 @@ class UploadAsDocument
             $module = 'Producer';
         }
 
-        if (str_ends_with($module, 'TbPersonTbUserInfo')) {
+        if (str_ends_with($module, 'TbUser')) {
             // TODO:: get $referenceNo
             // TODO: implement in infra/DocumentUploadBatchModel
             $module = '?????';
