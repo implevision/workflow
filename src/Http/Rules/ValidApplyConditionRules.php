@@ -40,12 +40,12 @@ class ValidApplyConditionRules implements ValidationRule
     /**
      * Recursively validate a rule or group condition.
      *
-     * @param  array  $condition The condition to validate, can be a rule or a group.
-     * @param  Closure  $fail The validation failure callback.
-     * @param  array  $allowedComparators The list of allowed comparators.
-     * @param  int  $conditionIndex The 1-based index of the parent condition.
-     * @param  int|null  $ruleNumber The 1-based index of the rule within its condition or group, if applicable.
-     * @param  array  $groupPath The hierarchical path of parent groups for building error messages.
+     * @param  array  $condition  The condition to validate, can be a rule or a group.
+     * @param  Closure  $fail  The validation failure callback.
+     * @param  array  $allowedComparators  The list of allowed comparators.
+     * @param  int  $conditionIndex  The 1-based index of the parent condition.
+     * @param  int|null  $ruleNumber  The 1-based index of the rule within its condition or group, if applicable.
+     * @param  array  $groupPath  The hierarchical path of parent groups for building error messages.
      * @return void
      */
     private function validateRuleOrGroup($condition, $fail, $allowedComparators, $conditionIndex, $ruleNumber = null, $groupPath = [])
