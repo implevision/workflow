@@ -79,6 +79,6 @@ return [
 
     'modules' => [
         'claim' => Avatar\Infrastructure\Models\Api\v1\TbClaim::class,
-        'policy' => Avatar\Infrastructure\Models\Api\v1\TbPolicy::class,
+        'policy' => Avatar\Infrastructure\Models\Api\v1\TbPotransaction::class,
     ],
 ];
