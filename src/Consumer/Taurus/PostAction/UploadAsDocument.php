@@ -19,6 +19,12 @@ class UploadAsDocument
             $module = 'Claim';
         }
 
+        if (str_ends_with($module, 'TbPotransaction')) {
+            $recordInfo = $module::find($recordIdentifier);
+            $referenceNo = $recordInfo->n_potransaction_PK ?? '';
+            $module = 'Policy';
+        }
+
         $docTypeValue = $preparedData['docTypeValue'];
         $docName = $preparedData['docName'];
         $docUrl = $preparedData['docUrl'];
