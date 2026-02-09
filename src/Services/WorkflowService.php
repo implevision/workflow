@@ -401,8 +401,7 @@ class WorkflowService
         foreach ($matchedWorkflow as $workflow) {
             foreach ($workflow['conditions'] as $conditions) {
                 if ($conditions['conditions']['applyRuleTo'] == 'CERTAIN') {
-                    $entityData = $entityType::find($entity);
-                    // TODO: Call workflow engine to check if the condition is met
+                    array_push($workflowToRun, $workflow['id']);
                 } else {
                     array_push($workflowToRun, $workflow['id']);
                 }
