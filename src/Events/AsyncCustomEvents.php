@@ -15,7 +15,7 @@ class AsyncCustomEvents
 
     public array $data;
 
-    public array $appendPlaceHolders;
+    public array $appendPlaceHolders = [];
 
     /**
      * Create a new event instance.
