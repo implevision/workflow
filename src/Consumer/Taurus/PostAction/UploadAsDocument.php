@@ -156,34 +156,35 @@ class UploadAsDocument
      *
      * @return array{module:string,referenceNo:int,}|null
      */
-    public static function getAttachmentModuleAndReferenceNo($table, $matchedModuleIdentifierData, $recordIdentifier): array | null
+    public static function getAttachmentModuleAndReferenceNo(string $table, array $matchedModuleIdentifierData, int $recordIdentifier): ?array 
     {
         $moduleType = $matchedModuleIdentifierData['moduleIdentifier'] ?? null;
-        $module = $matchedModuleIdentifierData['module'] ?? null;
-        $recordInfo = $table::find($recordIdentifier) ?? null;
+        $module     = $matchedModuleIdentifierData['module'] ?? null;
 
-        switch ($moduleType) {
-            case 'TbClaim':
-                return self::getClaimModuleAndReferenceNo($recordInfo, $module);
-
-            case 'TbPotransaction':
-                return self::getPolicyTransactionModuleAndReferenceNo($recordInfo, $module);
-
-            case 'TbAgentTasksMaster':
-                return self::getAgentTasksModuleAndReferenceNo($recordInfo, $module);
-
-            case 'TbQuotepolicy':
-                return self::getQuotePolicyModuleAndReferenceNo($recordInfo, $module);
-
-            case 'TbPersonInfo':
-                return self::getPersonInfoModuleAndReferenceNo($recordInfo, $module);
-
-            case 'TbUser':
-                return self::getUserModuleAndReferenceNo($recordInfo, $module);
-
-            default:
-                return null;
+        if (!$moduleType || !$module || !$recordIdentifier) {
+            return null;
         }
+
+        $record = $table::find($recordIdentifier);
+
+        if (!$record) {
+            return null;
+        }
+
+        $handlers = [
+            'TbClaim'            => 'getClaimModuleAndReferenceNo',
+            'TbPotransaction'    => 'getPolicyTransactionModuleAndReferenceNo',
+            'TbAgentTasksMaster' => 'getAgentTasksModuleAndReferenceNo',
+            'TbQuotepolicy'      => 'getQuotePolicyModuleAndReferenceNo',
+            'TbPersonInfo'       => 'getPersonInfoModuleAndReferenceNo',
+            'TbUser'             => 'getUserModuleAndReferenceNo',
+        ];
+
+        $handler = $handlers[$moduleType] ?? null;
+
+        return $handler && is_callable(value: [self::class, $handler])
+            ? self::$handler($record, $module)
+            : null;
     }
 
     public static function getClaimModuleAndReferenceNo(object $recordInfo, string $module): array
