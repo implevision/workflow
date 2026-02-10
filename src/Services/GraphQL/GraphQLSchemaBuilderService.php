@@ -220,7 +220,7 @@ class GraphQLSchemaBuilderService
     /**
      * Converts a string to uppercase with underscores (e.g. "fieldName" to "FIELD_NAME")
      *
-     * @param  string  $str The input string
+     * @param  string  $str  The input string
      * @return string The converted string
      */
     public static function convertToUnderscore($str)
@@ -269,9 +269,8 @@ class GraphQLSchemaBuilderService
      * Formats a GraphQL condition from a structured array
      * - Checks for nested conditions and relations
      * - Checks for 'JOIN' operator
-     * 
-     * @param array $cond The condition array
-     * @return string
+     *
+     * @param  array  $cond  The condition array
      */
     private function formatGraphQLCondition(array $cond): string
     {
@@ -305,7 +304,8 @@ class GraphQLSchemaBuilderService
 
     /**
      * Formats a structured array into a GraphQL where condition string
-     * @param mixed $variable
+     *
+     * @param  mixed  $variable
      * @return string
      */
     public function arrayToGraphQLWhereCondition($variable)
