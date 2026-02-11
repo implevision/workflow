@@ -17,7 +17,7 @@
   ],
   "require": {
     "spatie/laravel-data": "^3.0 || ^4.14",
-    "aws/aws-sdk-php": "3.349.3"
+    "aws/aws-sdk-php": "^3.0"
   },
   "extra": {
     "laravel": {
