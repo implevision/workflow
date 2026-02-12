@@ -4,7 +4,6 @@ namespace Taurus\Workflow\Consumer\Taurus\PostAction;
 
 use Avatar\Infrastructure\Models\Api\v1\DocumentUploadBatchModel;
 use Avatar\Infrastructure\Models\Api\v1\TbClaimLog;
-use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Illuminate\Support\Facades\Auth;
 
 class UploadAsDocument

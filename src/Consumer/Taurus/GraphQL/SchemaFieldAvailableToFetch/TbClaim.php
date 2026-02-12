@@ -4,7 +4,7 @@ namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
-class TbClaim
+class TbClaim extends AbstractSchema
 {
     /**
      * @var array
