@@ -13,6 +13,16 @@ function getTablePrefix()
 }
 
 /**
+ * Get the database connection name for the workflow package.
+ *
+ * @return string
+ */
+function getWorkflowDBConnection()
+{
+    return config('workflow.db_connection', env('DB_CONNECTION_CORE', env('DB_CONNECTION', 'mysql')));
+}
+
+/**
  * Get the current tenant.
  *
  * @return string The tenant name.

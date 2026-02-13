@@ -52,6 +52,7 @@ class DispatchWorkflowService
      */
     public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [])
     {
+        config(['database.default' => 'core_system']);
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
         $this->workflowService = app(WorkflowService::class);
@@ -121,7 +122,7 @@ class DispatchWorkflowService
             $jobWorkflowId = $this->jobWorkflowRepo->createSingle($jobWorkflow);
             setRunningJobWorkflowId($jobWorkflowId);
         } catch (\Exception $e) {
-            \Log::error('WORKFLOW - Error while creating entry in JOB WORKFLOW table. '.$e->getMessage());
+            \Log::error('WORKFLOW - Error while creating entry in JOB WORKFLOW table. '.$e->getMessage().$e->getLine().$e->getFile());
 
             return false;
         }

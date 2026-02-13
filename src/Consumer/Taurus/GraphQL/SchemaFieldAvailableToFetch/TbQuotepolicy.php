@@ -2,7 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
-class TbClaim extends AbstractSchema
+class TbQuotepolicy extends AbstractSchema
 {
     /**
      * @var array
