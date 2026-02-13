@@ -114,7 +114,8 @@ class UploadAsDocument
      * Matches the payload module against predefined module identifiers
      * and returns the corresponding module data (name and identifier).
      *
-     * @param array  $moduleArray Predefined module definitions.
+     * @param  array  $moduleArray  Predefined module definitions.
+     *
      * @example :
      *                           [
      *                             [
@@ -123,11 +124,11 @@ class UploadAsDocument
      *                             ],
      *                             // ...
      *                           ]
-     * @param string $module Module value received from the payload.
      *
+     * @param  string  $module  Module value received from the payload.
      * @return array|null Matched module data or null if no match is found.
      */
-    public static function moduleMatches(array $moduleArray, string $module): array | null
+    public static function moduleMatches(array $moduleArray, string $module): ?array
     {
         foreach ($moduleArray as $value) {
             if (\Str::contains($module, $value['moduleIdentifier'])) {
@@ -141,43 +142,46 @@ class UploadAsDocument
     /**
      * Resolves module and reference details for a given record.
      *
-     * @param string $table Fully qualified Eloquent model class.
+     * @param  string  $table  Fully qualified Eloquent model class.
+     *
      * @example: 'Avatar/Infrastructure/Models/Api/v1/TbClaim' => TbClaim::class
      *
-     * @param array $matchedModuleIdentifierData this is the matched module data that is returned from the moduleMatches function which includes the module name and module identifier
+     * @param  array  $matchedModuleIdentifierData  this is the matched module data that is returned from the moduleMatches function which includes the module name and module identifier
+     *
      * @example:
      *                     [
      *                       'moduleIdentifier' => 'TbClaim',
      *                       'module' => 'Claim',
      *                     ]
      *
-     * @param int $recordIdentifier Primary key value of the target record.
+     * @param  int  $recordIdentifier  Primary key value of the target record.
+     *
      * @example: n_potransaction_PK for TbPotransaction, id for TbAgentTasksMaster, ClaimId_PK for TbClaim etc
      *
      * @return array{module:string,referenceNo:int,}|null
      */
-    public static function getAttachmentModuleAndReferenceNo(string $table, array $matchedModuleIdentifierData, int $recordIdentifier): ?array 
+    public static function getAttachmentModuleAndReferenceNo(string $table, array $matchedModuleIdentifierData, int $recordIdentifier): ?array
     {
         $moduleType = $matchedModuleIdentifierData['moduleIdentifier'] ?? null;
-        $module     = $matchedModuleIdentifierData['module'] ?? null;
+        $module = $matchedModuleIdentifierData['module'] ?? null;
 
-        if (!$moduleType || !$module || !$recordIdentifier) {
+        if (! $moduleType || ! $module || ! $recordIdentifier) {
             return null;
         }
 
         $record = $table::find($recordIdentifier);
 
-        if (!$record) {
+        if (! $record) {
             return null;
         }
 
         $handlers = [
-            'TbClaim'            => 'getClaimModuleAndReferenceNo',
-            'TbPotransaction'    => 'getPolicyTransactionModuleAndReferenceNo',
+            'TbClaim' => 'getClaimModuleAndReferenceNo',
+            'TbPotransaction' => 'getPolicyTransactionModuleAndReferenceNo',
             'TbAgentTasksMaster' => 'getAgentTasksModuleAndReferenceNo',
-            'TbQuotepolicy'      => 'getQuotePolicyModuleAndReferenceNo',
-            'TbPersonInfo'       => 'getPersonInfoModuleAndReferenceNo',
-            'TbUser'             => 'getUserModuleAndReferenceNo',
+            'TbQuotepolicy' => 'getQuotePolicyModuleAndReferenceNo',
+            'TbPersonInfo' => 'getPersonInfoModuleAndReferenceNo',
+            'TbUser' => 'getUserModuleAndReferenceNo',
         ];
 
         $handler = $handlers[$moduleType] ?? null;
@@ -198,7 +202,7 @@ class UploadAsDocument
     public static function getPolicyTransactionModuleAndReferenceNo(object $recordInfo, string $module): array
     {
         $policyNo = DB::table('tb_policies as policy')
-            ->where('n_PolicyNoId_PK', '=', $recordInfo->n_Policy_Master_FK)
+            ->where('n_PolicyNoId_PK', '=', $recordInfo->n_PolicyMaster_FK)
             ->value('policy.Policy_No') ?? '';
 
         return [
@@ -236,7 +240,7 @@ class UploadAsDocument
     {
         $statementId = DB::table('tb_accountmasters as am')
             ->where('am.n_PersonInfoId_FK', '=', $recordInfo->n_PersonInfoId_PK)
-            ->leftJoin('tb_paagentstatementmasters as pasm', 'pasm.n_PAAgentMasterFK', '=',  'am.n_AgencyAddlInfoId_PK')
+            ->leftJoin('tb_paagentstatementmasters as pasm', 'pasm.n_PAAgentMasterFK', '=', 'am.n_AgencyAddlInfoId_PK')
             ->value('pasm.n_PAAgentStatementMaster_PK') ?? '';
 
         return [
