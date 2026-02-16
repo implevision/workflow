@@ -646,6 +646,50 @@ class TbPotransaction
                 'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
                 'parseResultCallback' => 'parseCompanyName',
             ],
+            'AttachPaymentReceipt' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'docuploadinfo' => [
+                            'doctypes' => [
+                                'docTypeCode' => null,
+                            ],
+                            'docUploadDocInfoRel' => [
+                                'docUploadReference' => [
+                                    'tableRefId' => null,
+                                    'tableMasters' => [
+                                        'tableName' => null,
+                                    ],
+                                ],
+                                'docInfo' => [
+                                    'docPath' => null,
+                                    'docName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                // This finds the correct PAYMENTRECEIPT document,
+                // then extracts the first docInfo.docurl value.
+                'jqFilter' => '
+                [
+                      .policyQuery.policy.docuploadinfo[]
+                      | select(
+                      .doctypes.docTypeCode == "PAYMENTRECEIPT"
+                      and
+                      (.docUploadDocInfoRel[].docUploadReference.tableMasters.tableName == "tb_potransactions")
+                      )
+                      | .docUploadDocInfoRel[]
+                      | .docUploadReference.tableRefId as $tableRefId
+                      | .docInfo[]
+                      | { 
+                          name: .docName, 
+                          path: .docPath,
+                          tableRefId: $tableRefId
+                        }
+                    ]
+                ',
+                'parseResultCallback' => 'generatePresignedUrl',
+            ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
