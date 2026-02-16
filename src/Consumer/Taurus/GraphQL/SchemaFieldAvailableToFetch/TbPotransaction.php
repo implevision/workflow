@@ -690,6 +690,28 @@ class TbPotransaction
                 ',
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
+            'PaymentTransactionNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'policyAccountingPaymentLog' => [
+                            'orderNumber' => null
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.policy.policyAccountingPaymentLog[].metadata',
+                'parseResultCallback' => 'parsePaymentTransactionNumber',
+            ],
+            'PaymentReceivedDate' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'policyAccountingPaymentLog' => [
+                            'metadata' => null
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyQuery.policy.policyAccountingPaymentLog[].metadata',
+                'parseResultCallback' => 'parsePaymentReceivedDate',
+            ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
@@ -1087,5 +1109,41 @@ class TbPotransaction
 
         // Otherwise, return insuredPortal
         return $insuredPortal;
+    }
+
+    public function parsePaymentTransactionNumber($metadata)
+    {
+
+        // Metadata is already decoded, directly access the structure
+        if (!is_array($metadata)) {
+            return null;
+        }
+
+        // Check if the required nested path exists and return transaction_date
+        $transactionNumber = $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['paygov_tracking_id'] ?? null;
+
+        if ($transactionNumber) {
+            return $transactionNumber;
+        }
+
+        return null;
+    }
+
+    public function parsePaymentReceivedDate($metadata)
+    {
+
+        // Metadata is already decoded, directly access the structure
+        if (!is_array($metadata)) {
+            return null;
+        }
+
+        // Check if the required nested path exists and return transaction_date
+        $transactionDate = $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['transaction_date'] ?? null;
+
+        if ($transactionDate) {
+            return $this->formatDate($transactionDate);
+        }
+
+        return null;
     }
 }
