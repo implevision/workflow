@@ -27,6 +27,7 @@ class PostAction implements ShouldQueue
      */
     public function handle(): void
     {
+        setWorkflowDBConnection();
         switch ($this->payload['postAction']) {
             case '':
         }

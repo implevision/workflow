@@ -35,6 +35,7 @@ class EmailJob implements ShouldQueue
      */
     public function handle(): void
     {
+        setWorkflowDBConnection();
         $jobWorkflowId = ! empty($this->payload['jobWorkflowId']) ? $this->payload['jobWorkflowId'] : 0;
         $workflowId = ! empty($this->payload['workflowId']) ? $this->payload['workflowId'] : 0;
         $recordIdentifier = ! empty($this->payload['recordIdentifier']) ? $this->payload['recordIdentifier'] : 0;

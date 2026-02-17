@@ -52,7 +52,6 @@ class DispatchWorkflowService
      */
     public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [])
     {
-        config(['database.default' => 'core_system']);
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
         $this->workflowService = app(WorkflowService::class);

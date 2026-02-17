@@ -22,6 +22,13 @@ function getWorkflowDBConnection()
     return config('workflow.db_connection', env('DB_CONNECTION_CORE', env('DB_CONNECTION', 'mysql')));
 }
 
+function setWorkflowDBConnection()
+{
+    \Log::info('*****');
+    \Log::info(getWorkflowDBConnection());
+    config(['database.default' => getWorkflowDBConnection()]);
+}
+
 /**
  * Get the current tenant.
  *

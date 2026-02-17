@@ -8,7 +8,7 @@ class InitInstance
 {
     public function __construct()
     {
-        //gfsSaasUserdata(Config::get('workflow.default_system_user_id'));
+        gfsSaasUserdata(Config::get('workflow.default_system_user_id'));
     }
 
     /**

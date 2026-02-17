@@ -36,6 +36,7 @@ class InvokeMatchingWorkflow extends Command
      */
     public function handle()
     {
+        setWorkflowDBConnection();
         $entityType = $this->option('EntityType');
         $entity = $this->option('Entity');
         $entityAction = $this->option('EntityAction');

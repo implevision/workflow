@@ -27,7 +27,11 @@ class InstanceActionData extends Data
 
         foreach ($actions as $action) {
             if (isset($action['actionType'])) {
-                $mapped[$action['actionType']] = self::fromArray($action);
+                $actionData = self::fromArray($action);
+                if ($actionData instanceof InstanceActionData) {
+                    $actionData = $actionData->toArray();
+                }
+                $mapped[$action['actionType']] = $actionData;
             }
         }
 
