@@ -24,8 +24,6 @@ function getWorkflowDBConnection()
 
 function setWorkflowDBConnection()
 {
-    \Log::info('*****');
-    \Log::info(getWorkflowDBConnection());
     config(['database.default' => getWorkflowDBConnection()]);
 }
 
