@@ -121,7 +121,7 @@ class DispatchWorkflowService
             $jobWorkflowId = $this->jobWorkflowRepo->createSingle($jobWorkflow);
             setRunningJobWorkflowId($jobWorkflowId);
         } catch (\Exception $e) {
-            \Log::error('WORKFLOW - Error while creating entry in JOB WORKFLOW table. '.$e->getMessage().$e->getLine().$e->getFile());
+            \Log::error('WORKFLOW - Error while creating entry in JOB WORKFLOW table. '.$e->getMessage());
 
             return false;
         }
