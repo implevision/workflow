@@ -672,18 +672,18 @@ class TbPotransaction
                 // then extracts the first docInfo.docurl value.
                 'jqFilter' => '
                 [
-                      .policyQuery.policy.docuploadinfo[]
+                      .policyQuery?.policy?.docuploadinfo[]?
                       | select(
-                      .doctypes.docTypeCode == "PAYMENTRECEIPT"
+                      .doctypes?.docTypeCode? == "PAYMENTRECEIPT"
                       and
-                      (.docUploadDocInfoRel[].docUploadReference.tableMasters.tableName == "tb_potransactions")
+                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
                       )
-                      | .docUploadDocInfoRel[]
-                      | .docUploadReference.tableRefId as $tableRefId
-                      | .docInfo[]
-                      | { 
-                          name: .docName, 
-                          path: .docPath,
+                      | .docUploadDocInfoRel[]?
+                      | .docUploadReference?.tableRefId? as $tableRefId
+                      | .docInfo[]?
+                      | {
+                          name: .docName?,
+                          path: .docPath?,
                           tableRefId: $tableRefId
                         }
                     ]
@@ -692,24 +692,32 @@ class TbPotransaction
             ],
             'PaymentTransactionNumber' => [
                 'GraphQLschemaToReplace' => [
+                    'id' => null,
                     'policy' => [
                         'policyAccountingPaymentLog' => [
-                            'orderNumber' => null
+                            'metadata' => null,
+                        ],
+                        'product' => [
+                            'productCode' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.policyAccountingPaymentLog[].metadata',
+                'jqFilter' => '{metadata: .policyQuery?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyQuery?.id?, productCode: .policyQuery?.policy?.product?.productCode?}',
                 'parseResultCallback' => 'parsePaymentTransactionNumber',
             ],
             'PaymentReceivedDate' => [
                 'GraphQLschemaToReplace' => [
+                    'id' => null,
                     'policy' => [
                         'policyAccountingPaymentLog' => [
-                            'metadata' => null
+                            'metadata' => null,
+                        ],
+                        'product' => [
+                            'productCode' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.policyAccountingPaymentLog[].metadata',
+                'jqFilter' => '{metadata: .policyQuery?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyQuery?.id?, productCode: .policyQuery?.policy?.product?.productCode?}',
                 'parseResultCallback' => 'parsePaymentReceivedDate',
             ],
         ];
@@ -1111,39 +1119,89 @@ class TbPotransaction
         return $insuredPortal;
     }
 
-    public function parsePaymentTransactionNumber($metadata)
+    public function parsePaymentTransactionNumber($data)
     {
+        if (!is_array($data)) {
+            return null;
+        }
 
-        // Metadata is already decoded, directly access the structure
+        $metadata = $data['metadata'] ?? null;
+        $id = $data['id'] ?? null;
+        $productCode = $data['productCode'] ?? null;
+
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true);
+        }
+
         if (!is_array($metadata)) {
             return null;
         }
 
-        // Check if the required nested path exists and return transaction_date
-        $transactionNumber = $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['paygov_tracking_id'] ?? null;
+        if ($productCode === 'HiscoxFloodPlus') {
+            $stripeResponse = $metadata['stripe_response'] ?? null;
 
-        if ($transactionNumber) {
-            return $transactionNumber;
+            if (is_string($stripeResponse)) {
+                $stripeResponse = json_decode($stripeResponse, true);
+            }
+
+            if (!is_array($stripeResponse)) {
+                return null;
+            }
+
+            $stripeMetadata = $stripeResponse['metadata'] ?? null;
+
+            if (is_array($stripeMetadata) && (string)($stripeMetadata['transaction_id'] ?? '') === (string)$id) {
+                return $stripeResponse['id'] ?? null;
+            }
+
+            return null;
         }
 
-        return null;
+        // Default: FLOOD / NFIP products
+        return $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['paygov_tracking_id'] ?? null;
     }
 
-    public function parsePaymentReceivedDate($metadata)
+    public function parsePaymentReceivedDate($data)
     {
+        if (!is_array($data)) {
+            return null;
+        }
 
-        // Metadata is already decoded, directly access the structure
+        $metadata = $data['metadata'] ?? null;
+        $id = $data['id'] ?? null;
+        $productCode = $data['productCode'] ?? null;
+
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true);
+        }
+
         if (!is_array($metadata)) {
             return null;
         }
 
-        // Check if the required nested path exists and return transaction_date
-        $transactionDate = $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['transaction_date'] ?? null;
+        if ($productCode === 'HiscoxFloodPlus') {
+            $stripeResponse = $metadata['stripe_response'] ?? null;
 
-        if ($transactionDate) {
-            return $this->formatDate($transactionDate);
+            if (is_string($stripeResponse)) {
+                $stripeResponse = json_decode($stripeResponse, true);
+            }
+
+            if (!is_array($stripeResponse)) {
+                return null;
+            }
+
+            $stripeMetadata = $stripeResponse['metadata'] ?? null;
+
+            if (is_array($stripeMetadata) && (string)($stripeMetadata['transaction_id'] ?? '') === (string)$id) {
+                return $this->formatDate($stripeResponse['created'] ?? null);
+            }
+
+            return null;
         }
 
-        return null;
+        // Default: FLOOD / NFIP products
+        $transactionDate = $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['transaction_date'] ?? null;
+
+        return $transactionDate ? $this->formatDate($transactionDate) : null;
     }
 }
