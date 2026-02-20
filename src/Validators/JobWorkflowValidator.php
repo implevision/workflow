@@ -12,8 +12,13 @@ class JobWorkflowValidator
     {
         $workflowTable = getTablePrefix().'_workflows';
 
+        // workflow_id is nullable for manual workflow executions
+        $workflowIdRules = isset($record['workflow_id']) && $record['workflow_id'] !== null
+            ? ['required', 'integer', 'exists:'.$workflowTable.',id']
+            : ['nullable', 'integer'];
+
         Validator::make($record, [
-            'workflow_id' => ['required', 'integer', 'exists:'.$workflowTable.',id'],
+            'workflow_id' => $workflowIdRules,
             'status' => ['required', Rule::in(JobWorkflow::getAllowedStatuses())],
             'total_no_of_records_to_execute' => ['nullable', 'integer'],
             'total_no_of_records_executed' => ['nullable', 'integer'],

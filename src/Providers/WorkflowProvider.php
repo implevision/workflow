@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Providers;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
+use Taurus\Workflow\Console\Commands\DispatchManualWorkflow;
 use Taurus\Workflow\Console\Commands\DispatchWorkflow;
 use Taurus\Workflow\Console\Commands\HealthCheck;
 use Taurus\Workflow\Console\Commands\InvokeMatchingWorkflow;
@@ -53,6 +54,7 @@ class WorkflowProvider extends ServiceProvider
         );
 
         $this->commands([
+            DispatchManualWorkflow::class,
             DispatchWorkflow::class,
             HealthCheck::class,
             InvokeUpcomingWorkflow::class,
