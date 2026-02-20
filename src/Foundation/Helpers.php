@@ -126,6 +126,44 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data 
     }
 }
 
+function gitCommandToDispatchManualWorkflow(
+    string $module,
+    int|string $recordIdentifier = 0,
+    array $selectedActions = [],
+    array $actionsConfig = []
+): array {
+    $selectedActions = json_encode($selectedActions);
+    $actionsConfig = json_encode($actionsConfig);
+
+    if (isTenantBaseSystem()) {
+        $tenant = getTenant();
+
+        return [
+            'command' => 'tenants:run',
+            'options' => [
+                'commandname' => 'taurus:dispatch-manual-workflow',
+                '--tenants' => [$tenant],
+                '--option' => [
+                    "module=$module",
+                    "recordIdentifier=$recordIdentifier",
+                    "selectedActions=$selectedActions",
+                    "actionsConfig=$actionsConfig",
+                ],
+            ],
+        ];
+    }
+
+    return [
+        'command' => 'taurus:dispatch-manual-workflow',
+        'options' => [
+            '--module' => $module,
+            '--recordIdentifier' => $recordIdentifier,
+            '--selectedActions' => $selectedActions,
+            '--actionsConfig' => $actionsConfig,
+        ],
+    ];
+}
+
 function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [])
 {
     $entityData = json_encode((array) $entityData);

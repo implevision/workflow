@@ -57,9 +57,14 @@ class JobWorkflow extends Model
 
     /**
      * Get the next batch ID for the given workflow ID.
+     * Accepts null for manual workflow executions.
      */
-    public static function getNextBatchId(int $workflowId): int
+    public static function getNextBatchId(int|null $workflowId): int
     {
-        return (self::where('workflow_id', $workflowId)->max('batch_id') ?? 0) + 1;
+        $query = $workflowId !== null
+            ? self::where('workflow_id', $workflowId)
+            : self::whereNull('workflow_id');
+
+        return ($query->max('batch_id') ?? 0) + 1;
     }
 }
