@@ -74,7 +74,7 @@ class WorkflowService
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
-                'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? [],
+                'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? '',
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
                 'is_active' => $data['detail']['isActive'] ?? true,
             ]);
@@ -168,7 +168,7 @@ class WorkflowService
                 'recordActionToExecuteWorkflow' => $workflow->record_action_to_execute_workflow,
                 'dateTimeInfoToExecuteWorkflow' => $workflow->date_time_info_to_execute_workflow,
                 'customDateTimeInfoToExecuteWorkflow' => $workflow?->custom_date_time_info_to_execute_workflow ?? [],
-                'odysseyActionToExecuteWorkflow' => $workflow?->odyssey_action_to_execute_workflow ?? [],
+                'odysseyActionToExecuteWorkflow' => $workflow?->odyssey_action_to_execute_workflow ?? '',
             ],
             'workFlowConditions' => $workflowConditions,
         ]);
@@ -196,7 +196,7 @@ class WorkflowService
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
-                'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? [],
+                'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? '',
             ]);
 
             // get existing condition IDs
@@ -403,8 +403,7 @@ class WorkflowService
         foreach ($matchedWorkflow as $workflow) {
             foreach ($workflow['conditions'] as $conditions) {
                 if ($conditions['conditions']['applyRuleTo'] == 'CERTAIN') {
-                    $entityData = $entityType::find($entity);
-                    // TODO: Call workflow engine to check if the condition is met
+                    array_push($workflowToRun, $workflow['id']);
                 } else {
                     array_push($workflowToRun, $workflow['id']);
                 }
@@ -694,5 +693,25 @@ class WorkflowService
             \Log::error('Error getting workflow log by module: '.$exception->getMessage());
             return collect();
         }
+    }
+        
+    /**
+     * Retrieve workflows for a given module key.
+     *
+     * Resolves the module class from configuration using the provided module key
+     * and fetches related workflows from the repository.
+     *
+     *
+     * @return Collection
+     */
+    public function moduleWiseWorkflow(string $moduleKey)
+    {
+        $moduleClass = config("workflow.modules.$moduleKey");
+
+        if (! $moduleClass) {
+            return collect();
+        }
+
+        return $this->workflowRepo->all(true)->where('module', $moduleClass)->load(['conditions.actions'])->values();
     }
 }

@@ -66,6 +66,28 @@ class TbPotransaction
      */
     private function initializeFieldMapping()
     {
+        $addressStructure = [
+            'addressTypeCode' => null,
+            'houseNo' => null,
+            'streetName' => null,
+            'addressLine1' => null,
+            'addressLine2' => null,
+            'addressLine3' => null,
+            'addressLine4' => null,
+            'postalCode' => null,
+            'postalCodeSuffix' => null,
+            'tbCity' => [
+                'name' => null,
+            ],
+            'tbState' => [
+                'name' => null,
+            ],
+            'tbCountry' => [
+                'name' => null,
+            ],
+            'isDefaultAddress' => null,
+        ];
+
         $fieldMapping = [
             'PremiumDue' => [
                 'GraphQLschemaToReplace' => [
@@ -123,7 +145,25 @@ class TbPotransaction
             ],
             'AttachDecPage' => [
                 'GraphQLschemaToReplace' => [
-                    'docurl' => null,
+                    'policy' => [
+                        'docuploadinfo' => [
+                            'doctypes' => [
+                                'docTypeCode' => null,
+                            ],
+                            'docUploadDocInfoRel' => [
+                                'docUploadReference' => [
+                                    'tableRefId' => null,
+                                    'tableMasters' => [
+                                        'tableName' => null,
+                                    ],
+                                ],
+                                'docInfo' => [
+                                    'docPath' => null,
+                                    'docName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
                 // This finds the correct DECLARATION document,
                 // then extracts the first docInfo.docurl value.
@@ -136,9 +176,14 @@ class TbPotransaction
                       (.docUploadDocInfoRel[].docUploadReference.tableMasters.tableName == "tb_potransactions")
                       )
                       | .docUploadDocInfoRel[]
+                      | .docUploadReference.tableRefId as $tableRefId
                       | .docInfo[]
-                      | .docPath
-                      ]
+                      | { 
+                          name: .docName, 
+                          path: .docPath,
+                          tableRefId: $tableRefId
+                        }
+                    ]
                 ',
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
@@ -156,27 +201,7 @@ class TbPotransaction
                 'GraphQLschemaToReplace' => [
                     'policy' => [
                         'insuredPersonInfo' => [
-                            'TbPersonaddress' => [
-                                'addressTypeCode' => null,
-                                'houseNo' => null,
-                                'streetName' => null,
-                                'addressLine1' => null,
-                                'addressLine2' => null,
-                                'addressLine3' => null,
-                                'addressLine4' => null,
-                                'postalCode' => null,
-                                'postalCodeSuffix' => null,
-                                'tbCity' => [
-                                    'name' => null,
-                                ],
-                                'tbState' => [
-                                    'name' => null,
-                                ],
-                                'tbCountry' => [
-                                    'name' => null,
-                                ],
-                                'isDefaultAddress' => null,
-                            ],
+                            'TbPersonaddress' => $addressStructure,
                         ],
                     ],
                 ],
@@ -299,11 +324,23 @@ class TbPotransaction
             ],
             'TransactionSubType' => [
                 'GraphQLschemaToReplace' => [
+                    'policyRiskTransactionType' => [
+                        'policyRiskTransactionTypeCode' => null,
+                    ],
                     'policyRiskTransactionSubType' => [
                         'transactionSubTypeScreenName' => null,
                     ],
+                    'floodTransactionSubType' => [
+                        'reasonCode' => null,
+                    ],
+                    'policy' => [
+                        'product' => [
+                            'productCode' => null,
+                        ],
+                    ],
                 ],
-                'jqFilter' => '.policyQuery.policyRiskTransactionSubType.transactionSubTypeScreenName',
+                'jqFilter' => '.policyQuery',
+                'parseResultCallback' => 'transactionSubTypeScreenNameResolver',
             ],
             'WaitingPeriod' => [
                 'GraphQLschemaToReplace' => [
@@ -609,12 +646,182 @@ class TbPotransaction
                 'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
                 'parseResultCallback' => 'parseCompanyName',
             ],
+            'AttachPaymentReceipt' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'docuploadinfo' => [
+                            'doctypes' => [
+                                'docTypeCode' => null,
+                            ],
+                            'docUploadDocInfoRel' => [
+                                'docUploadReference' => [
+                                    'tableRefId' => null,
+                                    'tableMasters' => [
+                                        'tableName' => null,
+                                    ],
+                                ],
+                                'docInfo' => [
+                                    'docPath' => null,
+                                    'docName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                // This finds the correct PAYMENTRECEIPT document,
+                // then extracts the first docInfo.docurl value.
+                'jqFilter' => '
+                [
+                      .policyQuery?.policy?.docuploadinfo[]?
+                      | select(
+                      .doctypes?.docTypeCode? == "PAYMENTRECEIPT"
+                      and
+                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
+                      )
+                      | .docUploadDocInfoRel[]?
+                      | .docUploadReference?.tableRefId? as $tableRefId
+                      | .docInfo[]?
+                      | {
+                          name: .docName?,
+                          path: .docPath?,
+                          tableRefId: $tableRefId
+                        }
+                    ]
+                ',
+                'parseResultCallback' => 'generatePresignedUrl',
+            ],
+            'PaymentTransactionNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'id' => null,
+                    'policy' => [
+                        'policyAccountingPaymentLog' => [
+                            'metadata' => null,
+                        ],
+                        'product' => [
+                            'productCode' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '{metadata: .policyQuery?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyQuery?.id?, productCode: .policyQuery?.policy?.product?.productCode?}',
+                'parseResultCallback' => 'parsePaymentTransactionNumber',
+            ],
+            'PaymentReceivedDate' => [
+                'GraphQLschemaToReplace' => [
+                    'id' => null,
+                    'policy' => [
+                        'policyAccountingPaymentLog' => [
+                            'metadata' => null,
+                        ],
+                        'product' => [
+                            'productCode' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '{metadata: .policyQuery?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyQuery?.id?, productCode: .policyQuery?.policy?.product?.productCode?}',
+                'parseResultCallback' => 'parsePaymentReceivedDate',
+            ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
             'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
             'jqFilter' => '.policyQuery.policy.insuredPersonInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
             'parseResultCallback' => 'parseMailingAddress',
+        ];
+
+        $fieldMapping['PrimaryMortgageeName'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'mortgageePersonInfo' => [
+                        'fullName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'parseResultCallback' => 'parsePrimaryMortgageeName',
+        ];
+
+        $fieldMapping['PrimaryMortgageeLoanNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'loanNumber' => null,
+                ],
+            ],
+            'jqFilter' => '.policyQuery.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'parseResultCallback' => 'parseLoanNumber',
+        ];
+
+        $fieldMapping['PrimaryMortgageeAddress'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'mortgageeAddress' => $addressStructure,
+                ],
+            ],
+            'jqFilter' => '.policyQuery.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'parseResultCallback' => 'parsePrimaryMortgageeAddress',
+        ];
+
+        $fieldMapping['MortgageeInfo'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'loanNumber' => null,
+                    'mortgageeAddress' => $addressStructure,
+                    'mortgageePersonInfo' => [
+                        'fullName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.mortgageeInfo[]',
+            'parseResultCallback' => 'parseMortgageeInfo',
+        ];
+
+        $fieldMapping['InsuredPortal'] = [
+            'GraphQLschemaToReplace' => [
+                'tbAccountMaster' => [
+                    'TbPersoninfo' => [
+                        'brandedCompany' => [
+                            'company' => [
+                                'insuredPortal' => null,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[0].company.insuredPortal',
+            'parseResultCallback' => 'getInsuredPortalUrl',
+        ];
+
+        $fieldMapping['AdditionalInsuredName'] = [
+            'GraphQLschemaToReplace' => [
+                'additionalInterestInfo' => [
+                    'partyInterestCode' => null,
+                    'additionalPersonInfo' => [
+                        'fullname' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.additionalInterestInfo[] | select(.partyInterestCode == "ADDITIONALINSURED")',
+            'parseResultCallback' => 'parseAdditionalInsuredName',
+        ];
+
+        $fieldMapping['CompanyLogo'] = [
+            'GraphQLschemaToReplace' => [
+                'tbAccountMaster' => [
+                    'TbPersoninfo' => [
+                        'brandedCompany' => [
+                            'company' => [
+                                'logo' => null,
+                                'publicLogo' => null,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
+            'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
         return $fieldMapping;
@@ -738,15 +945,20 @@ class TbPotransaction
         return $label;
     }
 
-    public function generatePresignedUrl(array $paths): array
+    public function generatePresignedUrl(array $documents): array
     {
-        $presigned = [];
-
-        foreach ($paths as $path) {
-            $presigned[] = Helper::generatePresignedUrl($path);
-        }
-
-        return $presigned;
+        return array_values(array_map(
+            function ($doc) {
+                return [
+                    'name' => $this->formatFileName($doc['name']),
+                    'path' => Helper::generatePresignedUrl($doc['path']),
+                ];
+            },
+            array_filter($documents, function ($doc) {
+                return isset($doc['tableRefId'], $doc['name'])
+                    && str_contains($doc['name'], (string) $doc['tableRefId']);
+            })
+        ));
     }
 
     public function parseYesNoDisplayName($value)
@@ -766,10 +978,230 @@ class TbPotransaction
 
     public function parseCompanyName($brandedCompanyArr)
     {
-        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['companyName'])) {
-            return $brandedCompanyArr['company']['companyName'];
+        // Ensure we are working with an array and 'company' key exists and is an array
+        if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
+            $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
+            if (! empty($companyName)) {
+                return $companyName;
+            }
         }
 
-        return null;
+        // Fallback to holding company name if not found
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+        return $holdingCompanyDetail['wyo'] ?? '';
+    }
+
+    public function transactionSubTypeScreenNameResolver($policyData)
+    {
+        $productCode = $policyData['policy']['product']['productCode'] ?? null;
+        $isNfipProduct = Helper::isNfipProduct($productCode);
+
+        if (
+            $policyData['policyRiskTransactionType']['policyRiskTransactionTypeCode'] === 'ENDORSE'
+            &&
+            $isNfipProduct
+        ) {
+            $reasonCode = $policyData['floodTransactionSubType']['reasonCode'] ?? '';
+
+            $reasonCodeArray = explode(',', $reasonCode);
+            $displayNameArray = [];
+
+            foreach ($reasonCodeArray as $trrpMapping) {
+                $ddGroup = 'FLENDORSEMENTTRANSUBTYPE';
+                $appCodeNameForDisplay = Helper::parseAppCodeNameToDisplayNameUsingDDGroup(
+                    $ddGroup,
+                    $trrpMapping,
+                    's_TRRPMapping'
+                );
+
+                $displayNameArray[] = $appCodeNameForDisplay;
+            }
+
+            $reasonString = implode(', ', $displayNameArray);
+
+            return $reasonString;
+        } else {
+            return $policyData['policyRiskTransactionSubType']['transactionSubTypeScreenName'] ?? null;
+        }
+    }
+
+    public function parsePrimaryMortgageeName($mortgagee)
+    {
+        return $mortgagee['mortgageePersonInfo']['fullName'] ?? null;
+    }
+
+    public function parseLoanNumber($mortgagee)
+    {
+        return $mortgagee['loanNumber'] ?? null;
+    }
+
+    public function parsePrimaryMortgageeAddress($mortgagee)
+    {
+        return $this->parseAddress($mortgagee['mortgageeAddress'] ?? []);
+    }
+
+    public function parseMortgageeInfo($mortgagees)
+    {
+        if (is_string($mortgagees)) {
+            // Handle case where multiple JSON objects are concatenated without an array wrapper
+            $objects = [];
+            $pattern = '/\{(?:[^{}]|(?R))*\}/m';
+            if (preg_match_all($pattern, $mortgagees, $matches)) {
+                foreach ($matches[0] as $jsonObj) {
+                    $decoded = json_decode($jsonObj, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $objects[] = $decoded;
+                    }
+                }
+                $mortgagees = $objects;
+            } else {
+                // fallback: wrap as single element array
+                $decoded = json_decode($mortgagees, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $mortgagees = [$decoded];
+                } else {
+                    $mortgagees = [$mortgagees];
+                }
+            }
+        }
+
+        $mortgageesList = [];
+
+        foreach ($mortgagees as $mortgagee) {
+            $mortgageeType = $mortgagee['mortgageeType'] ?? null;
+            $loanNumber = $mortgagee['loanNumber'] ?? null;
+            $mortgageeFullName = $mortgagee['mortgageePersonInfo']['fullName'] ?? null;
+            $mortgageeAddress = $this->parseAddress($mortgagee['mortgageeAddress'] ?? []);
+
+            $mortgageeParts = [
+                'mortgageeType' => $mortgageeType,
+                'loanNumber' => $loanNumber,
+                'mortgageeFullName' => $mortgageeFullName,
+                'mortgageeAddress' => $mortgageeAddress,
+            ];
+
+            $mortgageesList[] = $mortgageeParts;
+        }
+
+        return $mortgageesList;
+    }
+
+    public function parseAdditionalInsuredName($additionalInterest)
+    {
+        return $additionalInterest['additionalPersonInfo']['fullname'] ?? null;
+    }
+
+    public static function formatFileName(?string $fileName): string
+    {
+        if (empty($fileName)) {
+            return '';
+        }
+
+        return pathinfo($fileName, PATHINFO_FILENAME);
+    }
+
+    public function resolveCompanyLogoUrl($brandedCompanyArr)
+    {
+        return Helper::parseCompanyLogo($brandedCompanyArr);
+    }
+
+    public function getInsuredPortalUrl($insuredPortal)
+    {
+        // Returns holding company website URL if insuredPortal is empty
+        if (empty($insuredPortal)) {
+            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+            return $holdingCompanyDetail['insured_portal'];
+        }
+
+        // Otherwise, return insuredPortal
+        return $insuredPortal;
+    }
+
+    public function parsePaymentTransactionNumber($data)
+    {
+        if (!is_array($data)) {
+            return null;
+        }
+
+        $metadata = $data['metadata'] ?? null;
+        $id = $data['id'] ?? null;
+        $productCode = $data['productCode'] ?? null;
+
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true);
+        }
+
+        if (!is_array($metadata)) {
+            return null;
+        }
+
+        if ($productCode === 'HiscoxFloodPlus') {
+            $stripeResponse = $metadata['stripe_response'] ?? null;
+
+            if (is_string($stripeResponse)) {
+                $stripeResponse = json_decode($stripeResponse, true);
+            }
+
+            if (!is_array($stripeResponse)) {
+                return null;
+            }
+
+            $stripeMetadata = $stripeResponse['metadata'] ?? null;
+
+            if (is_array($stripeMetadata) && (string)($stripeMetadata['transaction_id'] ?? '') === (string)$id) {
+                return $stripeResponse['id'] ?? null;
+            }
+
+            return null;
+        }
+
+        // Default: FLOOD / NFIP products
+        return $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['paygov_tracking_id'] ?? null;
+    }
+
+    public function parsePaymentReceivedDate($data)
+    {
+        if (!is_array($data)) {
+            return null;
+        }
+
+        $metadata = $data['metadata'] ?? null;
+        $id = $data['id'] ?? null;
+        $productCode = $data['productCode'] ?? null;
+
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true);
+        }
+
+        if (!is_array($metadata)) {
+            return null;
+        }
+
+        if ($productCode === 'HiscoxFloodPlus') {
+            $stripeResponse = $metadata['stripe_response'] ?? null;
+
+            if (is_string($stripeResponse)) {
+                $stripeResponse = json_decode($stripeResponse, true);
+            }
+
+            if (!is_array($stripeResponse)) {
+                return null;
+            }
+
+            $stripeMetadata = $stripeResponse['metadata'] ?? null;
+
+            if (is_array($stripeMetadata) && (string)($stripeMetadata['transaction_id'] ?? '') === (string)$id) {
+                return $this->formatDate($stripeResponse['created'] ?? null);
+            }
+
+            return null;
+        }
+
+        // Default: FLOOD / NFIP products
+        $transactionDate = $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['transaction_date'] ?? null;
+
+        return $transactionDate ? $this->formatDate($transactionDate) : null;
     }
 }

@@ -22,7 +22,7 @@ class InvokeMatchingWorkflow extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:invoke-matching-workflow {--Entity=} {--EntityAction=} {--EntityType=} {--EntityData=}';
+    protected $signature = 'taurus:invoke-matching-workflow {--Entity=} {--EntityAction=} {--EntityType=} {--EntityData=} {--EntityPlaceHoldersToAppend=}';
 
     /**
      * The console command description.
@@ -41,6 +41,8 @@ class InvokeMatchingWorkflow extends Command
         $entityAction = $this->option('EntityAction');
         $entityData = $this->option('EntityData');
         $entityData = $entityData ? json_decode($entityData, true) : [];
+        $entityPlaceHoldersToAppend = $this->option('EntityPlaceHoldersToAppend');
+        $entityPlaceHoldersToAppend = $entityPlaceHoldersToAppend ? json_decode($entityPlaceHoldersToAppend, true) : [];
 
         if (empty($entity) || empty($entityAction) || empty($entityType)) {
             $errorMessage = 'WORKFLOW - Entity, EntityAction and EntityType are required.';
@@ -49,6 +51,11 @@ class InvokeMatchingWorkflow extends Command
 
             return 1;
         }
+
+        setRunningWorkflowId(0);
+        setRunningJobWorkflowId(0);
+        setRecordIdentifierForRunningWorkflow($entity);
+        setModuleForCurrentWorkflow($entityType);
 
         try {
             $matchedWorkflow = $this->workflowService->getMatchingWorkflow($entityType, $entityAction, $entity);
@@ -74,7 +81,7 @@ class InvokeMatchingWorkflow extends Command
             $this->info($message);
 
             try {
-                $command = gitCommandToDispatchWorkflow($workflowId, $entity, $entityData);
+                $command = gitCommandToDispatchWorkflow($workflowId, $entity, $entityData, $entityPlaceHoldersToAppend);
                 Artisan::call($command['command'], $command['options']);
             } catch (\Exception $e) {
                 $errorMessage = 'WORKFLOW - Error dispatching workflow with ID '.$workflowId.': '.$e->getMessage();

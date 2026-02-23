@@ -17,6 +17,7 @@ class Helper
             'public_logo' => $holdingCompanyDetail->public_logo_url,
             'wyo' => $holdingCompanyDetail->s_HoldingCompanyName,
             'naic_number' => $holdingCompanyDetail->naic_number,
+            'insured_portal' => $holdingCompanyDetail->payment_wesite_url,
         ];
     }
 
@@ -168,10 +169,14 @@ class Helper
      *
      * @param  string  $ddGroup
      * @param  string  $appCodeName
+     * @param  string  $columnNameToMatchWith
      * @return string|null
      */
-    public static function parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName)
-    {
+    public static function parseAppCodeNameToDisplayNameUsingDDGroup(
+        $ddGroup,
+        $appCodeName,
+        $columnNameToMatchWith = 's_AppCodeName'
+    ) {
         $label = \DB::table('tb_appcodes')
             ->where('tb_appcodetypes.s_AppCodeTypeName', $ddGroup)
             ->join(
@@ -180,7 +185,7 @@ class Helper
                 '=',
                 'tb_appcodetypes.n_AppCodeTypeId_PK'
             )
-            ->where('s_AppCodeName', $appCodeName)
+            ->where($columnNameToMatchWith, $appCodeName)
             ->value('s_AppCodeNameForDisplay');
 
         return $label;
@@ -231,5 +236,67 @@ class Helper
         }
 
         return number_format((float) $number);
+    }
+
+    /**
+     * Returns true if the given product code is an NFIP product.
+     *
+     * @param  string  $productCode
+     * @return bool
+     */
+    public static function isNfipProduct($productCode)
+    {
+        $nfipProductCodes = getConstantValues('policy', 'nfip_products_code') ?? [];
+        $isNfipProduct = in_array($productCode, $nfipProductCodes, true);
+
+        return $isNfipProduct;
+    }
+
+    /**
+     * Check for company logo in branded company array, if not found get from holding company details.
+     *
+     * @param  mixed  $brandedCompanyArr
+     */
+    public static function parseCompanyLogo($brandedCompanyArr)
+    {
+        $logo = '';
+        $logoHasPublicUrl = false;
+
+        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['logo'])) {
+            $logo = $brandedCompanyArr['company']['logo'];
+        }
+
+        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['publicLogo'])) {
+            $logo = $brandedCompanyArr['company']['publicLogo'];
+            $logoHasPublicUrl = true;
+        }
+
+        if (! $logo) {
+            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+            $logo = $holdingCompanyDetail['logo'] ?? null;
+
+            if ($holdingCompanyDetail['public_logo']) {
+                $logo = $holdingCompanyDetail['public_logo'];
+                $logoHasPublicUrl = true;
+            }
+        }
+
+        if (! $logo) {
+            \Log::info('WORKFLOW - failed to fetch logo ', (array) $brandedCompanyArr);
+        }
+
+        if ($logoHasPublicUrl) {
+            return $logo;
+        }
+
+        // From gfs-saas-infra/src/Foundation/Helpers.php
+        $path = removeS3HostAndBucketFromURL($logo);
+        \Log::info('WORKFLOW - S3 path for company logo: '.$path);
+
+        if (str_starts_with($path, 'http')) {
+            return $path;
+        }
+
+        return \Storage::disk('s3')->temporaryUrl($path, Carbon::now()->addMinutes(4320));
     }
 }

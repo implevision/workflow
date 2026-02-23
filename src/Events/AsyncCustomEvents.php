@@ -15,13 +15,16 @@ class AsyncCustomEvents
 
     public array $data;
 
+    public array $appendPlaceHolders = [];
+
     /**
      * Create a new event instance.
      */
-    public function __construct(string $event, string $eventVirtualModel, array $data)
+    public function __construct(string $event, string $eventVirtualModel, array $data, array $appendPlaceHolders = [])
     {
         $this->event = $event;
         $this->eventVirtualModel = $eventVirtualModel;
         $this->data = $data;
+        $this->appendPlaceHolders = $appendPlaceHolders;
     }
 }

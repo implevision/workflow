@@ -41,6 +41,8 @@ class DispatchWorkflowService
 
     protected $data;
 
+    protected $appendPlaceHolders;
+
     protected $isManuallyInvoked = false;
 
     /**
@@ -49,13 +51,14 @@ class DispatchWorkflowService
      * @param  int  $workflowId  The ID of the workflow to be dispatched.
      * @param  int|string  $recordIdentifier  An optional identifier for the record, default is 0.
      */
-    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [])
+    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [])
     {
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
         $this->workflowService = app(WorkflowService::class);
         $this->recordIdentifier = $recordIdentifier;
         $this->data = $data;
+        $this->appendPlaceHolders = $appendPlaceHolders;
         $this->isManuallyInvoked = count($data) ? true : false;
         $this->getInfo();
     }
@@ -192,17 +195,10 @@ class DispatchWorkflowService
             }
 
             if ($condition['applyRuleTo'] == 'CERTAIN' && ! $this->isManuallyInvoked) {
-                $conditionsToApply = [];
-                foreach ($condition['applyConditionRules']['children'] as $certainCondition) {
-                    $conditionsToApply[] = GraphQLSchemaBuilderService::getQueryMapping(
-                        $certainCondition['field'],
-                        $certainCondition['comparator'],
-                        $certainCondition['expectedValue']
-                    );
-                }
+                $conditionsToApply = GraphQLSchemaBuilderService::buildWhereConditionFromGroup($condition['applyConditionRules']);
 
                 if (count($graphQLQuery)) {
-                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => $conditionsToApply];
+                    $graphQLQuery['JOIN'] = $conditionsToApply;
                 } else {
                     $graphQLQuery = $conditionsToApply;
                 }
@@ -245,9 +241,28 @@ class DispatchWorkflowService
                     continue;
                 }
 
+                /***
+                 * Placeholders data to extract from appendPlaceHolders
+                 */
+                $placeHolderWithValues = [];
+                $placeHolderToExtract = [];
+                if (count($this->appendPlaceHolders)) {
+                    foreach ($this->appendPlaceHolders as $placeHolderKey => $placeHolderValue) {
+                        if ($placeHolderValue) { // NO NEED TO EXTRACT IF VALUE IS ALREADY AVAILABLE
+                            $placeHolderWithValues[$placeHolderKey] = $placeHolderValue;
+
+                            continue;
+                        }
+
+                        $placeHolderToExtract[] = $placeHolderKey;
+                    }
+                }
+
                 try {
                     $listOfRequiredData = $actionToExecute ? $actionToExecute->getListOfRequiredData() : [];
                     $listOfMandateData = $actionToExecute ? $actionToExecute->getListOfMandateData() : [];
+
+                    $listOfRequiredData = array_merge($listOfRequiredData, $placeHolderToExtract);
 
                     if ($actionType == 'EMAIL' && strtoupper($action['payload']['emailRecipient']) != 'CUSTOM') {
                         $listOfRequiredData[] = $listOfMandateData[] = ucfirst($action['payload']['emailRecipient']);
@@ -327,6 +342,8 @@ class DispatchWorkflowService
                             $parsedData[$placeHolder] = $placeHolderValue;
                         }
 
+                        $parsedData = array_merge($parsedData, $placeHolderWithValues);
+
                         if ($actionType == 'WEB_HOOK') {
                             $data = $this->generatePayloadFromParsedData($parsedData);
                         } else {
@@ -379,6 +396,11 @@ class DispatchWorkflowService
                                 $emailPlaceHolderValue = $action['payload']['customEmailRecipients'];
                             } else {
                                 $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
+                                $emailPlaceHolderValue = ! empty($data[$index][$emailPlaceHolder]) ? $data[$index][$emailPlaceHolder] : '';
+                            }
+
+                            if (! empty($placeHolderToExtract['emailRecipient'])) {
+                                $emailPlaceHolder = ucfirst($placeHolderToExtract['emailRecipient']);
                                 $emailPlaceHolderValue = ! empty($data[$index][$emailPlaceHolder]) ? $data[$index][$emailPlaceHolder] : '';
                             }
 

@@ -90,6 +90,7 @@ class WebhookAction extends AbstractWorkflowAction
             'WyoAgencyAgentCode',
             'PremiumDue',
             'PremiumCapDiscountAmount',
+            'PolicyNumberWithoutPrefix',
         ];
     }
 
@@ -108,6 +109,7 @@ class WebhookAction extends AbstractWorkflowAction
         return [
             'Type',
             'SubType',
+            'PolicyNumberWithoutPrefix',
         ];
     }
 
@@ -148,8 +150,8 @@ class WebhookAction extends AbstractWorkflowAction
         if ($data) {
             preg_match_all('/{{\s*(.*?)\s*}}/', $webhookRequestUrl, $webhookRequestUrlPlaceholderMatches);
             foreach ($data as $placeHolderData) {
-                $requestUrl = $this->replacePlaceholders($webhookRequestUrl, $placeHolderData);
-                $requestPayload = $this->replacePlaceholders($webhookRequestPayload, $placeHolderData);
+                $requestUrl = $this->replacePlaceholders($webhookRequestUrl, $placeHolderData, true);
+                $requestPayload = $this->replacePlaceholders($webhookRequestPayload, $placeHolderData, true);
                 try {
                     Http::makeRequest($webhookRequestMethod, $requestUrl, $webhookRequestHeaders, $requestPayload);
                 } catch (\Exception $e) {
@@ -159,18 +161,20 @@ class WebhookAction extends AbstractWorkflowAction
         }
     }
 
-    private function replacePlaceholders($input, $placeholders)
+    private function replacePlaceholders($input, $placeholders, $replaceWithEmptySpaceIfNotAvailable = false)
     {
         if (is_array($input)) {
-            return array_map(function ($item) use ($placeholders) {
-                return $this->replacePlaceholders($item, $placeholders);
+            return array_map(function ($item) use ($placeholders, $replaceWithEmptySpaceIfNotAvailable) {
+                return $this->replacePlaceholders($item, $placeholders, $replaceWithEmptySpaceIfNotAvailable);
             }, $input);
         }
 
-        return preg_replace_callback('/{{\s*(.*?)\s*}}/', function ($matches) use ($placeholders) {
+        return preg_replace_callback('/{{\s*(.*?)\s*}}/', function ($matches) use ($placeholders, $replaceWithEmptySpaceIfNotAvailable) {
             $placeholder = $matches[1];
 
-            return isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : '{{'.$placeholder.'}}';
+            $defaultValue = $replaceWithEmptySpaceIfNotAvailable ? '' : '{{'.$placeholder.'}}';
+
+            return isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : $defaultValue;
         }, $input);
     }
 
