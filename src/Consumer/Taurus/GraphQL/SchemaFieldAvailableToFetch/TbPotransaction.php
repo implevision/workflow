@@ -790,8 +790,25 @@ class TbPotransaction
                     ],
                 ],
             ],
-            'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[0].company.insuredPortal',
+            'jqFilter' => '.policyQuery?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
             'parseResultCallback' => 'getInsuredPortalUrl',
+        ];
+
+        // Note: AgentPortal URL will bet get  by getAgentPortalUrl function,  the insured portal query is just for mock.
+        $fieldMapping['AgentPortal'] = [
+            'GraphQLschemaToReplace' => [
+                'tbAccountMaster' => [
+                    'TbPersoninfo' => [
+                        'brandedCompany' => [
+                            'company' => [
+                                'insuredPortal' => null,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
+            'parseResultCallback' => 'getAgentPortalUrl',
         ];
 
         $fieldMapping['AdditionalInsuredName'] = [
@@ -1117,6 +1134,20 @@ class TbPotransaction
 
         // Otherwise, return insuredPortal
         return $insuredPortal;
+    }
+
+    public function getAgentPortalUrl($insuredPortal)
+    {
+        if (empty($insuredPortal)) {
+            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+            $insuredPortal = $holdingCompanyDetail['agent_portal'] ?? null;
+
+            if (empty($insuredPortal)) {
+                return Helper::createPortalURL('AgentPortal');
+            }
+        }
+
+        return str_replace('mypolicy', 'agent', $insuredPortal);
     }
 
     public function parsePaymentTransactionNumber($data)
