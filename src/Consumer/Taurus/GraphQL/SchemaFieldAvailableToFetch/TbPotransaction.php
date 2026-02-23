@@ -790,7 +790,7 @@ class TbPotransaction
                     ],
                 ],
             ],
-            'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[0].company.insuredPortal',
+            'jqFilter' => '.policyQuery?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
             'parseResultCallback' => 'getInsuredPortalUrl',
         ];
 
@@ -807,7 +807,7 @@ class TbPotransaction
                     ],
                 ],
             ],
-            'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[0].company.insuredPortal',
+            'jqFilter' => '.policyQuery?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
             'parseResultCallback' => 'getAgentPortalUrl',
         ];
 
