@@ -11,28 +11,36 @@ class WorkflowConditionData extends Data
         public string $applyRuleTo,
         public ?string $s3FilePath,
         public array $applyConditionRules,
-        /** @var array<string, InstanceActionData> */
+        /** @var array<string, InstanceActionData|array> */
         public array $instanceActions
     ) {}
 
+    /**
+     * Compatible with laravel-data v3 and v4
+     */
     public static function collect(mixed $items, ?string $into = null): mixed
     {
-        // laravel-data v3 uses `collection()`, v4 uses `collect()`
-        if (method_exists(parent::class, 'collection')) {
+        if (is_callable([parent::class, 'collect'])) {
+            return parent::collect($items, $into);
+        }
+
+        if (is_callable([parent::class, 'collection'])) {
             return parent::collection($items)->toArray();
         }
 
-        return parent::collect($items, $into);
+        return $items;
     }
 
     public static function fromArray(array $data): self
     {
         return new self(
             id: $data['id'] ?? null,
-            applyRuleTo: $data['applyRuleTo'] ?? null,
+            applyRuleTo: $data['applyRuleTo'] ?? '',
             applyConditionRules: $data['applyConditionRules'] ?? [],
             s3FilePath: $data['s3FilePath'] ?? null,
-            instanceActions: InstanceActionData::mapByActionType($data['instanceActions'])
+            instanceActions: InstanceActionData::mapByActionType(
+                $data['instanceActions'] ?? []
+            )
         );
     }
 }
