@@ -109,6 +109,7 @@ class WebhookAction extends AbstractWorkflowAction
         return [
             'Type',
             'SubType',
+            'PolicyNumberWithoutPrefix',
         ];
     }
 

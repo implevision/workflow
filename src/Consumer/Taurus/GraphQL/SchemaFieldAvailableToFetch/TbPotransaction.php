@@ -646,6 +646,80 @@ class TbPotransaction extends AbstractSchema
                 'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
                 'parseResultCallback' => 'parseCompanyName',
             ],
+            'AttachPaymentReceipt' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'docuploadinfo' => [
+                            'doctypes' => [
+                                'docTypeCode' => null,
+                            ],
+                            'docUploadDocInfoRel' => [
+                                'docUploadReference' => [
+                                    'tableRefId' => null,
+                                    'tableMasters' => [
+                                        'tableName' => null,
+                                    ],
+                                ],
+                                'docInfo' => [
+                                    'docPath' => null,
+                                    'docName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                // This finds the correct PAYMENTRECEIPT document,
+                // then extracts the first docInfo.docurl value.
+                'jqFilter' => '
+                [
+                      .policyQuery?.policy?.docuploadinfo[]?
+                      | select(
+                      .doctypes?.docTypeCode? == "PAYMENTRECEIPT"
+                      and
+                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
+                      )
+                      | .docUploadDocInfoRel[]?
+                      | .docUploadReference?.tableRefId? as $tableRefId
+                      | .docInfo[]?
+                      | {
+                          name: .docName?,
+                          path: .docPath?,
+                          tableRefId: $tableRefId
+                        }
+                    ]
+                ',
+                'parseResultCallback' => 'generatePresignedUrl',
+            ],
+            'PaymentTransactionNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'id' => null,
+                    'policy' => [
+                        'policyAccountingPaymentLog' => [
+                            'metadata' => null,
+                        ],
+                        'product' => [
+                            'productCode' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '{metadata: .policyQuery?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyQuery?.id?, productCode: .policyQuery?.policy?.product?.productCode?}',
+                'parseResultCallback' => 'parsePaymentTransactionNumber',
+            ],
+            'PaymentReceivedDate' => [
+                'GraphQLschemaToReplace' => [
+                    'id' => null,
+                    'policy' => [
+                        'policyAccountingPaymentLog' => [
+                            'metadata' => null,
+                        ],
+                        'product' => [
+                            'productCode' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '{metadata: .policyQuery?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyQuery?.id?, productCode: .policyQuery?.policy?.product?.productCode?}',
+                'parseResultCallback' => 'parsePaymentReceivedDate',
+            ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
@@ -716,8 +790,25 @@ class TbPotransaction extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[0].company.insuredPortal',
+            'jqFilter' => '.policyQuery?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
             'parseResultCallback' => 'getInsuredPortalUrl',
+        ];
+
+        // Note: AgentPortal URL will bet get  by getAgentPortalUrl function,  the insured portal query is just for mock.
+        $fieldMapping['AgentPortal'] = [
+            'GraphQLschemaToReplace' => [
+                'tbAccountMaster' => [
+                    'TbPersoninfo' => [
+                        'brandedCompany' => [
+                            'company' => [
+                                'insuredPortal' => null,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
+            'parseResultCallback' => 'getAgentPortalUrl',
         ];
 
         $fieldMapping['AdditionalInsuredName'] = [
@@ -1043,5 +1134,105 @@ class TbPotransaction extends AbstractSchema
 
         // Otherwise, return insuredPortal
         return $insuredPortal;
+    }
+
+    public function getAgentPortalUrl($insuredPortal)
+    {
+        if (empty($insuredPortal)) {
+            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+            $insuredPortal = $holdingCompanyDetail['agent_portal'] ?? null;
+
+            if (empty($insuredPortal)) {
+                return Helper::createPortalURL('AgentPortal');
+            }
+        }
+
+        return str_replace('mypolicy', 'agent', $insuredPortal);
+    }
+
+    public function parsePaymentTransactionNumber($data)
+    {
+        if (!is_array($data)) {
+            return null;
+        }
+
+        $metadata = $data['metadata'] ?? null;
+        $id = $data['id'] ?? null;
+        $productCode = $data['productCode'] ?? null;
+
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true);
+        }
+
+        if (!is_array($metadata)) {
+            return null;
+        }
+
+        if ($productCode === 'HiscoxFloodPlus') {
+            $stripeResponse = $metadata['stripe_response'] ?? null;
+
+            if (is_string($stripeResponse)) {
+                $stripeResponse = json_decode($stripeResponse, true);
+            }
+
+            if (!is_array($stripeResponse)) {
+                return null;
+            }
+
+            $stripeMetadata = $stripeResponse['metadata'] ?? null;
+
+            if (is_array($stripeMetadata) && (string)($stripeMetadata['transaction_id'] ?? '') === (string)$id) {
+                return $stripeResponse['id'] ?? null;
+            }
+
+            return null;
+        }
+
+        // Default: FLOOD / NFIP products
+        return $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['paygov_tracking_id'] ?? null;
+    }
+
+    public function parsePaymentReceivedDate($data)
+    {
+        if (!is_array($data)) {
+            return null;
+        }
+
+        $metadata = $data['metadata'] ?? null;
+        $id = $data['id'] ?? null;
+        $productCode = $data['productCode'] ?? null;
+
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true);
+        }
+
+        if (!is_array($metadata)) {
+            return null;
+        }
+
+        if ($productCode === 'HiscoxFloodPlus') {
+            $stripeResponse = $metadata['stripe_response'] ?? null;
+
+            if (is_string($stripeResponse)) {
+                $stripeResponse = json_decode($stripeResponse, true);
+            }
+
+            if (!is_array($stripeResponse)) {
+                return null;
+            }
+
+            $stripeMetadata = $stripeResponse['metadata'] ?? null;
+
+            if (is_array($stripeMetadata) && (string)($stripeMetadata['transaction_id'] ?? '') === (string)$id) {
+                return $this->formatDate($stripeResponse['created'] ?? null);
+            }
+
+            return null;
+        }
+
+        // Default: FLOOD / NFIP products
+        $transactionDate = $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['transaction_date'] ?? null;
+
+        return $transactionDate ? $this->formatDate($transactionDate) : null;
     }
 }
