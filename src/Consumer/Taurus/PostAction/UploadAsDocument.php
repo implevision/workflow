@@ -59,6 +59,8 @@ class UploadAsDocument
             $referenceNo = $attachmentModuleAndReferenceNo['referenceNo'];
         }
 
+        \Log::info('WORKFLOW - Document Upload - Attachment Module and Reference No', ['module' => $module, 'referenceNo' => $referenceNo]);
+
         $docTypeValue = $preparedData['docTypeValue'];
         $docName = $preparedData['docName'];
         $docUrl = $preparedData['docUrl'];

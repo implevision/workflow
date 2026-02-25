@@ -1152,7 +1152,7 @@ class TbPotransaction
 
     public function parsePaymentTransactionNumber($data)
     {
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             return null;
         }
 
@@ -1164,7 +1164,7 @@ class TbPotransaction
             $metadata = json_decode($metadata, true);
         }
 
-        if (!is_array($metadata)) {
+        if (! is_array($metadata)) {
             return null;
         }
 
@@ -1175,13 +1175,13 @@ class TbPotransaction
                 $stripeResponse = json_decode($stripeResponse, true);
             }
 
-            if (!is_array($stripeResponse)) {
+            if (! is_array($stripeResponse)) {
                 return null;
             }
 
             $stripeMetadata = $stripeResponse['metadata'] ?? null;
 
-            if (is_array($stripeMetadata) && (string)($stripeMetadata['transaction_id'] ?? '') === (string)$id) {
+            if (is_array($stripeMetadata) && (string) ($stripeMetadata['transaction_id'] ?? '') === (string) $id) {
                 return $stripeResponse['id'] ?? null;
             }
 
@@ -1194,7 +1194,7 @@ class TbPotransaction
 
     public function parsePaymentReceivedDate($data)
     {
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             return null;
         }
 
@@ -1206,7 +1206,7 @@ class TbPotransaction
             $metadata = json_decode($metadata, true);
         }
 
-        if (!is_array($metadata)) {
+        if (! is_array($metadata)) {
             return null;
         }
 
@@ -1217,13 +1217,13 @@ class TbPotransaction
                 $stripeResponse = json_decode($stripeResponse, true);
             }
 
-            if (!is_array($stripeResponse)) {
+            if (! is_array($stripeResponse)) {
                 return null;
             }
 
             $stripeMetadata = $stripeResponse['metadata'] ?? null;
 
-            if (is_array($stripeMetadata) && (string)($stripeMetadata['transaction_id'] ?? '') === (string)$id) {
+            if (is_array($stripeMetadata) && (string) ($stripeMetadata['transaction_id'] ?? '') === (string) $id) {
                 return $this->formatDate($stripeResponse['created'] ?? null);
             }
 
