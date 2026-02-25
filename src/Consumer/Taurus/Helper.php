@@ -11,13 +11,15 @@ class Helper
     public static function getHoldingCompanyDetail()
     {
         $holdingCompanyDetail = \DB::table('tb_holdingcompanies')->first();
+        $metadata = json_decode($holdingCompanyDetail->metadata, true);
 
         return [
             'logo' => $holdingCompanyDetail->logo_url,
             'public_logo' => $holdingCompanyDetail->public_logo_url,
             'wyo' => $holdingCompanyDetail->s_HoldingCompanyName,
             'naic_number' => $holdingCompanyDetail->naic_number,
-            'insured_portal' => $holdingCompanyDetail->payment_wesite_url,
+            'insured_portal' => $holdingCompanyDetail->payment_wesite_url ?? self::createPortalURL('InsuredPortal'),
+            'agent_portal' => $metadata['agent_url'] ?? $holdingCompanyDetail->payment_wesite_url,
         ];
     }
 

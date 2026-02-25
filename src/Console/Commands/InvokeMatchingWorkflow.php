@@ -53,6 +53,11 @@ class InvokeMatchingWorkflow extends Command
             return 1;
         }
 
+        setRunningWorkflowId(0);
+        setRunningJobWorkflowId(0);
+        setRecordIdentifierForRunningWorkflow($entity);
+        setModuleForCurrentWorkflow($entityType);
+
         try {
             $matchedWorkflow = $this->workflowService->getMatchingWorkflow($entityType, $entityAction, $entity);
         } catch (\Exception $e) {
