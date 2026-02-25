@@ -75,6 +75,7 @@ return [
         'scheduler:CreateSchedule' => 'To create a new schedule, the user must have permission to create it in order to invoke the workflow at particular time.',
         'ses:SendEmail' => 'Allows sending single emails.',
         'ses:SendBulkEmail' => 'Allows sending bulk emails (via SendBulkEmail API).',
+        'ses:SendTemplatedEmail' => 'Allows sending templated emails.',
     ],
 
     'modules' => [

@@ -124,6 +124,7 @@ class WorkflowSeeder extends Command
                 'module' => $data['module'] ?? '',
             ];
 
+            // create email template in email template service
             $response = $client->request(
                 'post',
                 // TODO - replace with config url
@@ -136,7 +137,26 @@ class WorkflowSeeder extends Command
             $responseBody = $response->getBody()->getContents();
             $responseBody = is_array($responseBody) ? $responseBody : json_decode($responseBody, true);
 
-            if ($responseBody['status'] !== true) {
+            if (! $responseBody['status']) {
+                // throw new Exception($response->getBody());
+            }
+
+            // PUBLISH email template in email template service
+            $template = $data['templateNameToSave'];
+            $requestBody['isPublished'] = true;
+            $response = $client->request(
+                'put',
+                // TODO - replace with config url
+                config('workflow.email_template_service_url').'/api/email/template/update/'.$template,
+                [
+                    'headers' => $headers,
+                    'json' => $requestBody,
+                ]
+            );
+            $responseBody = $response->getBody()->getContents();
+            $responseBody = is_array($responseBody) ? $responseBody : json_decode($responseBody, true);
+
+            if (! $responseBody['status']) {
                 throw new Exception($response->getBody());
             }
         } catch (Exception $e) {
