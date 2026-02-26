@@ -33,6 +33,12 @@ class HealthCheck extends Command
         'timezone',
         'aws_iam_role_arn_to_invoke_lambda_from_event_bridge',
         'aws_lambda_function_arn_to_invoke_workflow',
+        'email_template_service_url',
+        'email_template_service_client_key',
+        'graphql.endpoint',
+        'allowed_receiver.email',
+        'allowed_receiver.ends_with',
+        'send_all_workflow_email_to',
     ];
 
     /**
@@ -79,7 +85,9 @@ class HealthCheck extends Command
         $headers = ['Key', 'Value'];
         $data = [];
         foreach ($this->keysToCheck as $key) {
-            array_push($data, [$key, config("workflow.{$key}")]);
+            $value = config("workflow.{$key}");
+            $value = is_array($value) ? implode(', ', $value) : $value;
+            array_push($data, [$key, $value]);
         }
         $this->table($headers, $data);
     }
