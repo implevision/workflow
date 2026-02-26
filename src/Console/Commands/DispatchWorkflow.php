@@ -26,6 +26,7 @@ class DispatchWorkflow extends Command
      */
     public function handle()
     {
+        setWorkflowDBConnection();
         $workflowId = $this->option('workflowId');
         $recordIdentifier = $this->option('recordIdentifier', 0);
         $data = $this->option('data');

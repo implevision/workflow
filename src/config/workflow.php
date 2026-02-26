@@ -21,7 +21,7 @@ return [
 
     'table_prefix' => env('WORKFLOW_TABLE_PREFIX', 'tb_taurus'),
 
-    'db_connection' => env('DB_CONNECTION_CORE', env('DB_CONNECTION', 'mysql')),
+    'db_connection' => '',
 
     'timezone' => env('WORKFLOW_TIMEZONE_TO_USE', 'America/New_York'),
 

@@ -19,12 +19,16 @@ function getTablePrefix()
  */
 function getWorkflowDBConnection()
 {
-    return config('workflow.db_connection', env('DB_CONNECTION_CORE', env('DB_CONNECTION', 'mysql')));
+    return config('workflow.db_connection');
 }
 
 function setWorkflowDBConnection()
 {
-    config(['database.default' => getWorkflowDBConnection()]);
+    $connectionToSet = getWorkflowDBConnection();
+    if ($connectionToSet) {
+        \Log::info('WORKFLOW - Setting workflow database connection to: '.$connectionToSet);
+        config(['database.default' => $connectionToSet]);
+    }
 }
 
 /**

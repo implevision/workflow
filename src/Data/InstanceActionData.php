@@ -26,7 +26,7 @@ class InstanceActionData extends Data
         $mapped = [];
 
         foreach ($actions as $action) {
-            if (!isset($action['actionType'])) {
+            if (! isset($action['actionType'])) {
                 continue;
             }
 
