@@ -5,7 +5,7 @@ namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
-class TbAgentTasksMaster
+class TbAgentTasksMaster extends AbstractSchema
 {
     /**
      * @var array

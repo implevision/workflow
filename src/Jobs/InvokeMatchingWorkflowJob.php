@@ -38,6 +38,7 @@ class InvokeMatchingWorkflowJob implements ShouldQueue
      */
     public function handle(): void
     {
+        setWorkflowDBConnection();
         try {
             // Log the event details
             Log::info('WORKFLOW - Handling job workflow created event', [

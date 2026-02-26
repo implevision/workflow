@@ -21,6 +21,8 @@ return [
 
     'table_prefix' => env('WORKFLOW_TABLE_PREFIX', 'tb_taurus'),
 
+    'db_connection' => '',
+
     'timezone' => env('WORKFLOW_TIMEZONE_TO_USE', 'America/New_York'),
 
     'aws_lambda_function_arn_to_invoke_workflow' => env('AWS_LAMBDA_FUNCTION_ARN_TO_INVOKE_WORKFLOW'),

@@ -54,6 +54,7 @@ class PrepareEmailData
         }, $payload['subject']);
 
         $filename = preg_replace('/[^A-Za-z0-9 ]/', '', $subject).' - '.time().'.pdf';
+
         $docPath = sprintf('%s/%s/%s/%s/emailLetters/%s', getTenant(), date('Y'), date('m'), date('d'), $filename);
         $bucketName = config('workflow.bucket_to_save_email_letters', config('filesystems.disks.s3.bucket'));
 

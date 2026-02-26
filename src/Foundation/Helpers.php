@@ -13,6 +13,25 @@ function getTablePrefix()
 }
 
 /**
+ * Get the database connection name for the workflow package.
+ *
+ * @return string
+ */
+function getWorkflowDBConnection()
+{
+    return config('workflow.db_connection');
+}
+
+function setWorkflowDBConnection()
+{
+    $connectionToSet = getWorkflowDBConnection();
+    if ($connectionToSet) {
+        \Log::info('WORKFLOW - Setting workflow database connection to: '.$connectionToSet);
+        config(['database.default' => $connectionToSet]);
+    }
+}
+
+/**
  * Get the current tenant.
  *
  * @return string The tenant name.

@@ -4,7 +4,7 @@ namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
-class TbPotransaction
+class TbPotransaction extends AbstractSchema
 {
     /**
      * @var array

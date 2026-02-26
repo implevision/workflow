@@ -270,6 +270,7 @@ class DispatchWorkflowService
                         $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->workflowInfo['detail']['module']);
                         $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
                         $queryName = $moduleClassForGraphQL->getQueryName();
+                        $graphQLHeaders = $moduleClassForGraphQL->getHeaders();
                         $graphQLSchemaBuilder = new GraphQLSchemaBuilderService($fieldMapping);
                         foreach ($listOfRequiredData as $placeHolder) {
                             $graphQLSchemaBuilder->addField($placeHolder);
@@ -286,7 +287,7 @@ class DispatchWorkflowService
                     try {
                         // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
                         // \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
-                        $graphQLClient = new GraphQLClient;
+                        $graphQLClient = new GraphQLClient($graphQLHeaders);
                         $response = $graphQLClient->query($graphQLRequestPayload);
                         // \Log::info('WORKFLOW - GraphQL Response: ', $response);
                     } catch (\Exception $e) {
