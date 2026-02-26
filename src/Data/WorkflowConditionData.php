@@ -3,6 +3,7 @@
 namespace Taurus\Workflow\Data;
 
 use Spatie\LaravelData\Data;
+use Spatie\LaravelData\DataCollection;
 
 class WorkflowConditionData extends Data
 {
@@ -16,15 +17,17 @@ class WorkflowConditionData extends Data
 
     /**
      * Compatible with laravel-data v3 and v4.
-     *
-     * DO NOT ADD "@var array<string, InstanceActionData|array>" to instanceActions — breaks v4 transformer.
      */
-    public static function collect(mixed $items, ?string $into = null): array
+    public static function collect(mixed $items, ?string $into = null): array|DataCollection
     {
-        return array_map(
-            fn ($item) => static::fromArray((array) $item),
-            (array) $items
-        );
+
+        // Compatible with laravel-data v3
+        if (is_callable([parent::class, 'collection'])) {
+            return parent::collection($items)->toArray();
+        }
+
+        // Compatible with laravel-data v4
+        return parent::collect($items, $into);
     }
 
     public static function fromArray(array $data): self
