@@ -47,7 +47,14 @@ class PrepareEmailData
         $documentName = $payload['actionPayload']['documentName'] ?? '';
         $documentId = $payload['actionPayload']['documentId'] ?? '';
 
-        $filename = preg_replace('/[^A-Za-z0-9 ]/', '', $payload['subject'])." - {$documentName}.pdf";
+        $subject = $html = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
+            $key = trim($matches[1]);
+
+            return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
+        }, $payload['subject']);
+
+        $filename = preg_replace('/[^A-Za-z0-9 ]/', '', $subject).' - '.time().'.pdf';
+
         $docPath = sprintf('%s/%s/%s/%s/emailLetters/%s', getTenant(), date('Y'), date('m'), date('d'), $filename);
         $bucketName = config('workflow.bucket_to_save_email_letters', config('filesystems.disks.s3.bucket'));
 
