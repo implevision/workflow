@@ -12,6 +12,8 @@ use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConfigRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowRepositoryInterface;
 use Taurus\Workflow\Services\AWS\EventBridgeScheduler;
+use Taurus\Workflow\Models\WorkflowLog;
+
 
 class WorkflowService
 {
@@ -666,6 +668,33 @@ class WorkflowService
         }
     }
 
+    /**
+    * Retrieve completed workflow logs for a given module.
+    *
+    * @param string $moduleKey  
+    * @return \Illuminate\Support\Collection  
+    */
+    public function getWorkflowlog(string $moduleKey)
+    {
+        try {
+            $moduleClass = config("workflow.modules.$moduleKey");
+
+            if (! $moduleClass) {
+                return collect();
+         }
+
+               return WorkflowLog::with('workflow:id,name')
+                ->where('module', $moduleClass)
+                ->where('status', WorkflowLog::STATUS_COMPLETED) 
+                ->orderBy('created_at', 'desc')
+               ->get();
+
+        } catch (\Exception $exception) {
+            \Log::error('Error getting workflow log by module: '.$exception->getMessage());
+            return collect();
+        }
+    }
+        
     /**
      * Retrieve workflows for a given module key.
      *
