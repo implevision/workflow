@@ -33,7 +33,7 @@ class WorkflowLog extends Model
         parent::__construct($attributes);
 
         $prefix = getTablePrefix();
-        $this->table = $prefix.'_workflow_config';
+        $this->table = $prefix.'_workflow_logs';
     }
 
     /**
