@@ -130,8 +130,6 @@ class DispatchWorkflowService
         setModuleForCurrentWorkflow($this->workflowInfo['detail']['module']);
         $allConditions = $this->workflowInfo['workFlowConditions'];
 
-        \Log::info('WORKFLOW - Created entry in JOB WORKFLOW table with ID '.$workflowLog);
-
         $graphQLQuery = [];
         // NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
         // Example: After/Before X day(s)/month(s)/year(s) of the event
