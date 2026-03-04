@@ -3,13 +3,13 @@
 namespace Taurus\Workflow\Services;
 
 use Illuminate\Support\Facades\Storage;
+use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 use Taurus\Workflow\Services\WorkflowActions\EmailAction;
 use Taurus\Workflow\Services\WorkflowActions\WebhookAction;
-use Taurus\Workflow\Models\WorkflowLog;
 
 /**
  * Class DispatchWorkflowService
@@ -130,16 +130,6 @@ class DispatchWorkflowService
         setModuleForCurrentWorkflow($this->workflowInfo['detail']['module']);
         $allConditions = $this->workflowInfo['workFlowConditions'];
 
-        // Workflow Log 
-        $workflowLog = WorkflowLog::create([
-            'job_workflow_id'   => $jobWorkflowId ?: null,
-            'workflow_id'       => $this->workflowId,
-            'record_identifier' => $this->recordIdentifier ?? null,
-            'module'            => $this->workflowInfo['detail']['module'],
-            'status'            => WorkflowLog::STATUS_IN_PROGRESS,
-            ]);
-        \Log::info('WORKFLOW - Created entry in JOB WORKFLOW table with ID '.$workflowLog);
-
         $graphQLQuery = [];
         // NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
         // Example: After/Before X day(s)/month(s)/year(s) of the event
@@ -208,6 +198,16 @@ class DispatchWorkflowService
                 $actionToExecute = null;
                 $actionType = $action['actionType'];
                 $actionPayload = $action['payload'];
+
+                // Workflow Log
+                $workflowLog = WorkflowLog::create([
+                    'job_workflow_id' => $jobWorkflowId ?: null,
+                    'workflow_id' => $this->workflowId,
+                    'record_identifier' => $this->recordIdentifier ?? null,
+                    'module' => $this->workflowInfo['detail']['module'],
+                    'status' => WorkflowLog::STATUS_IN_PROGRESS,
+                    'action_type' => $actionType,
+                ]);
                 switch ($actionType) {
                     case 'EMAIL':
                         try {

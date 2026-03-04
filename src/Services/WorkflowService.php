@@ -6,14 +6,13 @@ use Illuminate\Support\Facades\DB;
 use stdClass;
 use Taurus\Workflow\Consumer\ConsumerService;
 use Taurus\Workflow\Data\WorkflowData;
+use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Contracts\JobWorkflowRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowActionRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConfigRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowRepositoryInterface;
 use Taurus\Workflow\Services\AWS\EventBridgeScheduler;
-use Taurus\Workflow\Models\WorkflowLog;
-
 
 class WorkflowService
 {
@@ -669,11 +668,10 @@ class WorkflowService
     }
 
     /**
-    * Retrieve completed workflow logs for a given module.
-    *
-    * @param string $moduleKey  
-    * @return \Illuminate\Support\Collection  
-    */
+     * Retrieve completed workflow logs for a given module.
+     *
+     * @return \Illuminate\Support\Collection
+     */
     public function getWorkflowlog(string $moduleKey)
     {
         try {
@@ -681,20 +679,21 @@ class WorkflowService
 
             if (! $moduleClass) {
                 return collect();
-         }
+            }
 
-               return WorkflowLog::with('workflow:id,name')
+            return WorkflowLog::with('workflow:id,name')
                 ->where('module', $moduleClass)
-                ->where('status', WorkflowLog::STATUS_COMPLETED) 
+                ->where('status', WorkflowLog::STATUS_COMPLETED)
                 ->orderBy('created_at', 'desc')
-               ->get();
+                ->get();
 
         } catch (\Exception $exception) {
             \Log::error('Error getting workflow log by module: '.$exception->getMessage());
+
             return collect();
         }
     }
-        
+
     /**
      * Retrieve workflows for a given module key.
      *
