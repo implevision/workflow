@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class WorkflowLog extends Model
 {
-    protected $table = 'tbl_workflow_logs';
-
     protected $fillable = [
         'workflow_id',
         'record_identifier',
@@ -29,6 +27,14 @@ class WorkflowLog extends Model
     public const STATUS_COMPLETED = 'COMPLETED';
 
     public const STATUS_ERROR = 'ERROR';
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $prefix = getTablePrefix();
+        $this->table = $prefix.'_workflow_config';
+    }
 
     /**
      * Mark workflow log entry as COMPLETED.
