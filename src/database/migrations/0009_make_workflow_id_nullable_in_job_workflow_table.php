@@ -17,10 +17,13 @@ return new class extends Migration
 
         Schema::table($table, function (Blueprint $table) use ($tablePrefix) {
             // Drop the FK constraint first before modifying the column
-            // $table->dropForeign("{$tablePrefix}_job_workflow_workflow_id_index");
+            $table->dropForeign("{$tablePrefix}_job_workflow_workflow_id_foreign");
 
             // Make the column nullable so manual executions can use NULL
             $table->unsignedBigInteger('workflow_id')->nullable()->change();
+
+            // Re-add FK constraint (nullable foreign key is valid)
+            $table->foreign('workflow_id')->references('id')->on("{$tablePrefix}_workflows")->onDelete('cascade');
         });
     }
 
@@ -30,6 +33,9 @@ return new class extends Migration
         $table = "{$tablePrefix}_job_workflow";
 
         Schema::table($table, function (Blueprint $table) use ($tablePrefix) {
+            // Drop FK before modifying the column
+            $table->dropForeign("{$tablePrefix}_job_workflow_workflow_id_foreign");
+
             // Restore to NOT NULL (set any nulls to 0 first to avoid data issues)
             \DB::statement("UPDATE {$tablePrefix}_job_workflow SET workflow_id = 0 WHERE workflow_id IS NULL");
             $table->unsignedBigInteger('workflow_id')->nullable(false)->change();
