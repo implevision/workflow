@@ -29,9 +29,6 @@ return new class extends Migration
                 $table->unsignedBigInteger('workflow_id')->nullable()->change();
             });
 
-            // Set invalid workflow_id to NULL
-            \DB::statement("UPDATE {$table} SET workflow_id = NULL WHERE workflow_id IS NOT NULL AND workflow_id NOT IN (SELECT id FROM {$workflowsTable})");
-
             // Re-add FK constraint (nullable foreign key is valid)
             Schema::table($table, function (Blueprint $table) use ($workflowsTable) {
                 $table->foreign('workflow_id')->references('id')->on($workflowsTable)->onDelete('cascade');
@@ -41,7 +38,11 @@ return new class extends Migration
 
     public function down(): void
     {
-        $tablePrefix = getTablePrefix();
+        // Commenting out the down method since making a column non-nullable again
+        // can lead to data loss if there are existing NULL values
+        // If you need to revert this migration, you should first ensure that there are no NULL values in the workflow_id column
+
+        /*$tablePrefix = getTablePrefix();
         $table = "{$tablePrefix}_job_workflow";
         $workflowsTable = "{$tablePrefix}_workflows";
 
@@ -64,6 +65,6 @@ return new class extends Migration
                 // Re-add FK constraint
                 $table->foreign('workflow_id')->references('id')->on($workflowsTable)->onDelete('cascade');
             });
-        }
+        }*/
     }
 };
