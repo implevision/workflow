@@ -135,6 +135,46 @@ class SES
         }
     }
 
+    /**
+     * Pre-render {{#each}} blocks in PHP before sending to SES.
+     * SES inline TemplateContent does not support Handlebars block helpers.
+     */
+    public static function renderTemplate(string $content, array $data): string
+    {
+        return preg_replace_callback(
+            '/\{\{#each\s+(\w+)\s*\}\}(.*?)\{\{\/each\}\}/s',
+            function ($matches) use ($data) {
+                $arrayName = $matches[1];
+                $inner = $matches[2];
+                $items = $data[$arrayName] ?? [];
+
+                // Support JSON-encoded arrays (e.g. from GraphQL string payloads)
+                if (is_string($items)) {
+                    $decoded = json_decode($items, true);
+                    $items = is_array($decoded) ? $decoded : [];
+                }
+
+                if (! is_array($items)) {
+                    return '';
+                }
+
+                $result = '';
+                foreach ($items as $item) {
+                    $rendered = $inner;
+                    if (is_array($item)) {
+                        foreach ($item as $key => $value) {
+                            $rendered = str_replace('{{'.$key.'}}', $value, $rendered);
+                        }
+                    }
+                    $result .= $rendered;
+                }
+
+                return $result;
+            },
+            $content
+        );
+    }
+
     public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')
     {
         try {
@@ -142,6 +182,10 @@ class SES
         } catch (\Exception $e) {
             throw new \Exception('Error creating SES client: '.$e->getMessage());
         }
+
+        // Pre-render {{#each}} blocks that SES inline templates do not support
+        $htmlContent = self::renderTemplate($htmlContent, $payload);
+        $subject = self::renderTemplate($subject, $payload);
 
         // SES dose not support if any placeholder is missing in the email template.
         // So we need to fill the missing placeholders with empty string
@@ -160,6 +204,12 @@ class SES
         $recipient = $payload['email'];
         unset($payload['email']);
 
+        // Save attachments before removing arrays from payload
+        $attachments = $payload['attachments'] ?? [];
+
+        // Remove array values (already rendered by renderTemplate above)
+        $payload = array_filter($payload, fn ($v) => ! is_array($v));
+
         $payload = array_map(function ($value) {
             return empty($value) ? '' : $value;
         }, $payload);
@@ -173,8 +223,6 @@ class SES
                 $from = str_replace('{{'.$placeholder.'}}', $placeholderValue, $from);
             }
         }
-
-        $attachments = $payload['attachments'];
 
         try {
             $response = $sesClient->sendEmail([
