@@ -12,6 +12,9 @@ class WorkflowLog extends Model
         'module',
         'status',
         'job_workflow_id',
+        'action_type',
+        'action_track_id',
+        'error',
     ];
 
     protected $casts = [
