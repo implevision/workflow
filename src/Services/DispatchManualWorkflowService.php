@@ -241,7 +241,11 @@ class DispatchManualWorkflowService
                             $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
                             if ($sendAllEmailsTo) {
-                                $emailPlaceHolderValue = $sendAllEmailsTo;
+                                $allowedEmails = array_map('trim', explode(',', $sendAllEmailsTo));
+                                $recipientEmails = array_map('trim', explode(',', $emailPlaceHolderValue));
+                                if (array_diff($recipientEmails, $allowedEmails)) {
+                                    $emailPlaceHolderValue = $sendAllEmailsTo;
+                                }
                             }
 
                             $emailPlaceHolderValue = explode(',', $emailPlaceHolderValue);
