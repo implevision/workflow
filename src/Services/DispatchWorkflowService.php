@@ -410,7 +410,11 @@ class DispatchWorkflowService
                             if (config('app.env') != 'production') {
                                 $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
-                                if ($sendAllEmailsTo) {
+                                if (
+                                    $sendAllEmailsTo &&
+                                    ! (! empty($action['payload']['emailRecipient']) &&
+                                        strtoupper($action['payload']['emailRecipient']) == 'CUSTOM')
+                                ) {
                                     $emailPlaceHolderValue = $sendAllEmailsTo;
                                 }
 
