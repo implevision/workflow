@@ -240,12 +240,12 @@ class DispatchManualWorkflowService
                         if (config('app.env') != 'production') {
                             $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
-                            if ($sendAllEmailsTo) {
-                                $allowedEmails = array_map('trim', explode(',', $sendAllEmailsTo));
-                                $recipientEmails = array_map('trim', explode(',', $emailPlaceHolderValue));
-                                if (array_diff($recipientEmails, $allowedEmails)) {
-                                    $emailPlaceHolderValue = $sendAllEmailsTo;
-                                }
+                            if (
+                                $sendAllEmailsTo &&
+                                ! (! empty($action['payload']['emailRecipient']) &&
+                                    strtoupper($action['payload']['emailRecipient']) == 'CUSTOM')
+                            ) {
+                                $emailPlaceHolderValue = $sendAllEmailsTo;
                             }
 
                             $emailPlaceHolderValue = explode(',', $emailPlaceHolderValue);
