@@ -532,15 +532,11 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             ],
 
             'RenewalIndicator' => [
-                'agentTask' => [
-                    'policyTransaction' => [
-                        'GraphQLschemaToReplace' => [
-                            'agentTask' => [
-                                'policyTransaction' => [
-                                    'policy' => [
-                                        'renewalTypeCode' => null,
-                                    ],
-                                ],
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'renewalTypeCode' => null,
                             ],
                         ],
                     ],
@@ -1318,15 +1314,16 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     }
     public function transactionSubTypeScreenNameResolver($policyData)
     {
-        $productCode = $policyData['policy']['product']['productCode'] ?? null;
+        $policyTransaction = $policyData['policyTransaction'] ?? [];
+        $productCode = $policyTransaction['policy']['product']['productCode'] ?? null;
         $isNfipProduct = Helper::isNfipProduct($productCode);
 
         if (
-            $policyData['policyRiskTransactionType']['policyRiskTransactionTypeCode'] === 'ENDORSE'
+            $policyTransaction['policyRiskTransactionType']['policyRiskTransactionTypeCode'] === 'ENDORSE'
             &&
             $isNfipProduct
         ) {
-            $reasonCode = $policyData['floodTransactionSubType']['reasonCode'] ?? '';
+            $reasonCode = $policyTransaction['floodTransactionSubType']['reasonCode'] ?? '';
 
             $reasonCodeArray = explode(',', $reasonCode);
             $displayNameArray = [];
@@ -1346,7 +1343,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
             return $reasonString;
         } else {
-            return $policyData['policyRiskTransactionSubType']['transactionSubTypeScreenName'] ?? null;
+            return $policyTransaction['policyRiskTransactionSubType']['transactionSubTypeScreenName'] ?? null;
         }
     }
 
@@ -1448,5 +1445,64 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     public function parseMailingAddress($addressArr)
     {
         return $this->parseAddress($addressArr);
+    }
+    public function parsePrimaryMortgageeAddress($mortgagee)
+    {
+        return $this->parseAddress($mortgagee['mortgageeAddress'] ?? []);
+    }
+     public function parseLoanNumber($mortgagee)
+    {
+        return $mortgagee['loanNumber'] ?? null;
+    }
+        public function parsePaymentReceivedDate($data)
+    {
+        if (! is_array($data)) {
+            return null;
+        }
+
+        $metadata = $data['metadata'] ?? null;
+        $id = $data['id'] ?? null;
+        $productCode = $data['productCode'] ?? null;
+
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true);
+        }
+
+        if (! is_array($metadata)) {
+            return null;
+        }
+
+        if ($productCode === 'HiscoxFloodPlus') {
+            $stripeResponse = $metadata['stripe_response'] ?? null;
+
+            if (is_string($stripeResponse)) {
+                $stripeResponse = json_decode($stripeResponse, true);
+            }
+
+            if (! is_array($stripeResponse)) {
+                return null;
+            }
+
+            $stripeMetadata = $stripeResponse['metadata'] ?? null;
+
+            if (is_array($stripeMetadata) && (string) ($stripeMetadata['transaction_id'] ?? '') === (string) $id) {
+                return $this->formatDate($stripeResponse['created'] ?? null);
+            }
+
+            return null;
+        }
+
+        // Default: FLOOD / NFIP products
+        $transactionDate = $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['transaction_date'] ?? null;
+
+        return $transactionDate ? $this->formatDate($transactionDate) : null;
+    }
+    public function parsePrimaryMortgageeName($mortgagee)
+    {
+        return $mortgagee['mortgageePersonInfo']['fullName'] ?? null;
+    }
+    public function parseAdditionalInsuredName($additionalInterest)
+    {
+        return $additionalInterest['additionalPersonInfo']['fullname'] ?? null;
     }
 }
