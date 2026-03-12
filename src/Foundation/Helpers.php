@@ -117,7 +117,7 @@ function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
     return sprintf('%s %s %s', 'php artisan ', $command['command'], implode(', ', $command['options']));
 }
 
-function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [])
+function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [], $page = 1)
 {
     $data = json_encode((array) $data);
     $entityPlaceHoldersToAppend = json_encode((array) $entityPlaceHoldersToAppend);
@@ -129,7 +129,7 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data 
             'options' => [
                 'commandname' => 'taurus:dispatch-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier", "data=$data", "appendPlaceHolders=$entityPlaceHoldersToAppend"],
+                '--option' => ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier", "data=$data", "appendPlaceHolders=$entityPlaceHoldersToAppend", "page=$page"],
             ],
         ];
     } else {
@@ -140,6 +140,7 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data 
                 '--recordIdentifier' => $recordIdentifier,
                 '--data' => $data,
                 '--appendPlaceHolders' => $entityPlaceHoldersToAppend,
+                '--page' => $page,
             ],
         ];
     }

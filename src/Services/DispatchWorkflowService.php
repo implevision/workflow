@@ -43,6 +43,8 @@ class DispatchWorkflowService
 
     protected $appendPlaceHolders;
 
+    protected $page;
+
     protected $isManuallyInvoked = false;
 
     /**
@@ -51,7 +53,7 @@ class DispatchWorkflowService
      * @param  int  $workflowId  The ID of the workflow to be dispatched.
      * @param  int|string  $recordIdentifier  An optional identifier for the record, default is 0.
      */
-    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [])
+    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [], int $page = 1)
     {
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
@@ -59,6 +61,7 @@ class DispatchWorkflowService
         $this->recordIdentifier = $recordIdentifier;
         $this->data = $data;
         $this->appendPlaceHolders = $appendPlaceHolders;
+        $this->page = $page;
         $this->isManuallyInvoked = count($data) ? true : false;
         $this->getInfo();
     }
@@ -274,7 +277,7 @@ class DispatchWorkflowService
                 }
 
                 if ($this->isManuallyInvoked) {
-                    $data[] = $this->data;
+                    $data = $this->data;
                 } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
                     // Build GraphQL query
                     try {
@@ -287,7 +290,9 @@ class DispatchWorkflowService
                             $graphQLSchemaBuilder->addField($placeHolder);
                         }
                         $schemaData = $graphQLSchemaBuilder->getSchema();
-                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery);
+                        $moduleClassForGraphQL->setPage($this->page);
+                        $queryArgs = $moduleClassForGraphQL->getQueryArgs();
+                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery, $queryArgs);
                     } catch (\Exception $e) {
                         \Log::error('WORKFLOW - Error while preparing GraphQL query payload - '.$e->getMessage());
 
@@ -296,16 +301,24 @@ class DispatchWorkflowService
 
                     // Handle GraphQL query execution
                     try {
-                        // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        // \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
+                        \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
+                        \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
                         $graphQLClient = new GraphQLClient($graphQLHeaders);
                         $response = $graphQLClient->query($graphQLRequestPayload);
-                        // \Log::info('WORKFLOW - GraphQL Response: ', $response);
+                        \Log::info('WORKFLOW - GraphQL Response: ', (array) $response);
                     } catch (\Exception $e) {
                         \Log::error('WORKFLOW - Error while executing GraphQL query - '.$e->getMessage());
 
                         continue;
                     }
+
+                    // If schema provides custom record extraction, use it directly (skip jqFilter)
+                    if ($moduleClassForGraphQL->hasCustomRecordExtraction()) {
+                        foreach ($moduleClassForGraphQL->getRecordsFromResponse($response) as $record) {
+                            $record = array_merge($record, $placeHolderWithValues);
+                            $data[] = $record;
+                        }
+                    } else {
 
                     $parsedData = [];
 
@@ -348,7 +361,7 @@ class DispatchWorkflowService
                         if ($actionType == 'WEB_HOOK') {
                             $data = $this->generatePayloadFromParsedData($parsedData);
                         } else {
-                            // SET DATA FOP ACTION
+                            // SET DATA FOR ACTION
                             $data[] = $parsedData;
                         }
                     } catch (\Exception $e) {
@@ -363,6 +376,7 @@ class DispatchWorkflowService
 
                         continue;
                     }
+                    } // end else (jqFilter path)
                 }
 
                 if (config('app.env') != 'production') {

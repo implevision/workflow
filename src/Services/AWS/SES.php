@@ -9,13 +9,17 @@ use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
 class SES
 {
-    public static function extractPlaceholders($html)
-    {
-        preg_match_all('/{{\s*(.*?)\s*}}/', $html, $matches);
+public static function extractPlaceholders($html)
+{
+    preg_match_all('/{{\s*(.*?)\s*}}/', $html, $matches);
 
-        return $matches[1]; // Return only the extracted placeholders
-    }
+    $placeholders = $matches[1] ?? [];
 
+    return array_filter($placeholders, function ($placeholder) {
+        return !str_starts_with($placeholder, '#')
+            && !str_starts_with($placeholder, '/');
+    });
+}
     public static function getSesClient()
     {
         $awsProfile = config('workflow.aws_profile');
@@ -52,6 +56,18 @@ class SES
 
     public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')
     {
+        // If template has block helpers ({{#if}}, {{#each}}), SES inline TemplateContent
+        // cannot process them. Fall back to per-recipient sendEmail() so renderTemplate()
+        // pre-renders the blocks for each recipient individually.
+        if (preg_match('/\{\{#(?:if|each)\s/', $htmlContent)) {
+            $messageId = null;
+            foreach ($payload as $item) {
+                $messageId = self::sendEmail($from, $subject, $htmlContent, $item, $textContent, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
+            }
+
+            return $messageId;
+        }
+
         try {
             $sesClient = self::getSesClient();
         } catch (\Exception $e) {
@@ -141,7 +157,21 @@ class SES
      */
     public static function renderTemplate(string $content, array $data): string
     {
-        return preg_replace_callback(
+        // First pass: handle {{#if}} blocks — SES inline templates do not support block helpers
+        $content = preg_replace_callback(
+            '/\{\{#if\s+(\w+)\s*\}\}(.*?)\{\{\/if\}\}/s',
+            function ($matches) use ($data) {
+                $varName = $matches[1];
+                $inner   = $matches[2];
+                $value   = $data[$varName] ?? null;
+
+                return ! empty($value) ? $inner : '';
+            },
+            $content
+        );
+
+        // Second pass: handle {{#each}} blocks
+        $content = preg_replace_callback(
             '/\{\{#each\s+(\w+)\s*\}\}(.*?)\{\{\/each\}\}/s',
             function ($matches) use ($data) {
                 $arrayName = $matches[1];
@@ -173,6 +203,8 @@ class SES
             },
             $content
         );
+
+        return $content;
     }
 
     public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')

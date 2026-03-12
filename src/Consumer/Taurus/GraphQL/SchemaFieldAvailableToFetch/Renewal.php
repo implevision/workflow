@@ -1,6 +1,8 @@
 <?php
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
+use Taurus\Workflow\Consumer\Taurus\Helper;
+
 
 class Renewal extends AbstractSchema
 {
@@ -45,6 +47,74 @@ class Renewal extends AbstractSchema
     }
 
     /**
+     * Signals that this class handles its own record extraction via
+     * getRecordsFromResponse(), bypassing the jqFilter mechanism.
+     */
+    public function hasCustomRecordExtraction(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Groups expired + expiring agents by email into one record each.
+     * Each record contains ExpiredRenewalListData and ExpiringRenewalListData
+     * as separate keys so the email template can show two distinct sections.
+     */
+    public function getRecordsFromResponse(array $response): array
+    {
+        $expired  = $response['PolicyRenewal']['PoliciesExpiredInLast15Days']  ?? [];
+        $expiring = $response['PolicyRenewal']['PoliciesExpiringIn15Days']      ?? [];
+
+        $agentMap = [];
+
+        foreach ($expired as $agent) {
+            $email = $agent['agentEmail'] ?? '';
+            if (! isset($agentMap[$email])) {
+                $agentMap[$email] = $this->baseAgentRecord($agent);
+            }
+            $agentMap[$email]['ExpiredRenewalListData'] = $this->formatRenewalDates($agent['renewalListData'] ?? []);
+        }
+
+        foreach ($expiring as $agent) {
+            $email = $agent['agentEmail'] ?? '';
+            if (! isset($agentMap[$email])) {
+                $agentMap[$email] = $this->baseAgentRecord($agent);
+            }
+            $agentMap[$email]['ExpiringRenewalListData'] = $this->formatRenewalDates($agent['renewalListData'] ?? []);
+        }
+
+        return array_values($agentMap);
+    }
+
+    private function baseAgentRecord(array $agent): array
+    {
+        return [
+            'AgentEmail'              => $agent['agentEmail']         ?? '',
+            'CompanyName'             => $agent['companyName']        ?? '',
+            'CompanyAddress'          => $agent['companyAddress']     ?? '',
+            'companyPhoneNumber'      => $agent['companyPhoneNumber'] ?? '',
+            'logo'                    => $agent['logo']               ?? '',
+            'agentUrl'                => $agent['agentUrl']           ?? '',
+            'ExpiredRenewalListData'  => [],
+            'ExpiringRenewalListData' => [],
+        ];
+    }
+
+    /**
+     * Returns the date and days arguments required by PolicyRenewal query.
+     * date = today's date (dynamic at runtime)
+     * days = 15 (fixed renewal window)
+     */
+    public function getQueryArgs(): array
+    {
+        return [
+         'date' => '2026-06-30',
+            'days' => 15,
+            'page' => $this->page,
+        ];
+    }
+
+    /**
      * Initializes the field mapping with GraphQL schema for the Renewal class.
      *
      * KEYS are PLACEHOLDER for the GraphQL schema to be replaced.
@@ -53,139 +123,66 @@ class Renewal extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
-        $renewalListData = [
+        // GraphQL schema — sirf query banane ke liye use hota hai.
+        // Data extraction getRecordsFromResponse() me hoti hai.
+        $agentSchema = [
             [
-                'insuredName' => null,
-                'policyNo' => null,
-                'premiumAmount' => null,
-                'termEndDate' => null,
-            ],
-        ];
-
-        $expiredSchema = [
-            'PoliciesExpiredInLast15Days' => [
-                [
-                    'companyPhoneNumber' => null,
-                    'companyName' => null,
-                    'companyAddress' => null,
-                    'agentUrl' => null,
-                    'agentEmail' => null,
-                    'logo' => null,
-                    'renewalListData' => $renewalListData,
+                'companyPhoneNumber' => null,
+                'companyName'        => null,
+                'companyAddress'     => null,
+                'agentUrl'           => null,
+                'agentEmail'         => null,
+                'logo'               => null,
+                'renewalListData'    => [
+                    [
+                        'insuredName'   => null,
+                        'policyNo'      => null,
+                        'premiumAmount' => null,
+                        'termEndDate'   => null,
+                    ],
                 ],
             ],
         ];
 
-        $expiringSchema = [
-            'PoliciesExpiringIn15Days' => [
-                [
-                    'companyPhoneNumber' => null,
-                    'companyName' => null,
-                    'companyAddress' => null,
-                    'agentUrl' => null,
-                    'agentEmail' => null,
-                    'logo' => null,
-                    'renewalListData' => $renewalListData,
-                ],
-            ],
+        $expiredSchema  = ['PoliciesExpiredInLast15Days' => $agentSchema];
+        $expiringSchema = ['PoliciesExpiringIn15Days'    => $agentSchema];
+        $bothSchema     = $expiredSchema + $expiringSchema;
+
+        // jqFilter nahi — data getRecordsFromResponse() se aata hai
+        return [
+            'AgentEmail'              => ['GraphQLschemaToReplace' => $bothSchema],
+            'CompanyName'             => ['GraphQLschemaToReplace' => $bothSchema],
+            'CompanyAddress'          => ['GraphQLschemaToReplace' => $bothSchema],
+            'companyPhoneNumber'      => ['GraphQLschemaToReplace' => $bothSchema],
+            'logo'                    => ['GraphQLschemaToReplace' => $bothSchema],
+            'agentUrl'                => ['GraphQLschemaToReplace' => $bothSchema],
+            'renewalListData'         => ['GraphQLschemaToReplace' => $bothSchema],
+            'ExpiredAgentEmail'       => ['GraphQLschemaToReplace' => $expiredSchema],
+            'ExpiredCompanyName'      => ['GraphQLschemaToReplace' => $expiredSchema],
+            'ExpiredCompanyAddress'   => ['GraphQLschemaToReplace' => $expiredSchema],
+            'ExpiredCompanyPhoneNumber'=> ['GraphQLschemaToReplace' => $expiredSchema],
+            'ExpiredRenewalListData'  => ['GraphQLschemaToReplace' => $expiredSchema],
+            'ExpiringAgentEmail'      => ['GraphQLschemaToReplace' => $expiringSchema],
+            'ExpiringCompanyName'     => ['GraphQLschemaToReplace' => $expiringSchema],
+            'ExpiringCompanyAddress'  => ['GraphQLschemaToReplace' => $expiringSchema],
+            'ExpiringCompanyPhoneNumber'=> ['GraphQLschemaToReplace' => $expiringSchema],
+            'ExpiringRenewalListData' => ['GraphQLschemaToReplace' => $expiringSchema],
         ];
-
-        $fieldMapping = [
-            // --- Full array placeholders ---
-            'PoliciesExpiredInLast15Days' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days',
-            ],
-            'PoliciesExpiringIn15Days' => [
-                'GraphQLschemaToReplace' => $expiringSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiringIn15Days',
-            ],
-
-            // --- Expired: company-level fields ---
-            'ExpiredCompanyName' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days[].companyName',
-            ],
-            'ExpiredCompanyPhoneNumber' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days[].companyPhoneNumber',
-            ],
-            'ExpiredCompanyAddress' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days[].companyAddress',
-            ],
-            'ExpiredAgentUrl' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days[].agentUrl',
-            ],
-            'ExpiredLogo' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days[].logo',
-            ],
-            'ExpiredAgentEmail' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days[].agentEmail',
-            ],
-
-            // --- Expired: renewalListData fields ---
-            'ExpiredInsuredName' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days[].renewalListData[].insuredName',
-            ],
-            'ExpiredPolicyNo' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days[].renewalListData[].policyNo',
-            ],
-            'ExpiredPremiumAmount' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days[].renewalListData[].premiumAmount',
-            ],
-            'ExpiredTermEndDate' => [
-                'GraphQLschemaToReplace' => $expiredSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiredInLast15Days[].renewalListData[].termEndDate',
-            ],
-
-            // --- Expiring: company-level fields ---
-            'ExpiringCompanyName' => [
-                'GraphQLschemaToReplace' => $expiringSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiringIn15Days[].companyName',
-            ],
-            'ExpiringCompanyPhoneNumber' => [
-                'GraphQLschemaToReplace' => $expiringSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiringIn15Days[].companyPhoneNumber',
-            ],
-            'ExpiringCompanyAddress' => [
-                'GraphQLschemaToReplace' => $expiringSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiringIn15Days[].companyAddress',
-            ],
-            'ExpiringAgentUrl' => [
-                'GraphQLschemaToReplace' => $expiringSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiringIn15Days[].agentUrl',
-            ],
-            'ExpiringLogo' => [
-                'GraphQLschemaToReplace' => $expiringSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiringIn15Days[].logo',
-            ],
-
-            // --- Expiring: renewalListData fields ---
-            'ExpiringInsuredName' => [
-                'GraphQLschemaToReplace' => $expiringSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiringIn15Days[].renewalListData[].insuredName',
-            ],
-            'ExpiringPolicyNo' => [
-                'GraphQLschemaToReplace' => $expiringSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiringIn15Days[].renewalListData[].policyNo',
-            ],
-            'ExpiringPremiumAmount' => [
-                'GraphQLschemaToReplace' => $expiringSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiringIn15Days[].renewalListData[].premiumAmount',
-            ],
-            'ExpiringTermEndDate' => [
-                'GraphQLschemaToReplace' => $expiringSchema,
-                'jqFilter' => '.PolicyRenewal.PoliciesExpiringIn15Days[].renewalListData[].termEndDate',
-            ],
-        ];
-
-        return $fieldMapping;
     }
+        public function formatDate($dateToFormat)
+    {
+        return Helper::formatDate($dateToFormat);
+    }
+
+    private function formatRenewalDates(array $list): array
+    {
+        return array_map(function ($item) {
+            if (! empty($item['termEndDate'])) {
+                $item['termEndDate'] = Helper::formatDate($item['termEndDate']);
+            }
+
+            return $item;
+        }, $list);
+    }
+
 }
