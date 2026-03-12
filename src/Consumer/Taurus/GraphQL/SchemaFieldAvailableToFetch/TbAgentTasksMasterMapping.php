@@ -404,7 +404,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '..policyAgentTaskQuery.agentTask.policyTransaction.policy.todaysDate',
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.todaysDate',
                 'parseResultCallback' => 'getTodaysDate',
             ],
 
@@ -512,7 +512,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery',
+                'jqFilter' => '.policyAgentTaskQuery.agentTask',
                 'parseResultCallback' => 'transactionSubTypeScreenNameResolver',
             ],
 
@@ -535,8 +535,12 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 'agentTask' => [
                     'policyTransaction' => [
                         'GraphQLschemaToReplace' => [
-                            'policy' => [
-                                'renewalTypeCode' => null,
+                            'agentTask' => [
+                                'policyTransaction' => [
+                                    'policy' => [
+                                        'renewalTypeCode' => null,
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -1386,5 +1390,63 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     public function formatCurrency($amount)
     {
         return Helper::formatCurrency($amount);
+    }
+    public function parseBillTo($appCodeName)
+    {
+        $ddGroup = 'BILLTOFLOOD'; // TODO: Confirm whether 'BILLTO' should be used for non-flood products
+        $label = Helper::parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $appCodeName);
+
+        return $label;
+    }
+    public function parsePropertyAddress($addressArr)
+    {
+        return $this->parseAddress($addressArr);
+    }
+
+    public function parseInsuredPersonEmail($emailArr)
+    {
+        return is_array($emailArr) && count($emailArr) ? (last($emailArr)['email'] ?? null) : null;
+    }
+    public function parseInsuredPersonPhone($phoneArr)
+    {
+        $phone = is_array($phoneArr) && count($phoneArr) ? (last($phoneArr)['phoneNumber'] ?? null) : null;
+        if ($phone) {
+            $phone = Helper::formatPhone($phone);
+        }
+
+        return $phone;
+    }
+     public function formatNumber($number)
+    {
+        return Helper::formatNumber($number);
+    }
+
+        private function parseAddress($addressArr)
+    {
+        if (empty($addressArr)) {
+            return null;
+        }
+
+        $address = [
+            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'city' => $addressArr['tbCity']['name'] ?? null,
+            // 'county' => $addressArr['tbCounty']['name'] ?? null,
+            'state' => $addressArr['tbState']['name'] ?? null,
+            'postalCode' => $addressArr['postalCode'] ?? null,
+        ];
+
+        if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
+            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
+        }
+
+        $address = array_filter(array_map('trim', $address), function ($item) {
+            return ! empty($item);
+        });
+
+        return implode(', ', $address);
+    }
+    public function parseMailingAddress($addressArr)
+    {
+        return $this->parseAddress($addressArr);
     }
 }
