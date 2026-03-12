@@ -67,6 +67,28 @@ class TbAgentTasksMasterMapping extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $addressStructure = [
+            'addressTypeCode' => null,
+            'houseNo' => null,
+            'streetName' => null,
+            'addressLine1' => null,
+            'addressLine2' => null,
+            'addressLine3' => null,
+            'addressLine4' => null,
+            'postalCode' => null,
+            'postalCodeSuffix' => null,
+            'tbCity' => [
+                'name' => null,
+            ],
+            'tbState' => [
+                'name' => null,
+            ],
+            'tbCountry' => [
+                'name' => null,
+            ],
+            'isDefaultAddress' => null,
+        ];
+
         $fieldMapping = [
             'TaskId' => [
                 'GraphQLschemaToReplace' => [
@@ -273,6 +295,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction',
                 'parseResultCallback' => 'parsePremiumDue',
             ],
+
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
                     'agentTask' => [
@@ -370,7 +393,755 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 'jqFilter' => '',
                 'parseResultCallback' => 'getUUID',
             ],
+
+            'TodaysDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'todaysDate' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '..policyAgentTaskQuery.agentTask.policyTransaction.policy.todaysDate',
+                'parseResultCallback' => 'getTodaysDate',
+            ],
+
+            'NameAsOnTitle' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'insuredPersonInfo' => [
+                                    'fullName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.insuredPersonInfo.fullName',
+            ],
+
+            'PolicyExpirationDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'transactionEffectiveToDate' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.transactionEffectiveToDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+
+            'TermStartDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policyTermMaster' => [
+                                'termStartDate' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policyTermMaster.termStartDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+
+            'TermEndDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policyTermMaster' => [
+                                'termEndDate' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policyTermMaster.termEndDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+
+            'ProductName' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'product' => [
+                                    'productName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.product.productName',
+            ],
+
+            'TransactionType' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policyRiskTransactionType' => [
+                                'transactionTypeScreenName' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policyRiskTransactionType.transactionTypeScreenName',
+            ],
+
+            'TransactionSubType' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policyRiskTransactionType' => [
+                                'policyRiskTransactionTypeCode' => null,
+                            ],
+                            'policyRiskTransactionSubType' => [
+                                'transactionSubTypeScreenName' => null,
+                            ],
+                            'floodTransactionSubType' => [
+                                'reasonCode' => null,
+                            ],
+                            'policy' => [
+                                'product' => [
+                                    'productCode' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyQuery',
+                'parseResultCallback' => 'transactionSubTypeScreenNameResolver',
+            ],
+
+            'WaitingPeriod' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+
+                            'riskAdditionalFloodInfo' => [
+                                'policyWaitingPeriod' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.policyWaitingPeriod',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+
+            'RenewalIndicator' => [
+                'agentTask' => [
+                    'policyTransaction' => [
+                        'GraphQLschemaToReplace' => [
+                            'policy' => [
+                                'renewalTypeCode' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.renewalTypeCode',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+
+            'BillTo' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'accountMaster' => [
+                                    'billToType' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.accountMaster.billToType',
+                'parseResultCallback' => 'parseBillTo',
+            ],
+            'UnderWriterApplicationStatus' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'policyApplicationMaster' => [
+                                    'underwriterApplicationStatusTypeCode' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+
+            'TransactionEffectiveDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'transactionEffectiveFromDate' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.transactionEffectiveFromDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+
+            'TotalPremium' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'totalPremium' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.totalPremium',
+                'parseResultCallback' => 'formatCurrency',
+            ],
+
+            'ReplacementCost' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'replacementCost' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.replacementCost',
+                'parseResultCallback' => 'formatCurrency',
+            ],
+
+            'AccountingDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'accountingDate' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.accountingDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+
+            'EffectiveDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policyTermMaster' => [
+                                'termStartDate' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policyTermMaster.termStartDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+
+            'InsuredPropertyAddress' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'insuredPersonInfo' => [
+                                    'TbPersonaddress' => $addressStructure,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.insuredPersonInfo.TbPersonaddress[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Location")',
+                'parseResultCallback' => 'parsePropertyAddress',
+            ],
+
+            'InsuredEmail' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'insuredPersonInfo' => [
+                                    'emailInfo' => [
+                                        'email' => null,
+                                        'isDefault' => null,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.policyAgentTaskQuery.agentTask.policyTransaction.policy.insuredPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
+                'parseResultCallback' => 'parseInsuredPersonEmail',
+            ],
+
+            'InsuredPhoneNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'insuredPersonInfo' => [
+                                    'phoneInfo' => [
+                                        'phoneNumber' => null,
+                                        'isDefault' => null,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.policyAgentTaskQuery.agentTask.policyTransaction.policy.insuredPersonInfo.phoneInfo[0] | select(.isDefault == "Y")]',
+                'parseResultCallback' => 'parseInsuredPersonPhone',
+            ],
+
+            'IsPolicyholderOwnerOrTenant' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'isPolicyholderOwnerOrTenant' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.isPolicyholderOwnerOrTenant',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+
+            'IsPolicyRentalProperty' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'isRentalProperty' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.isRentalProperty',
+                'parseResultCallback' => 'parseYesNoDisplayName',
+            ],
+
+            'IsPolicyholderCondominiumAssociation' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'condoOwnership' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.condoOwnership',
+                'parseResultCallback' => 'parseYesNoDisplayName',
+            ],
+
+            'CommunityNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'communityNumber' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.communityNumber',
+            ],
+
+            'PanelNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'panelNumber' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.panelNumber',
+            ],
+            'MapSuffix' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'mapSuffix' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.mapSuffix',
+            ],
+            'FloodZone' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'floodZone' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.floodZone',
+            ],
+            'CountyName' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'countyName' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.countyName',
+            ],
+            'InitialFirmDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'initialFirmDate' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.initialFirmDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'CurrentFirmDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'currentFirmDate' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.currentFirmDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'CurrentBaseFloodElevation' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'baseElevation' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.baseElevation',
+                'parseResultCallback' => 'formatNumber',
+            ],
+            'IsBuildingLocatedInCoastalBarrierResourcesSystemArea' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'isCBRSorOPA' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.isCBRSorOPA',
+                'parseResultCallback' => 'parseYesNoDisplayName',
+            ],
+            'ConstructionDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'dateOfConstruction' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.dateOfConstruction',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'OccupancyType' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'occupancyType' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.occupancyType',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+            'BuildingDescription' => [
+                'agentTask' => [
+                    'policyTransaction' => [
+                        'GraphQLschemaToReplace' => [
+                            'riskAdditionalFloodInfo' => [
+                                'buildingUse' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.buildingUse',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+            'FoundationType' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'foundationType' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.foundationType',
+                'parseResultCallback' => 'parseAppCodeNameToDisplayName',
+            ],
+            'TotalSquareFootage' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'totalSquareFootage' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.totalSquareFootage',
+                'parseResultCallback' => 'formatNumber',
+            ],
+            'NumberOfFloors' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'numberOfFloors' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.numberOfFloors',
+                'parseResultCallback' => 'formatNumber',
+            ],
+
+            'ECCertificateSignatureDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'elevationCertificate' => [
+                                'certificateDate' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.elevationCertificate.certificateDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+            'DiagramNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'elevationCertificate' => [
+                                'buildingDiagramNoCode' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.elevationCertificate.buildingDiagramNoCode',
+            ],
+            'TopOfBottomFloorInFeet' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'elevationCertificate' => [
+                                'topOfBottomFloor' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.elevationCertificate.topOfBottomFloor',
+                'parseResultCallback' => 'formatNumber',
+            ],
+            'TopOfNextHigherFloorInFeet' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'elevationCertificate' => [
+                                'topOfNextHigherFloor' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.elevationCertificate.topOfNextHigherFloor',
+                'parseResultCallback' => 'formatNumber',
+            ],
+            'LowestAdjacentGrade' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'elevationCertificate' => [
+                                'lowestAdjacentGrade' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.elevationCertificate.lowestAdjacentGrade',
+                'parseResultCallback' => 'formatNumber',
+            ],
+            'LoanClosingDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'riskAdditionalFloodInfo' => [
+                                'floodLoanClosingDate' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.riskAdditionalFloodInfo.floodLoanClosingDate',
+                'parseResultCallback' => 'formatDate',
+            ],
+
+            'PaymentTransactionNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'id' => null,
+                            'policy' => [
+                                'policyAccountingPaymentLog' => [
+                                    'metadata' => null,
+                                ],
+                                'product' => [
+                                    'productCode' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '{metadata: .policyAgentTaskQuery?.agentTask?.policyTransaction?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyAgentTaskQuery?.agentTask?.policyTransaction?.policy?.id?, productCode: .policyAgentTaskQuery?.agentTask?.policyTransaction?.policy?.product?.productCode?}',
+                'parseResultCallback' => 'parsePaymentTransactionNumber',
+            ],
+            'PaymentReceivedDate' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'id' => null,
+                            'policy' => [
+                                'policyAccountingPaymentLog' => [
+                                    'metadata' => null,
+                                ],
+                                'product' => [
+                                    'productCode' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '{metadata: .policyAgentTaskQuery?.agentTask?.policyTransaction?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyAgentTaskQuery?.agentTask?.policyTransaction?.policy?.id?, productCode: .policyAgentTaskQuery?.agentTask?.policyTransaction?.policy?.product?.productCode?}',
+                'parseResultCallback' => 'parsePaymentReceivedDate',
+            ],
         ];
+
+        $fieldMapping['InsuredMailingAddress'] = [
+            'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.insuredPersonInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'parseResultCallback' => 'parseMailingAddress',
+        ];
+
+        $fieldMapping['PrimaryMortgageeName'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'mortgageePersonInfo' => [
+                        'fullName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'parseResultCallback' => 'parsePrimaryMortgageeName',
+        ];
+
+        $fieldMapping['PrimaryMortgageeLoanNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'loanNumber' => null,
+                ],
+            ],
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'parseResultCallback' => 'parseLoanNumber',
+        ];
+
+        $fieldMapping['PrimaryMortgageeAddress'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'mortgageeType' => null,
+                    'mortgageeAddress' => $addressStructure,
+                ],
+            ],
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'parseResultCallback' => 'parsePrimaryMortgageeAddress',
+        ];
+
+        $fieldMapping['AdditionalInsuredName'] = [
+            'GraphQLschemaToReplace' => [
+                'additionalInterestInfo' => [
+                    'partyInterestCode' => null,
+                    'additionalPersonInfo' => [
+                        'fullname' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.additionalInterestInfo[] | select(.partyInterestCode == "ADDITIONALINSURED")',
+            'parseResultCallback' => 'parseAdditionalInsuredName',
+        ];
+
+        $fieldMapping['InsuredPortal'] = [
+            'GraphQLschemaToReplace' => [
+                'agentTask' => [
+                    'policyTransaction' => [
+                        'tbAccountMaster' => [
+                            'TbPersoninfo' => [
+                                'brandedCompany' => [
+                                    'company' => [
+                                        'insuredPortal' => null,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyAgentTaskQuery?.agentTask?.policyTransaction?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
+            'parseResultCallback' => 'getInsuredPortalUrl',
+        ];
+
+        $fieldMapping['AgentPortal'] = [
+            'GraphQLschemaToReplace' => [
+                'agentTask' => [
+                    'policyTransaction' => [
+                        'tbAccountMaster' => [
+                            'TbPersoninfo' => [
+                                'brandedCompany' => [
+                                    'company' => [
+                                        'insuredPortal' => null,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyAgentTaskQuery?.agentTask?.policyTransaction?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
+            'parseResultCallback' => 'getAgentPortalUrl',
+        ];
+
 
         return $fieldMapping;
     }
@@ -532,8 +1303,88 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             ->pluck('s_PolicyNoInitial') // Fetch the column values
             ->toArray();
 
-        $regex = '/^('.implode('|', $policyNoInitials).')/';
+        $regex = '/^(' . implode('|', $policyNoInitials) . ')/';
 
         return preg_replace($regex, '', $policyNumber);
+    }
+
+    public function getTodaysDate(): string
+    {
+        return Helper::getTodaysDate();
+    }
+    public function transactionSubTypeScreenNameResolver($policyData)
+    {
+        $productCode = $policyData['policy']['product']['productCode'] ?? null;
+        $isNfipProduct = Helper::isNfipProduct($productCode);
+
+        if (
+            $policyData['policyRiskTransactionType']['policyRiskTransactionTypeCode'] === 'ENDORSE'
+            &&
+            $isNfipProduct
+        ) {
+            $reasonCode = $policyData['floodTransactionSubType']['reasonCode'] ?? '';
+
+            $reasonCodeArray = explode(',', $reasonCode);
+            $displayNameArray = [];
+
+            foreach ($reasonCodeArray as $trrpMapping) {
+                $ddGroup = 'FLENDORSEMENTTRANSUBTYPE';
+                $appCodeNameForDisplay = Helper::parseAppCodeNameToDisplayNameUsingDDGroup(
+                    $ddGroup,
+                    $trrpMapping,
+                    's_TRRPMapping'
+                );
+
+                $displayNameArray[] = $appCodeNameForDisplay;
+            }
+
+            $reasonString = implode(', ', $displayNameArray);
+
+            return $reasonString;
+        } else {
+            return $policyData['policyRiskTransactionSubType']['transactionSubTypeScreenName'] ?? null;
+        }
+    }
+
+    public function getInsuredPortalUrl($insuredPortal)
+    {
+        // Returns holding company website URL if insuredPortal is empty
+        if (empty($insuredPortal)) {
+            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+            return $holdingCompanyDetail['insured_portal'];
+        }
+
+        // Otherwise, return insuredPortal
+        return $insuredPortal;
+    }
+
+    public function getAgentPortalUrl($insuredPortal)
+    {
+        if (empty($insuredPortal)) {
+            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+            $insuredPortal = $holdingCompanyDetail['agent_portal'] ?? null;
+
+            if (empty($insuredPortal)) {
+                return Helper::createPortalURL('AgentPortal');
+            }
+        }
+
+        return str_replace('mypolicy', 'agent', $insuredPortal);
+    }
+
+    public function parseYesNoDisplayName($value)
+    {
+        return Helper::parseYesNoDisplayName($value);
+    }
+
+    public function parseAppCodeNameToDisplayName($appCodeName)
+    {
+        return Helper::parseAppCodeNameToDisplayName($appCodeName);
+    }
+
+    public function formatCurrency($amount)
+    {
+        return Helper::formatCurrency($amount);
     }
 }
