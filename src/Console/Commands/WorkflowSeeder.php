@@ -17,7 +17,7 @@ class WorkflowSeeder extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:seed-workflow {--workflow=}';
+    protected $signature = 'taurus:seed-workflow {--workflow=} {--skip-tenant=}';
 
     /**
      * The console command description.
@@ -42,6 +42,16 @@ class WorkflowSeeder extends Command
     public function handle()
     {
         $workflow = $this->option('workflow');
+
+        $skipTenants = $this->option('skip-tenant')
+            ? array_map('trim', explode(',', $this->option('skip-tenant')))
+            : [];
+
+        if (! empty($skipTenants) && in_array(getTenant(), $skipTenants)) {
+            \Log::info("WORKFLOW SEEDER - Skipping seeding process for workflow: {$workflow} on tenant: ".getTenant());
+
+            return 0;
+        }
 
         \Log::info("WORKFLOW SEEDER - Starting seeding process for workflow: {$workflow}");
 
