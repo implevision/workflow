@@ -592,13 +592,11 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'agentTask' => [
                         'policyTransaction' => [
-                            'policy' => [
-                                'totalPremium' => null,
-                            ],
+                            'totalPremium' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.totalPremium',
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.totalPremium',
                 'parseResultCallback' => 'formatCurrency',
             ],
 
@@ -1014,9 +1012,6 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'policyTransaction' => [
                             'id' => null,
                             'policy' => [
-                                'policyAccountingPaymentLog' => [
-                                    'metadata' => null,
-                                ],
                                 'product' => [
                                     'productCode' => null,
                                 ],
@@ -1033,9 +1028,6 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'policyTransaction' => [
                             'id' => null,
                             'policy' => [
-                                'policyAccountingPaymentLog' => [
-                                    'metadata' => null,
-                                ],
                                 'product' => [
                                     'productCode' => null,
                                 ],
@@ -1045,6 +1037,41 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 ],
                 'jqFilter' => '{metadata: .policyAgentTaskQuery?.agentTask?.policyTransaction?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyAgentTaskQuery?.agentTask?.policyTransaction?.policy?.id?, productCode: .policyAgentTaskQuery?.agentTask?.policyTransaction?.policy?.product?.productCode?}',
                 'parseResultCallback' => 'parsePaymentReceivedDate',
+            ],
+
+            'AgentName' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'agentInfo' => [
+                                    'fullName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.agentInfo.fullName',
+            ],
+
+            'WYOCompanyName' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'tbAccountMaster' => [
+                                'TbPersoninfo' => [
+                                    'brandedCompany' => [
+                                        'company' => [
+                                            'companyName' => null,
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.brandedCompany[]',
+                'parseResultCallback' => 'parseCompanyName',
             ],
         ];
 
@@ -1056,49 +1083,65 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         $fieldMapping['PrimaryMortgageeName'] = [
             'GraphQLschemaToReplace' => [
-                'mortgageeInfo' => [
-                    'mortgageeType' => null,
-                    'mortgageePersonInfo' => [
-                        'fullName' => null,
+                'agentTask' => [
+                    'policyTransaction' => [
+                        'mortgageeInfo' => [
+                            'mortgageeType' => null,
+                            'mortgageePersonInfo' => [
+                                'fullName' => null,
+                            ],
+                        ],
                     ],
                 ],
             ],
-            'jqFilter' => '.policyAgentTaskQuery.agentTask.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
             'parseResultCallback' => 'parsePrimaryMortgageeName',
         ];
 
         $fieldMapping['PrimaryMortgageeLoanNumber'] = [
             'GraphQLschemaToReplace' => [
-                'mortgageeInfo' => [
-                    'mortgageeType' => null,
-                    'loanNumber' => null,
+                'agentTask' => [
+                    'policyTransaction' => [
+                        'mortgageeInfo' => [
+                            'mortgageeType' => null,
+                            'loanNumber' => null,
+                        ],
+                    ],
                 ],
             ],
-            'jqFilter' => '.policyAgentTaskQuery.agentTask.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
             'parseResultCallback' => 'parseLoanNumber',
         ];
 
         $fieldMapping['PrimaryMortgageeAddress'] = [
             'GraphQLschemaToReplace' => [
-                'mortgageeInfo' => [
-                    'mortgageeType' => null,
-                    'mortgageeAddress' => $addressStructure,
+                'agentTask' => [
+                    'policyTransaction' => [
+                        'mortgageeInfo' => [
+                            'mortgageeType' => null,
+                            'mortgageeAddress' => $addressStructure,
+                        ],
+                    ],
                 ],
             ],
-            'jqFilter' => '.policyAgentTaskQuery.agentTask.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
             'parseResultCallback' => 'parsePrimaryMortgageeAddress',
         ];
 
         $fieldMapping['AdditionalInsuredName'] = [
             'GraphQLschemaToReplace' => [
-                'additionalInterestInfo' => [
-                    'partyInterestCode' => null,
-                    'additionalPersonInfo' => [
-                        'fullname' => null,
+                'agentTask' => [
+                    'policyTransaction' => [
+                        'additionalInterestInfo' => [
+                            'partyInterestCode' => null,
+                            'additionalPersonInfo' => [
+                                'fullName' => null,
+                            ],
+                        ],
                     ],
                 ],
             ],
-            'jqFilter' => '.policyAgentTaskQuery.agentTask.additionalInterestInfo[] | select(.partyInterestCode == "ADDITIONALINSURED")',
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.additionalInterestInfo[] | select(.partyInterestCode == "ADDITIONALINSURED")',
             'parseResultCallback' => 'parseAdditionalInsuredName',
         ];
 
@@ -1503,6 +1546,48 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     }
     public function parseAdditionalInsuredName($additionalInterest)
     {
-        return $additionalInterest['additionalPersonInfo']['fullname'] ?? null;
+        return $additionalInterest['additionalPersonInfo']['fullName'] ?? null;
+    }
+
+    public function parsePaymentTransactionNumber($data)
+    {
+        if (! is_array($data)) {
+            return null;
+        }
+
+        $metadata = $data['metadata'] ?? null;
+        $id = $data['id'] ?? null;
+        $productCode = $data['productCode'] ?? null;
+
+        if (is_string($metadata)) {
+            $metadata = json_decode($metadata, true);
+        }
+
+        if (! is_array($metadata)) {
+            return null;
+        }
+
+        if ($productCode === 'HiscoxFloodPlus') {
+            $stripeResponse = $metadata['stripe_response'] ?? null;
+
+            if (is_string($stripeResponse)) {
+                $stripeResponse = json_decode($stripeResponse, true);
+            }
+
+            if (! is_array($stripeResponse)) {
+                return null;
+            }
+
+            $stripeMetadata = $stripeResponse['metadata'] ?? null;
+
+            if (is_array($stripeMetadata) && (string) ($stripeMetadata['transaction_id'] ?? '') === (string) $id) {
+                return $stripeResponse['id'] ?? null;
+            }
+
+            return null;
+        }
+
+        // Default: FLOOD / NFIP products
+        return $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['paygov_tracking_id'] ?? null;
     }
 }
