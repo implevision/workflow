@@ -668,11 +668,6 @@ class WorkflowService
     }
 
     /**
-     * Retrieve completed workflow logs for a given module.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    /**
     * Retrieve completed workflow logs for a given module.
     *
     * @param string $moduleKey  
