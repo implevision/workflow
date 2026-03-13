@@ -668,29 +668,33 @@ class WorkflowService
     }
 
     /**
-     * Retrieve completed workflow logs for a given module.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public function getWorkflowlog(string $moduleKey)
-    {
+    * Retrieve completed workflow logs for a given module.
+    *
+    * @param string $moduleKey  
+    * @return \Illuminate\Support\Collection  
+    */
+    public function getWorkflowlog(string $moduleKey, int $limit = 50, int $offset = 0)
+        {
         try {
             $moduleClass = config("workflow.modules.$moduleKey");
 
             if (! $moduleClass) {
-                return collect();
+                return ['data' => collect(), 'total' => 0];
             }
 
-            return WorkflowLog::with('workflow:id,name')
+            $query = WorkflowLog::with('workflow:id,name')
                 ->where('module', $moduleClass)
                 ->where('status', WorkflowLog::STATUS_COMPLETED)
-                ->orderBy('created_at', 'desc')
-                ->get();
+                ->orderBy('created_at', 'desc');
+
+            $total = $query->count();
+            $data  = $query->limit($limit)->offset($offset)->get();
+
+            return ['data' => $data, 'total' => $total];
 
         } catch (\Exception $exception) {
             \Log::error('Error getting workflow log by module: '.$exception->getMessage());
-
-            return collect();
+            return ['data' => collect(), 'total' => 0];
         }
     }
 
