@@ -75,7 +75,7 @@ class WorkflowService
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
                 'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? '',
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
-                'is_active' => $data['detail']['isActive'] ?? true,
+                'is_active' => $data['detail']['isActive'] ?? false,
             ]);
 
             if (! empty($data['workFlowConditions'])) {
