@@ -686,7 +686,6 @@ class WorkflowService
                 ->where('status', WorkflowLog::STATUS_COMPLETED)
                 ->orderBy('created_at', 'desc')
                 ->get();
-
         } catch (\Exception $exception) {
             \Log::error('Error getting workflow log by module: '.$exception->getMessage());
 
@@ -712,5 +711,36 @@ class WorkflowService
         }
 
         return $this->workflowRepo->all(true)->where('module', $moduleClass)->load(['conditions.actions'])->values();
+    }
+
+    /**
+     * Add or update a workflow log entry with error details.
+     *
+     * If a log entry exists for the given workflow and job workflow IDs, append the error to its error list.
+     * Otherwise, no action is taken.
+     *
+     * @param  int  $workflowId  The ID of the workflow.
+     * @param  int  $jobWorkflowId  The ID of the job workflow.
+     * @param  string  $errorType  The type of error to log.
+     * @param  mixed  $exception  Optional. The exception or error details to log.
+     */
+    public function addWorkflowLog($workflowId, $jobWorkflowId, $errorType, $exception = null): void
+    {
+        $log = WorkflowLog::where('workflow_id', $workflowId)
+            ->where('job_workflow_id', $jobWorkflowId)
+            ->first();
+
+        $existingErrors = [];
+        if ($log) {
+            $existingErrors = $log->error ? json_decode($log->error, true) : [];
+        }
+
+        $existingErrors[] = [
+            'errorType' => $errorType,
+            'exception' => $exception,
+        ];
+
+        $log->error = json_encode($existingErrors);
+        $log->save();
     }
 }

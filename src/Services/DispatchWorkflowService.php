@@ -214,6 +214,12 @@ class DispatchWorkflowService
                             $actionToExecute = new EmailAction($actionType, $actionPayload);
                             $actionToExecute->handle();
                         } catch (\Exception $e) {
+                            $this->workflowService->addWorkflowLog(
+                                $this->workflowId,
+                                $jobWorkflowId,
+                                'ERROR_INITIATING_ACTION',
+                                $e->getMessage()
+                            );
                             \Log::error('WORKFLOW - Error while initiating email action. '.$e->getMessage());
 
                             continue 2;
@@ -225,6 +231,12 @@ class DispatchWorkflowService
                             $actionToExecute = new WebhookAction($actionType, $actionPayload);
                             $actionToExecute->handle();
                         } catch (\Exception $e) {
+                            $this->workflowService->addWorkflowLog(
+                                $this->workflowId,
+                                $jobWorkflowId,
+                                'ERROR_INITIATING_ACTION',
+                                $e->getMessage()
+                            );
                             \Log::error('WORKFLOW - Error while initiating webhook action. '.$e->getMessage());
 
                             continue 2;
@@ -289,6 +301,12 @@ class DispatchWorkflowService
                         $schemaData = $graphQLSchemaBuilder->getSchema();
                         $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery);
                     } catch (\Exception $e) {
+                        $this->workflowService->addWorkflowLog(
+                            $this->workflowId,
+                            $jobWorkflowId,
+                            'GRAPHQL_ERROR',
+                            $e->getMessage()
+                        );
                         \Log::error('WORKFLOW - Error while preparing GraphQL query payload - '.$e->getMessage());
 
                         continue;
@@ -302,6 +320,12 @@ class DispatchWorkflowService
                         $response = $graphQLClient->query($graphQLRequestPayload);
                         // \Log::info('WORKFLOW - GraphQL Response: ', $response);
                     } catch (\Exception $e) {
+                        $this->workflowService->addWorkflowLog(
+                            $this->workflowId,
+                            $jobWorkflowId,
+                            'GRAPHQL_ERROR',
+                            $e->getMessage()
+                        );
                         \Log::error('WORKFLOW - Error while executing GraphQL query - '.$e->getMessage());
 
                         continue;
@@ -312,6 +336,12 @@ class DispatchWorkflowService
                     try {
                         foreach ($listOfRequiredData as $placeHolder) {
                             if (! array_key_exists($placeHolder, $fieldMapping)) {
+                                $this->workflowService->addWorkflowLog(
+                                    $this->workflowId,
+                                    $jobWorkflowId,
+                                    'FIELD_MAPPING_ISSUE',
+                                    'Field mapping not found for placeholder: '.$placeHolder
+                                );
                                 \Log::error('WORKFLOW - Field mapping not found for placeholder: '.$placeHolder);
                                 $parsedData[$placeHolder] = '';
 
@@ -352,6 +382,12 @@ class DispatchWorkflowService
                             $data[] = $parsedData;
                         }
                     } catch (\Exception $e) {
+                        $this->workflowService->addWorkflowLog(
+                            $this->workflowId,
+                            $jobWorkflowId,
+                            'GRAPHQL_ERROR',
+                            $e->getMessage()
+                        );
                         \Log::error(
                             'WORKFLOW - Error while extracting data from GraphQL response - '.$e->getMessage(),
                             [
@@ -386,6 +422,12 @@ class DispatchWorkflowService
                         if ($data[$index]['hasPriorDataForWorkflow']) {
                             $hasPriorDataForWorkflow = true;
                         } else {
+                            $this->workflowService->addWorkflowLog(
+                                $this->workflowId,
+                                $jobWorkflowId,
+                                'MISSING_MANDATE_DATA',
+                                ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]
+                            );
                             \Log::warning('WORKFLOW - Missing mandate data', ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]);
                             unset($data[$index]);
 
@@ -406,6 +448,15 @@ class DispatchWorkflowService
                             }
 
                             \Log::info('WORKFLOW - Actual email address: '.$emailPlaceHolderValue);
+
+                            if (! $emailPlaceHolderValue) {
+                                $this->workflowService->addWorkflowLog(
+                                    $this->workflowId,
+                                    $jobWorkflowId,
+                                    'MISSING_EMAIL_ADDRESS',
+                                    'System was not able to find email address for the record'
+                                );
+                            }
 
                             if (config('app.env') != 'production') {
                                 $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
@@ -442,7 +493,14 @@ class DispatchWorkflowService
                                 if ($executeEmailAction && count($finalList) > 0) {
                                     $data[$index]['email'] = $emailPlaceHolderValue;
                                 } else {
-                                    \Log::error('WORKFLOW - Email address not allowed in non-production env: '.$emailPlaceHolderValue);
+                                    $this->workflowService->addWorkflowLog(
+                                        $this->workflowId,
+                                        $jobWorkflowId,
+                                        'UNAUTHORIZED_EMAIL_ADDRESS',
+                                        'Email address not allowed in non-production env: '.implode(',', $emailPlaceHolderValue)
+                                    );
+
+                                    \Log::error('WORKFLOW - Email address not allowed in non-production env: '.implode(',', $emailPlaceHolderValue));
                                     $hasPriorDataForWorkflow = false;
                                     unset($data[$index]);
 
