@@ -10,7 +10,7 @@ class WorkflowDetailData extends Data
         public string $module,
         public string $name,
         public ?string $description,
-        public bool $isActive = true,
+        public bool $isActive = false,
     ) {}
 
     public static function fromArray(array $data): self
@@ -19,7 +19,7 @@ class WorkflowDetailData extends Data
             module: $data['module'],
             name: $data['name'],
             description: $data['description'] ?? null,
-            isActive: $data['isActive'] ?? true
+            isActive: $data['isActive'] ?? false
         );
     }
 }
