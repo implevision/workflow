@@ -75,7 +75,7 @@ class WorkflowService
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
                 'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? '',
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
-                'is_active' => $data['detail']['isActive'] ?? true,
+                'is_active' => $data['detail']['isActive'] ?? false,
             ]);
 
             if (! empty($data['workFlowConditions'])) {
@@ -813,5 +813,36 @@ class WorkflowService
         }
 
         return $this->workflowRepo->all(true)->where('module', $moduleClass)->load(['conditions.actions'])->values();
+    }
+
+    /**
+     * Add or update a workflow log entry with error details.
+     *
+     * If a log entry exists for the given workflow and job workflow IDs, append the error to its error list.
+     * Otherwise, no action is taken.
+     *
+     * @param  int  $workflowId  The ID of the workflow.
+     * @param  int  $jobWorkflowId  The ID of the job workflow.
+     * @param  string  $errorType  The type of error to log.
+     * @param  mixed  $exception  Optional. The exception or error details to log.
+     */
+    public function addWorkflowLog($workflowId, $jobWorkflowId, $errorType, $exception = null): void
+    {
+        $log = WorkflowLog::where('workflow_id', $workflowId)
+            ->where('job_workflow_id', $jobWorkflowId)
+            ->first();
+
+        $existingErrors = [];
+        if ($log) {
+            $existingErrors = $log->error ? json_decode($log->error, true) : [];
+        }
+
+        $existingErrors[] = [
+            'errorType' => $errorType,
+            'exception' => $exception,
+        ];
+
+        $log->error = json_encode($existingErrors);
+        $log->save();
     }
 }
