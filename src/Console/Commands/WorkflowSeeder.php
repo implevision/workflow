@@ -73,7 +73,10 @@ class WorkflowSeeder extends Command
         try {
             $validator = Validator::make($data, (new WorkflowRequest)->rules());
             if ($validator->fails()) {
-                \Log::error('WORKFLOW SEEDER - Validation failed for workflow', $validator->errors()->all());
+                \Log::error('WORKFLOW SEEDER - Validation failed for workflow', [
+                    'workflow' => $workflow,
+                    'errors' => $validator->errors()->all(),
+                ]);
 
                 return 1;
             }
@@ -83,7 +86,14 @@ class WorkflowSeeder extends Command
             $workflowData = WorkflowData::fromArray($data);
             $this->workflowService->createWorkflow($workflowData);
         } catch (\Exception $e) {
-            \Log::error("WORKFLOW SEEDER - Error while creating workflow: {$workflow}. Error: ".$e->getMessage());
+            \Log::error("WORKFLOW SEEDER - Error while creating workflow: {$workflow}. Error: ".$e->getMessage(), [
+                'exception' => $e,
+                'workflow' => $workflow,
+                'stack_trace' => $e->getTraceAsString(),
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
 
             return 1;
         }
@@ -106,7 +116,14 @@ class WorkflowSeeder extends Command
                 }
             }
         } catch (\Exception $e) {
-            \Log::error("WORKFLOW SEEDER - Error while inserting data for workflow: {$workflow}. Error: ".$e->getMessage());
+            \Log::error("WORKFLOW SEEDER - Error while inserting data for workflow: {$workflow}. Error: ".$e->getMessage(), [
+                'exception' => $e,
+                'workflow' => $workflow,
+                'stack_trace' => $e->getTraceAsString(),
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
 
             return 1;
         }
