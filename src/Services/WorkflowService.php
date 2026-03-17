@@ -682,12 +682,15 @@ class WorkflowService
     }
 
     /**
-    * Retrieve completed workflow logs for a given module.
-    *
-    * @param string $moduleKey
-    * @return \Illuminate\Support\Collection
-    */
-    public function getWorkflowlog(string $moduleKey, int $limit = 50, int $offset = 0, ?int $workflowId = null)
+     * Retrieve completed workflow logs for a given module.
+     *
+     * @param string   $moduleKey
+     * @param int      $limit
+     * @param int      $offset
+     * @param int|null $workflowId
+     * @return array{data: \Illuminate\Support\Collection, total: int}
+     */
+    public function getWorkflowlog(string $moduleKey, int $limit = 50, int $offset = 0, ?int $workflowId = null): array
         {
         try {
             $moduleClass = $this->resolveModuleClass($moduleKey);
@@ -745,10 +748,11 @@ class WorkflowService
 
             $labels = [];
             $data   = [];
+            $now    = now();
 
             for ($i = 6; $i >= 0; $i--) {
-                $date      = now()->subDays($i)->format('Y-m-d');
-                $labels[]  = now()->subDays($i)->format('M j');
+                $date      = $now->copy()->subDays($i)->format('Y-m-d');
+                $labels[]  = $now->copy()->subDays($i)->format('M j');
                 $data[]    = (int) ($rows->get($date)?->log_count ?? 0);
             }
 
