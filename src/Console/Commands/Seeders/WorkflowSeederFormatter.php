@@ -2,8 +2,8 @@
 
 namespace Taurus\Workflow\Console\Commands\Seeders;
 
-use Taurus\Workflow\Console\Commands\Seeders\Contracts\SeederValueResolverInterface;
 use Illuminate\Support\Facades\Log;
+use Taurus\Workflow\Console\Commands\Seeders\Contracts\SeederValueResolverInterface;
 
 class WorkflowSeederFormatter
 {
@@ -40,7 +40,7 @@ class WorkflowSeederFormatter
     {
         foreach ($conditions as &$condition) {
             if (! empty($condition['applyConditionRules'])) {
-                $condition['applyConditionRules']["children"] = $this->processRules($condition['applyConditionRules']["children"]);
+                $condition['applyConditionRules']['children'] = $this->processRules($condition['applyConditionRules']['children']);
             }
         }
 
