@@ -78,7 +78,7 @@ class WorkflowSeederFormatter
         [, $type, $argument] = $matches;
 
         if (! isset($this->resolvers[$type])) {
-            Log::warning("WORKFLOW_SEEDER_FORMATTER - No resolver registered for type: {$type}");
+            Log::warning("WORKFLOW SEEDER - No resolver registered for type: {$type}");
 
             return $value;
         }
