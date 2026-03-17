@@ -6,6 +6,7 @@ use Exception;
 use GuzzleHttp\Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
+use Taurus\Workflow\Console\Commands\Seeders\WorkflowSeederFormatter;
 use Taurus\Workflow\Data\WorkflowData;
 use Taurus\Workflow\Http\Requests\WorkflowRequest;
 use Taurus\Workflow\Services\WorkflowService;
@@ -76,6 +77,8 @@ class WorkflowSeeder extends Command
 
                 return 1;
             }
+
+            $data = app(WorkflowSeederFormatter::class)->format($data);
 
             $workflowData = WorkflowData::fromArray($data);
             $this->workflowService->createWorkflow($workflowData);
