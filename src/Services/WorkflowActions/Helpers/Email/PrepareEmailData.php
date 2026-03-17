@@ -31,7 +31,7 @@ class PrepareEmailData
     public function execute()
     {
         $senderName = ! empty($this->emailInformation['senderName']) ? $this->emailInformation['senderName'] : getTenant();
-        $senderEmailAddress = str_replace('{{tenant}}', tenant(), config('workflow.sender_email_address'));
+        $senderEmailAddress = str_replace('[tenant]', getTenant(), config('workflow.sender_email_address'));
         $from = sprintf('"%s" <%s>', $senderName, $senderEmailAddress);
         $actionPayload = [
             'workflowId' => $this->workflowId,

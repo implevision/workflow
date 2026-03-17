@@ -21,6 +21,8 @@ return [
 
     'table_prefix' => env('WORKFLOW_TABLE_PREFIX', 'tb_taurus'),
 
+    'db_connection' => '',
+
     'timezone' => env('WORKFLOW_TIMEZONE_TO_USE', 'America/New_York'),
 
     'aws_lambda_function_arn_to_invoke_workflow' => env('AWS_LAMBDA_FUNCTION_ARN_TO_INVOKE_WORKFLOW'),
@@ -59,12 +61,13 @@ return [
         ],
     ],
 
-    'allowed_receiver' => [ // For NON-PRODUCTION environments, we allow all emails to be sent.
-        'email' => [],
-        'ends_with' => [],
+    'allowed_receiver' => [ // FOR NON PRODUCTION ENVIRONMENTS
+        'email' => explode(',', env('WORKFLOW_ALLOWED_RECEIVER_EMAIL', '')), // COMMA SEPARATED
+        'ends_with' => explode(',', env('WORKFLOW_ALLOWED_RECEIVER_EMAIL_ENDS_WITH', '')), // COMMA SEPARATED
     ],
 
-    'send_all_workflow_email_to' => '', // For NON-PRODUCTION environments, we allow all emails to be sent.
+    // FOR NON PRODUCTION ENVIRONMENTS
+    'send_all_workflow_email_to' => env('WORKFLOW_SEND_ALL_WORKFLOW_EMAIL_TO', ''), // COMMA SEPARATED
 
     'required_actions' => [
         'sns:CreateTopic' => 'To create a new SNS topic, the user must have permission to create it.',
@@ -74,5 +77,11 @@ return [
         'scheduler:CreateSchedule' => 'To create a new schedule, the user must have permission to create it in order to invoke the workflow at particular time.',
         'ses:SendEmail' => 'Allows sending single emails.',
         'ses:SendBulkEmail' => 'Allows sending bulk emails (via SendBulkEmail API).',
+        'ses:SendTemplatedEmail' => 'Allows sending templated emails.',
+    ],
+
+    'modules' => [
+        'claim' => Avatar\Infrastructure\Models\Api\v1\TbClaim::class,
+        'policy' => Avatar\Infrastructure\Models\Api\v1\TbPotransaction::class,
     ],
 ];

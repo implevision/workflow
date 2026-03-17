@@ -35,6 +35,11 @@ class AbstractWorkflowAction
         return $this->payload;
     }
 
+    public function updatePayload($key, $params)
+    {
+        return $this->payload = [...$this->payload, ...[$key => $params]];
+    }
+
     public function getWorkflowId()
     {
         return $this->workflowId;

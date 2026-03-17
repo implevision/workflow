@@ -2,10 +2,9 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
-use Carbon\Carbon;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
-class TbClaim
+class TbClaim extends AbstractSchema
 {
     /**
      * @var array
@@ -85,6 +84,7 @@ class TbClaim
                     'referenceNo' => null,
                 ],
                 'jqFilter' => '.claim.referenceNo',
+                'parseResultCallback' => 'parseReferenceNo',
             ],
             'PolicyId' => [
                 'GraphQLschemaToReplace' => [
@@ -257,12 +257,13 @@ class TbClaim
                     'brandedCompany' => [
                         'company' => [
                             'logo' => null,
+                            'publicLogo' => null,
                         ],
                     ],
                 ],
             ],
             'jqFilter' => '.claim.agency.brandedCompany[]',
-            'parseResultCallback' => 'parseCompanyLogo',
+            'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
         $fieldMapping['WYOCompanyName'] = [
@@ -372,44 +373,37 @@ class TbClaim
         return is_array($emailArr) && count($emailArr) ? ($emailArr[0]['email'] ?? null) : null;
     }
 
-    public function parseCompanyLogo($brandedCompanyArr)
+    public function resolveCompanyLogoUrl($brandedCompanyArr)
     {
-        $logo = '';
-        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['logo'])) {
-            $logo = $brandedCompanyArr['company']['logo'];
-        }
-
-        if (! $logo) {
-            $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
-            $logo = $holdingCompanyDetail['logo'] ?? null;
-        }
-
-        if (! $logo) {
-            \Log::info('WORKFLOW - failed to fetch logo ', (array) $brandedCompanyArr);
-        }
-
-        // From gfs-saas-infra/src/Foundation/Helpers.php
-        $path = removeS3HostAndBucketFromURL($logo);
-        \Log::info('WORKFLOW - S3 path for company logo: '.$path);
-
-        if (str_starts_with($path, 'http')) {
-            return $path;
-        }
-
-        return \Storage::disk('s3')->temporaryUrl($path, Carbon::now()->addMinutes(4320));
+        return Helper::parseCompanyLogo($brandedCompanyArr);
     }
 
     public function parseCompanyName($brandedCompanyArr)
     {
-        if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['companyName'])) {
-            return $brandedCompanyArr['company']['companyName'];
+        // Ensure we are working with an array and 'company' key exists and is an array
+        if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
+            $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
+            if (! empty($companyName)) {
+                return $companyName;
+            }
         }
 
-        return null;
+        // Fallback to holding company name if not found
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+        return $holdingCompanyDetail['wyo'] ?? '';
     }
 
     public function getInsuredPortalUrl()
     {
         return Helper::createPortalURL('InsuredPortal');
+    }
+
+    public function parseReferenceNo($referenceNo)
+    {
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+        $tenant = getTenant();
+
+        return sprintf('%s%s%s', ucfirst(substr($tenant, 0, 1)), $holdingCompanyDetail['naic_number'], $referenceNo);
     }
 }

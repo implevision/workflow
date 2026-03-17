@@ -3,11 +3,13 @@
 namespace Taurus\Workflow\Services;
 
 use Illuminate\Support\Facades\Storage;
+use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 use Taurus\Workflow\Services\WorkflowActions\EmailAction;
+use Taurus\Workflow\Services\WorkflowActions\WebhookAction;
 
 /**
  * Class DispatchWorkflowService
@@ -39,6 +41,8 @@ class DispatchWorkflowService
 
     protected $data;
 
+    protected $appendPlaceHolders;
+
     protected $isManuallyInvoked = false;
 
     /**
@@ -47,13 +51,14 @@ class DispatchWorkflowService
      * @param  int  $workflowId  The ID of the workflow to be dispatched.
      * @param  int|string  $recordIdentifier  An optional identifier for the record, default is 0.
      */
-    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [])
+    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [])
     {
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
         $this->workflowService = app(WorkflowService::class);
         $this->recordIdentifier = $recordIdentifier;
         $this->data = $data;
+        $this->appendPlaceHolders = $appendPlaceHolders;
         $this->isManuallyInvoked = count($data) ? true : false;
         $this->getInfo();
     }
@@ -134,7 +139,7 @@ class DispatchWorkflowService
             ! $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['certainDateTime']
         ) {
             try {
-                $graphQLQuery[] = $this->workflowService->getQueryForEffectiveAction(
+                $graphQLQuery = $this->workflowService->getQueryForEffectiveAction(
                     $this->workflowInfo['detail']['module'],
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequency'],
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequencyType'],
@@ -146,13 +151,17 @@ class DispatchWorkflowService
             }
         }
 
-        $graphQLQuery = [];
         if ($this->recordIdentifier && ! $this->isManuallyInvoked) {
             try {
-                $graphQLQuery[] = $this->workflowService->getQueryForRecordIdentifier(
+                $queryToAppend = $this->workflowService->getQueryForRecordIdentifier(
                     $this->workflowInfo['detail']['module'],
                     $this->recordIdentifier
                 );
+                if (count($graphQLQuery)) {
+                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => $queryToAppend];
+                } else {
+                    $graphQLQuery = $queryToAppend;
+                }
             } catch (\Exception $e) {
                 throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
             }
@@ -175,39 +184,103 @@ class DispatchWorkflowService
                 }
             }
 
-            if ($condition['applyRuleTo'] == 'CERTAIN') {
-                // GET DATA BASED ON CERTAIN CONDITION
-                // APPEND IN $graphQLQuery
+            if ($condition['applyRuleTo'] == 'CERTAIN' && ! $this->isManuallyInvoked) {
+                $conditionsToApply = GraphQLSchemaBuilderService::buildWhereConditionFromGroup($condition['applyConditionRules']);
+
+                if (count($graphQLQuery)) {
+                    $graphQLQuery['JOIN'] = $conditionsToApply;
+                } else {
+                    $graphQLQuery = $conditionsToApply;
+                }
             }
 
             foreach ($condition['instanceActions'] as $action) {
                 $actionToExecute = null;
-                if ($action['actionType'] == 'EMAIL') {
-                    try {
-                        $actionToExecute = new EmailAction($action['actionType'], $action['payload']);
-                        $actionToExecute->handle();
-                    } catch (\Exception $e) {
-                        \Log::error('WORKFLOW - Error while initiating email action. '.$e->getMessage());
+                $actionType = $action['actionType'];
+                $actionPayload = $action['payload'];
 
-                        continue;
-                    }
+                // Workflow Log
+                $workflowLog = WorkflowLog::create([
+                    'job_workflow_id' => $jobWorkflowId ?: null,
+                    'workflow_id' => $this->workflowId,
+                    'record_identifier' => $this->recordIdentifier ?? null,
+                    'module' => $this->workflowInfo['detail']['module'],
+                    'status' => WorkflowLog::STATUS_IN_PROGRESS,
+                    'action_type' => $actionType,
+                ]);
+                switch ($actionType) {
+                    case 'EMAIL':
+                        try {
+                            $actionToExecute = new EmailAction($actionType, $actionPayload);
+                            $actionToExecute->handle();
+                        } catch (\Exception $e) {
+                            $this->workflowService->addWorkflowLog(
+                                $this->workflowId,
+                                $jobWorkflowId,
+                                'ERROR_INITIATING_ACTION',
+                                $e->getMessage()
+                            );
+                            \Log::error('WORKFLOW - Error while initiating email action. '.$e->getMessage());
+
+                            continue 2;
+                        }
+                        break;
+
+                    case 'WEB_HOOK':
+                        try {
+                            $actionToExecute = new WebhookAction($actionType, $actionPayload);
+                            $actionToExecute->handle();
+                        } catch (\Exception $e) {
+                            $this->workflowService->addWorkflowLog(
+                                $this->workflowId,
+                                $jobWorkflowId,
+                                'ERROR_INITIATING_ACTION',
+                                $e->getMessage()
+                            );
+                            \Log::error('WORKFLOW - Error while initiating webhook action. '.$e->getMessage());
+
+                            continue 2;
+                        }
+                        break;
+
+                    default:
+                        \Log::error('WORKFLOW - Error while initiating action. '.$actionType);
                 }
 
                 if (! $actionToExecute) {
-                    \Log::error('WORKFLOW - Action not found: '.$action['actionType']);
+                    \Log::error('WORKFLOW - Action not found: '.$actionType);
 
                     continue;
+                }
+
+                /***
+                 * Placeholders data to extract from appendPlaceHolders
+                 */
+                $placeHolderWithValues = [];
+                $placeHolderToExtract = [];
+                if (count($this->appendPlaceHolders)) {
+                    foreach ($this->appendPlaceHolders as $placeHolderKey => $placeHolderValue) {
+                        if ($placeHolderValue) { // NO NEED TO EXTRACT IF VALUE IS ALREADY AVAILABLE
+                            $placeHolderWithValues[$placeHolderKey] = $placeHolderValue;
+
+                            continue;
+                        }
+
+                        $placeHolderToExtract[] = $placeHolderKey;
+                    }
                 }
 
                 try {
                     $listOfRequiredData = $actionToExecute ? $actionToExecute->getListOfRequiredData() : [];
                     $listOfMandateData = $actionToExecute ? $actionToExecute->getListOfMandateData() : [];
 
-                    if ($action['actionType'] == 'EMAIL') {
+                    $listOfRequiredData = array_merge($listOfRequiredData, $placeHolderToExtract);
+
+                    if ($actionType == 'EMAIL' && strtoupper($action['payload']['emailRecipient']) != 'CUSTOM') {
                         $listOfRequiredData[] = $listOfMandateData[] = ucfirst($action['payload']['emailRecipient']);
                     }
                 } catch (\Exception $e) {
-                    \Log::error('WORKFLOW - Error while getting required data for action - '.$action['actionType'].' : '.$e->getMessage());
+                    \Log::error('WORKFLOW - Error while getting required data for action - '.$actionType.' : '.$e->getMessage());
 
                     continue;
                 }
@@ -220,6 +293,7 @@ class DispatchWorkflowService
                         $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->workflowInfo['detail']['module']);
                         $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
                         $queryName = $moduleClassForGraphQL->getQueryName();
+                        $graphQLHeaders = $moduleClassForGraphQL->getHeaders();
                         $graphQLSchemaBuilder = new GraphQLSchemaBuilderService($fieldMapping);
                         foreach ($listOfRequiredData as $placeHolder) {
                             $graphQLSchemaBuilder->addField($placeHolder);
@@ -227,6 +301,12 @@ class DispatchWorkflowService
                         $schemaData = $graphQLSchemaBuilder->getSchema();
                         $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery);
                     } catch (\Exception $e) {
+                        $this->workflowService->addWorkflowLog(
+                            $this->workflowId,
+                            $jobWorkflowId,
+                            'GRAPHQL_ERROR',
+                            $e->getMessage()
+                        );
                         \Log::error('WORKFLOW - Error while preparing GraphQL query payload - '.$e->getMessage());
 
                         continue;
@@ -235,10 +315,17 @@ class DispatchWorkflowService
                     // Handle GraphQL query execution
                     try {
                         // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        // \Log::info('WORKFLOW - GraphQL Request Payload: ' . $graphQLRequestPayload);
-                        $graphQLClient = new GraphQLClient;
+                        // \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
+                        $graphQLClient = new GraphQLClient($graphQLHeaders);
                         $response = $graphQLClient->query($graphQLRequestPayload);
+                        // \Log::info('WORKFLOW - GraphQL Response: ', $response);
                     } catch (\Exception $e) {
+                        $this->workflowService->addWorkflowLog(
+                            $this->workflowId,
+                            $jobWorkflowId,
+                            'GRAPHQL_ERROR',
+                            $e->getMessage()
+                        );
                         \Log::error('WORKFLOW - Error while executing GraphQL query - '.$e->getMessage());
 
                         continue;
@@ -249,6 +336,12 @@ class DispatchWorkflowService
                     try {
                         foreach ($listOfRequiredData as $placeHolder) {
                             if (! array_key_exists($placeHolder, $fieldMapping)) {
+                                $this->workflowService->addWorkflowLog(
+                                    $this->workflowId,
+                                    $jobWorkflowId,
+                                    'FIELD_MAPPING_ISSUE',
+                                    'Field mapping not found for placeholder: '.$placeHolder
+                                );
                                 \Log::error('WORKFLOW - Field mapping not found for placeholder: '.$placeHolder);
                                 $parsedData[$placeHolder] = '';
 
@@ -279,9 +372,22 @@ class DispatchWorkflowService
                             }
                             $parsedData[$placeHolder] = $placeHolderValue;
                         }
-                        // SET DATA FOP ACTION
-                        $data[] = $parsedData;
+
+                        $parsedData = array_merge($parsedData, $placeHolderWithValues);
+
+                        if ($actionType == 'WEB_HOOK') {
+                            $data = $this->generatePayloadFromParsedData($parsedData);
+                        } else {
+                            // SET DATA FOP ACTION
+                            $data[] = $parsedData;
+                        }
                     } catch (\Exception $e) {
+                        $this->workflowService->addWorkflowLog(
+                            $this->workflowId,
+                            $jobWorkflowId,
+                            'GRAPHQL_ERROR',
+                            $e->getMessage()
+                        );
                         \Log::error(
                             'WORKFLOW - Error while extracting data from GraphQL response - '.$e->getMessage(),
                             [
@@ -316,56 +422,97 @@ class DispatchWorkflowService
                         if ($data[$index]['hasPriorDataForWorkflow']) {
                             $hasPriorDataForWorkflow = true;
                         } else {
-                            \Log::error('WORKFLOW - Missing mandate data', ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]);
+                            $this->workflowService->addWorkflowLog(
+                                $this->workflowId,
+                                $jobWorkflowId,
+                                'MISSING_MANDATE_DATA',
+                                ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]
+                            );
+                            \Log::warning('WORKFLOW - Missing mandate data', ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]);
                             unset($data[$index]);
 
                             continue;
                         }
 
-                        if (config('app.env') != 'production' && $action['actionType'] == 'EMAIL') {
+                        if ($actionType == 'EMAIL') {
+                            if (! empty($action['payload']['emailRecipient']) && strtoupper($action['payload']['emailRecipient']) == 'CUSTOM') {
+                                $emailPlaceHolderValue = $action['payload']['customEmailRecipients'];
+                            } else {
+                                $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
+                                $emailPlaceHolderValue = ! empty($data[$index][$emailPlaceHolder]) ? $data[$index][$emailPlaceHolder] : '';
+                            }
 
-                            $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
-                            $emailPlaceHolderValue = $data[$index][$emailPlaceHolder];
+                            if (! empty($placeHolderToExtract['emailRecipient'])) {
+                                $emailPlaceHolder = ucfirst($placeHolderToExtract['emailRecipient']);
+                                $emailPlaceHolderValue = ! empty($data[$index][$emailPlaceHolder]) ? $data[$index][$emailPlaceHolder] : '';
+                            }
 
                             \Log::info('WORKFLOW - Actual email address: '.$emailPlaceHolderValue);
 
-                            $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
-
-                            if ($sendAllEmailsTo) {
-                                $emailPlaceHolderValue = explode(',', $sendAllEmailsTo);
+                            if (! $emailPlaceHolderValue) {
+                                $this->workflowService->addWorkflowLog(
+                                    $this->workflowId,
+                                    $jobWorkflowId,
+                                    'MISSING_EMAIL_ADDRESS',
+                                    'System was not able to find email address for the record'
+                                );
                             }
 
-                            $executeEmailAction = false;
-                            $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));
-                            if (count($allowedEmailAddressList1) > 0) {
-                                $executeEmailAction = true;
-                            }
+                            if (config('app.env') != 'production') {
+                                $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
-                            $allowedEmailAddressList2 = [];
-                            foreach (config('workflow.allowed_receiver.ends_with') as $endsWith) {
-                                foreach ((array) $emailPlaceHolderValue as $singleEmail) {
-                                    if (str_ends_with($singleEmail, $endsWith)) {
-                                        $executeEmailAction = true;
-                                        $allowedEmailAddressList2[] = $singleEmail;
+                                if (
+                                    $sendAllEmailsTo &&
+                                    ! (! empty($action['payload']['emailRecipient']) &&
+                                        strtoupper($action['payload']['emailRecipient']) == 'CUSTOM')
+                                ) {
+                                    $emailPlaceHolderValue = $sendAllEmailsTo;
+                                }
+
+                                $emailPlaceHolderValue = explode(',', $emailPlaceHolderValue);
+
+                                $executeEmailAction = false;
+                                $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));
+                                if (count($allowedEmailAddressList1) > 0) {
+                                    $executeEmailAction = true;
+                                }
+
+                                $allowedEmailAddressList2 = [];
+                                $allowedEmailShouldEndsWithInNonProduction = array_merge(['@thinktaurus.com'], config('workflow.allowed_receiver.ends_with'));
+                                foreach ($allowedEmailShouldEndsWithInNonProduction as $endsWith) {
+                                    foreach ((array) $emailPlaceHolderValue as $singleEmail) {
+                                        if (str_ends_with($singleEmail, $endsWith)) {
+                                            $executeEmailAction = true;
+                                            $allowedEmailAddressList2[] = $singleEmail;
+                                        }
                                     }
                                 }
-                            }
 
-                            $finalList = [...$allowedEmailAddressList1, ...$allowedEmailAddressList2];
+                                $finalList = [...$allowedEmailAddressList1, ...$allowedEmailAddressList2];
 
-                            if ($executeEmailAction && count($finalList) > 0) {
-                                $data[$index]['email'] = $emailPlaceHolderValue;
+                                if ($executeEmailAction && count($finalList) > 0) {
+                                    $data[$index]['email'] = $emailPlaceHolderValue;
+                                } else {
+                                    $this->workflowService->addWorkflowLog(
+                                        $this->workflowId,
+                                        $jobWorkflowId,
+                                        'UNAUTHORIZED_EMAIL_ADDRESS',
+                                        'Email address not allowed in non-production env: '.implode(',', $emailPlaceHolderValue)
+                                    );
+
+                                    \Log::error('WORKFLOW - Email address not allowed in non-production env: '.implode(',', $emailPlaceHolderValue));
+                                    $hasPriorDataForWorkflow = false;
+                                    unset($data[$index]);
+
+                                    continue;
+                                }
                             } else {
-                                \Log::error('WORKFLOW - Email address not allowed in non-production env: '.$emailPlaceHolderValue);
-                                $hasPriorDataForWorkflow = false;
-                                unset($data[$index]);
-
-                                continue;
+                                $data[$index]['email'] = explode(',', $emailPlaceHolderValue);
                             }
                         }
                     }
 
-                    if ($hasPriorDataForWorkflow === false) {
+                    if ($hasPriorDataForWorkflow === false && count($data) == 0) {
                         continue;
                     }
 
@@ -373,11 +520,12 @@ class DispatchWorkflowService
                     $actionToExecute->setDataForAction($feedFile, $data);
                     $actionToExecute->execute();
                 } catch (\Exception $e) {
-                    \Log::error('WORKFLOW - Error while executing action - '.$action['actionType'].' : '.$e->getMessage());
+                    \Log::error('WORKFLOW - Error while executing action - '.$actionType.' : '.$e->getMessage());
 
                     continue;
                 }
             }
+            WorkflowLog::markWorkflowCompleted($this->workflowId, $jobWorkflowId);
         }
 
         return true;
@@ -402,5 +550,47 @@ class DispatchWorkflowService
         }
 
         return $feedFile;
+    }
+
+    /**
+     * Generates a payload from the parsed data.
+     *
+     * This function takes the parsed data as input and constructs
+     * a payload that can be used for further processing or
+     * transmission. The structure of the payload will depend on
+     * the specific requirements of the workflow.
+     *
+     * @param  mixed  $parsedData  The data that has been parsed and
+     *                             is to be converted into a payload.
+     * @return array The generated payload based on the parsed data.
+     */
+    private function generatePayloadFromParsedData($parsedData)
+    {
+        $totalPayloadToGenerate = 0;
+
+        foreach ($parsedData as $key => $value) {
+            if (is_array($value)) {
+                $totalPayloadToGenerate = max($totalPayloadToGenerate, count($value));
+            }
+        }
+
+        if (! $totalPayloadToGenerate) {
+            return $parsedData;
+        }
+
+        $payload = [];
+        foreach ($parsedData as $key => $value) {
+            if (! is_array($value)) {
+                for ($i = 0; $i < $totalPayloadToGenerate; $i++) {
+                    $payload[$i][$key] = $value;
+                }
+            } else {
+                for ($i = 0; $i < $totalPayloadToGenerate; $i++) {
+                    $payload[$i][$key] = $value[$i];
+                }
+            }
+        }
+
+        return $payload;
     }
 }

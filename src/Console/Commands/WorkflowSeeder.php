@@ -6,6 +6,7 @@ use Exception;
 use GuzzleHttp\Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
+use Taurus\Workflow\Console\Commands\Seeders\WorkflowSeederFormatter;
 use Taurus\Workflow\Data\WorkflowData;
 use Taurus\Workflow\Http\Requests\WorkflowRequest;
 use Taurus\Workflow\Services\WorkflowService;
@@ -17,7 +18,7 @@ class WorkflowSeeder extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:seed-workflow {--workflow=}';
+    protected $signature = 'taurus:seed-workflow {--workflow=} {--skip-tenant=}';
 
     /**
      * The console command description.
@@ -43,6 +44,16 @@ class WorkflowSeeder extends Command
     {
         $workflow = $this->option('workflow');
 
+        $skipTenants = $this->option('skip-tenant')
+            ? array_map('trim', explode(',', $this->option('skip-tenant')))
+            : [];
+
+        if (! empty($skipTenants) && in_array(getTenant(), $skipTenants)) {
+            \Log::info("WORKFLOW SEEDER - Skipping seeding process for workflow: {$workflow} on tenant: ".getTenant());
+
+            return 0;
+        }
+
         \Log::info("WORKFLOW SEEDER - Starting seeding process for workflow: {$workflow}");
 
         $path = database_path("{$this->initialFilePath}/{$workflow}.json");
@@ -62,15 +73,27 @@ class WorkflowSeeder extends Command
         try {
             $validator = Validator::make($data, (new WorkflowRequest)->rules());
             if ($validator->fails()) {
-                \Log::error('WORKFLOW SEEDER - Validation failed for workflow', $validator->errors()->all());
+                \Log::error('WORKFLOW SEEDER - Validation failed for workflow', [
+                    'workflow' => $workflow,
+                    'errors' => $validator->errors()->all(),
+                ]);
 
                 return 1;
             }
 
+            $data = app(WorkflowSeederFormatter::class)->format($data);
+
             $workflowData = WorkflowData::fromArray($data);
             $this->workflowService->createWorkflow($workflowData);
         } catch (\Exception $e) {
-            \Log::error("WORKFLOW SEEDER - Error while creating workflow: {$workflow}. Error: ".$e->getMessage());
+            \Log::error("WORKFLOW SEEDER - Error while creating workflow: {$workflow}. Error: ".$e->getMessage(), [
+                'exception' => $e,
+                'workflow' => $workflow,
+                'stack_trace' => $e->getTraceAsString(),
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
 
             return 1;
         }
@@ -93,7 +116,14 @@ class WorkflowSeeder extends Command
                 }
             }
         } catch (\Exception $e) {
-            \Log::error("WORKFLOW SEEDER - Error while inserting data for workflow: {$workflow}. Error: ".$e->getMessage());
+            \Log::error("WORKFLOW SEEDER - Error while inserting data for workflow: {$workflow}. Error: ".$e->getMessage(), [
+                'exception' => $e,
+                'workflow' => $workflow,
+                'stack_trace' => $e->getTraceAsString(),
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
 
             return 1;
         }
@@ -113,17 +143,20 @@ class WorkflowSeeder extends Command
         try {
             $headers = [
                 'x-client-key' => config('workflow.email_template_service_client_key'),
-                'X-Tenant' => tenant('id'),
+                'X-Tenant' => getTenant(),
             ];
             $requestBody = [
                 'subject' => $data['subject'],
                 'html' => $emailTemplateContentAsString,
                 'templateName' => $data['templateName'],
+                'replyTo' => $data['replyTo'] ?? '',
+                'senderName' => $data['senderName'] ?? '',
+                'module' => $data['module'] ?? '',
             ];
 
+            // create email template in email template service
             $response = $client->request(
                 'post',
-                // TODO - replace with config url
                 config('workflow.email_template_service_url').'/api/email/template/save',
                 [
                     'headers' => $headers,
@@ -133,7 +166,25 @@ class WorkflowSeeder extends Command
             $responseBody = $response->getBody()->getContents();
             $responseBody = is_array($responseBody) ? $responseBody : json_decode($responseBody, true);
 
-            if ($responseBody['status'] !== true) {
+            if (! $responseBody['status']) {
+                throw new Exception($response->getBody());
+            }
+
+            // PUBLISH email template in email template service
+            $template = $data['templateNameToSave'];
+            $requestBody['isPublished'] = true;
+            $response = $client->request(
+                'put',
+                config('workflow.email_template_service_url').'/api/email/template/update/'.$template,
+                [
+                    'headers' => $headers,
+                    'json' => $requestBody,
+                ]
+            );
+            $responseBody = $response->getBody()->getContents();
+            $responseBody = is_array($responseBody) ? $responseBody : json_decode($responseBody, true);
+
+            if (! $responseBody['status']) {
                 throw new Exception($response->getBody());
             }
         } catch (Exception $e) {

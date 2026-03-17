@@ -7,6 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Response;
 use Taurus\Workflow\Http\Rules\ValidApplyConditionRules;
+use Taurus\Workflow\Http\Rules\ValidCustomDateTimeInfo;
 use Taurus\Workflow\Http\Rules\ValidDateTimeInfo;
 use Taurus\Workflow\Http\Rules\ValidInstanceActions;
 use Taurus\Workflow\Http\Rules\ValidRecordAction;
@@ -41,10 +42,13 @@ class WorkflowRequest extends FormRequest
             'id' => 'sometimes|nullable|exists:'.$workflowTable.',id',
             'detail.module' => 'required|string',
             'detail.name' => 'required|string',
+            'detail.product' => 'nullable|int',
             'detail.description' => 'nullable|string',
-            'when.effectiveActionToExecuteWorkflow' => 'required|in:ON_RECORD_ACTION,ON_DATE_TIME',
+            'when.effectiveActionToExecuteWorkflow' => 'required|in:ON_RECORD_ACTION,ON_DATE_TIME,CUSTOM_DATE_AND_TIME,ODYSSEY_ACTION',
             'when.recordActionToExecuteWorkflow' => ['nullable', new ValidRecordAction],
             'when.dateTimeInfoToExecuteWorkflow' => ['nullable', new ValidDateTimeInfo],
+            'when.customDateTimeInfoToExecuteWorkflow' => ['nullable', new ValidCustomDateTimeInfo],
+            'when.odysseyActionToExecuteWorkflow' => 'nullable|required_if:when.effectiveActionToExecuteWorkflow,ODYSSEY_ACTION|string',
             'workFlowConditions' => 'required|array',
             'workFlowConditions.*.id' => 'sometimes|nullable|exists:'.$workflowConditionTable.',id',
             'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN,CUSTOM_FEED',
@@ -54,8 +58,14 @@ class WorkflowRequest extends FormRequest
             // 'workFlowConditions.*.instanceActions.*.actionType' => 'required|string|in:EMAIL',
             // 'workFlowConditions.*.instanceActions.*.payload' => 'required|array',
             'workFlowConditions.*.instanceActions' => ['required', 'array', new ValidInstanceActions],
-            'workFlowConditions.*.applyConditionRules.children.*' => [
+            'workFlowConditions.*.applyConditionRules' => [
                 'required_if:workFlowConditions.*.applyRuleTo,CERTAIN',
+                'array',
+            ],
+            'workFlowConditions.*.applyConditionRules.type' => 'required|in:group,rule',
+            'workFlowConditions.*.applyConditionRules.operator' => 'required|in:AND,OR',
+            'workFlowConditions.*.applyConditionRules.id' => 'sometimes|nullable|string',
+            'workFlowConditions.*.applyConditionRules.children' => [
                 'array',
                 new ValidApplyConditionRules,
             ],
@@ -80,7 +90,7 @@ class WorkflowRequest extends FormRequest
         return [
             'detail.module.required' => 'The module field is required.',
             'detail.name.required' => 'The name field is required.',
-            'when.effectiveActionToExecuteWorkflow.in' => 'The effectiveActionToExecuteWorkflow must be either ON_RECORD_ACTION or ON_DATE_TIME.',
+            'when.effectiveActionToExecuteWorkflow.in' => 'The effectiveActionToExecuteWorkflow must be either ON_RECORD_ACTION, ON_DATE_TIME, CUSTOM_DATE_AND_TIME, or ODYSSEY_ACTION.',
             'workFlowConditions.applyConditionRules.required_if' => 'Condition rules are required when applyRuleTo is not ALL.',
         ];
     }

@@ -18,7 +18,7 @@ class HandlePostActionEvent
 
         try {
             setRunningWorkflowId($payload['workflowId']);
-            setRunningJobWorkflowId($payload['recordIdentifier']);
+            setRunningJobWorkflowId($payload['jobWorkflowId']);
             setRecordIdentifierForRunningWorkflow($payload['recordIdentifier']);
         } catch (\Throwable $e) {
             // Log the error or handle it as needed
