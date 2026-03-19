@@ -109,6 +109,13 @@ class TbClaim extends AbstractSchema
                 'parseResultCallback' => 'formatDate',
             ],
 
+            'PolicyId' => [
+                'GraphQLschemaToReplace' => [
+                    'policyId' => null,
+                ],
+                'jqFilter' => '.claim.policyId',
+            ],
+
         ];
 
         $fieldMapping['UpdatedByName'] = [
