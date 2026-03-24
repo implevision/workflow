@@ -105,7 +105,7 @@ class WorkflowService
 
             DB::commit();
 
-            if ($data['when']['effectiveActionToExecuteWorkflow'] === 'CUSTOM_DATE_AND_TIME') {
+            if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow']) && $data['when']['effectiveActionToExecuteWorkflow'] === 'CUSTOM_DATE_AND_TIME') {
                 $workflowId = $workflow->id;
                 $workflows = $this->workflowRepo->getById($workflowId)->toArray();
                 $this->scheduleWorkflows([$workflows]);
