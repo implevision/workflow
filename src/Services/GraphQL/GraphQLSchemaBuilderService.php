@@ -120,10 +120,19 @@ class GraphQLSchemaBuilderService
 
     public static function getQueryMapping($column, $operator, $value, $relation = null)
     {
-        if (! is_array($column)) {
-            $column = strtoupper(self::convertToUnderscore($column));
+        if (!is_array($column)) {
 
-            $result = ['column' => $column, 'operator' => $operator, 'value' => $value];
+            if ($relation) {
+                $column = $column;
+            } else {
+                $column = strtoupper(self::convertToUnderscore($column));
+         }
+
+            $result = [
+                'column' => $column,
+                'operator' => $operator,
+                'value' => $value
+            ];
 
             if ($relation) {
                 $result['relation'] = $relation;
@@ -155,7 +164,7 @@ class GraphQLSchemaBuilderService
             if ($relationName) {
                 return [
                     'relation' => $relationName,
-                    'column' => strtoupper(self::convertToUnderscore($column)),
+                    'column' => $column,
                     'operator' => $operator,
                     'value' => $value,
                 ];
@@ -198,6 +207,11 @@ class GraphQLSchemaBuilderService
     {
         $relationParts = explode('@', trim($relation), 2);
         $relationName = isset($relationParts[0]) ? $relationParts[0] : null;
+        
+        if ($relationName && str_contains($relationName, '.')) {
+            $dotParts = explode('.', $relationName);
+            $relationName = end($dotParts);
+        }
 
         return $relationName;
     }
@@ -286,7 +300,7 @@ class GraphQLSchemaBuilderService
 
         if (isset($cond['relation'])) {
             return sprintf(
-                '{ HAS: { relation: "%s", condition: { column: %s, operator: %s, value: "%s" } } }',
+                '{ HAS: { relation: "%s", condition: { column: "%s", operator: %s, value: "%s" } } }',
                 $cond['relation'],
                 $cond['column'],
                 $cond['operator'],
