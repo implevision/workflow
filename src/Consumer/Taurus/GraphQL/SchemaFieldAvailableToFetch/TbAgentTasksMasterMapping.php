@@ -1185,7 +1185,6 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             'parseResultCallback' => 'getAgentPortalUrl',
         ];
 
-
         return $fieldMapping;
     }
 
@@ -1346,7 +1345,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             ->pluck('s_PolicyNoInitial') // Fetch the column values
             ->toArray();
 
-        $regex = '/^(' . implode('|', $policyNoInitials) . ')/';
+        $regex = '/^('.implode('|', $policyNoInitials).')/';
 
         return preg_replace($regex, '', $policyNumber);
     }
@@ -1355,6 +1354,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     {
         return Helper::getTodaysDate();
     }
+
     public function transactionSubTypeScreenNameResolver($policyData)
     {
         $policyTransaction = $policyData['policyTransaction'] ?? [];
@@ -1431,6 +1431,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     {
         return Helper::formatCurrency($amount);
     }
+
     public function parseBillTo($appCodeName)
     {
         $ddGroup = 'BILLTOFLOOD'; // TODO: Confirm whether 'BILLTO' should be used for non-flood products
@@ -1438,6 +1439,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         return $label;
     }
+
     public function parsePropertyAddress($addressArr)
     {
         return $this->parseAddress($addressArr);
@@ -1447,6 +1449,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     {
         return is_array($emailArr) && count($emailArr) ? (last($emailArr)['email'] ?? null) : null;
     }
+
     public function parseInsuredPersonPhone($phoneArr)
     {
         $phone = is_array($phoneArr) && count($phoneArr) ? (last($phoneArr)['phoneNumber'] ?? null) : null;
@@ -1456,12 +1459,13 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         return $phone;
     }
-     public function formatNumber($number)
+
+    public function formatNumber($number)
     {
         return Helper::formatNumber($number);
     }
 
-        private function parseAddress($addressArr)
+    private function parseAddress($addressArr)
     {
         if (empty($addressArr)) {
             return null;
@@ -1485,19 +1489,23 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         return implode(', ', $address);
     }
+
     public function parseMailingAddress($addressArr)
     {
         return $this->parseAddress($addressArr);
     }
+
     public function parsePrimaryMortgageeAddress($mortgagee)
     {
         return $this->parseAddress($mortgagee['mortgageeAddress'] ?? []);
     }
-     public function parseLoanNumber($mortgagee)
+
+    public function parseLoanNumber($mortgagee)
     {
         return $mortgagee['loanNumber'] ?? null;
     }
-        public function parsePaymentReceivedDate($data)
+
+    public function parsePaymentReceivedDate($data)
     {
         if (! is_array($data)) {
             return null;
@@ -1540,10 +1548,12 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         return $transactionDate ? $this->formatDate($transactionDate) : null;
     }
+
     public function parsePrimaryMortgageeName($mortgagee)
     {
         return $mortgagee['mortgageePersonInfo']['fullName'] ?? null;
     }
+
     public function parseAdditionalInsuredName($additionalInterest)
     {
         return $additionalInterest['additionalPersonInfo']['fullName'] ?? null;

@@ -388,7 +388,10 @@ class WorkflowService
      */
     public function getMatchingWorkflow($entityType, $entityAction, $entity): bool|array
     {
+        DB::enableQueryLog();
         $matchedWorkflow = $this->workflowRepo->getMatchingWorkflow($entityType, $entityAction);
+        $queries = DB::getQueryLog();
+        \Log::info('INVOKE_MATCHING_WORKFLOW_QUERIES: ', $queries);
         if (empty($matchedWorkflow)) {
             return false;
         }
@@ -688,9 +691,6 @@ class WorkflowService
 
     /**
      * Resolve the model class for a given module key from workflowBaseData config.
-     *
-     * @param string $moduleKey
-     * @return string|null
      */
     private function resolveModuleClass(string $moduleKey): ?string
     {
@@ -703,14 +703,10 @@ class WorkflowService
     /**
      * Retrieve completed workflow logs for a given module.
      *
-     * @param string   $moduleKey
-     * @param int      $limit
-     * @param int      $offset
-     * @param int|null $workflowId
      * @return array{data: \Illuminate\Support\Collection, total: int}
      */
     public function getWorkflowlog(string $moduleKey, int $limit = 50, int $offset = 0, ?int $workflowId = null): array
-        {
+    {
         try {
             $moduleClass = $this->resolveModuleClass($moduleKey);
 
@@ -721,16 +717,16 @@ class WorkflowService
             $query = WorkflowLog::with('workflow:id,name')
                 ->where('module', $moduleClass)
                 ->where('status', WorkflowLog::STATUS_COMPLETED)
-                ->when($workflowId !== null, fn($q) => $q->where('workflow_id', $workflowId))
+                ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))
                 ->orderBy('created_at', 'desc');
 
             $total = $query->count();
-            $data  = $query->limit($limit)->offset($offset)->get();
+            $data = $query->limit($limit)->offset($offset)->get();
 
             return ['data' => $data, 'total' => $total];
-
         } catch (\Exception $exception) {
             \Log::error('Error getting workflow log by module: '.$exception->getMessage());
+
             return ['data' => collect(), 'total' => 0];
         }
     }
@@ -738,8 +734,6 @@ class WorkflowService
     /**
      * Get last 7 days workflow execution counts for chart.
      *
-     * @param string $moduleKey
-     * @param int|null $workflowId
      * @return array{labels: string[], data: int[]}
      */
     public function getWorkflowLogChart(string $moduleKey, ?int $workflowId = null): array
@@ -752,13 +746,13 @@ class WorkflowService
             }
 
             $startDate = now()->subDays(6)->startOfDay();
-            $endDate   = now()->endOfDay();
+            $endDate = now()->endOfDay();
 
             $rows = WorkflowLog::where('module', $moduleClass)
                 ->where('status', WorkflowLog::STATUS_COMPLETED)
                 ->where('created_at', '>=', $startDate)
                 ->where('created_at', '<=', $endDate)
-                ->when($workflowId !== null, fn($q) => $q->where('workflow_id', $workflowId))
+                ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))
                 ->selectRaw('DATE(created_at) as log_date, COUNT(*) as log_count')
                 ->groupBy('log_date')
                 ->orderBy('log_date')
@@ -766,28 +760,25 @@ class WorkflowService
                 ->keyBy('log_date');
 
             $labels = [];
-            $data   = [];
-            $now    = now();
+            $data = [];
+            $now = now();
 
             for ($i = 6; $i >= 0; $i--) {
-                $date      = $now->copy()->subDays($i)->format('Y-m-d');
-                $labels[]  = $now->copy()->subDays($i)->format('M j');
-                $data[]    = (int) ($rows->get($date)?->log_count ?? 0);
+                $date = $now->copy()->subDays($i)->format('Y-m-d');
+                $labels[] = $now->copy()->subDays($i)->format('M j');
+                $data[] = (int) ($rows->get($date)?->log_count ?? 0);
             }
 
             return ['labels' => $labels, 'data' => $data];
-
         } catch (\Exception $exception) {
             \Log::error('Error getting workflow log chart data: '.$exception->getMessage());
+
             return ['labels' => [], 'data' => []];
         }
     }
 
     /**
      * Get distinct workflow names and IDs for dropdown filter.
-     *
-     * @param string $moduleKey
-     * @return array
      */
     public function getWorkflowLogFilterDD(string $moduleKey): array
     {
@@ -804,16 +795,16 @@ class WorkflowService
                 ->select('workflow_id')
                 ->distinct()
                 ->get()
-                ->map(fn($log) => [
-                    'id'   => $log->workflow_id,
+                ->map(fn ($log) => [
+                    'id' => $log->workflow_id,
                     'name' => $log->workflow?->name ?? 'Manual Workflow',
                 ])
                 ->unique('id')
                 ->values()
                 ->toArray();
-
         } catch (\Exception $e) {
-            \Log::error('Error getting workflow log filter DD: ' . $e->getMessage());
+            \Log::error('Error getting workflow log filter DD: '.$e->getMessage());
+
             return [];
         }
     }
