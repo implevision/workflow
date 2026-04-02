@@ -392,6 +392,7 @@ class WorkflowService
         $matchedWorkflow = $this->workflowRepo->getMatchingWorkflow($entityType, $entityAction);
         $queries = DB::getQueryLog();
         \Log::info('INVOKE_MATCHING_WORKFLOW_QUERIES: ', $queries);
+        \Log::info('INVOKE_MATCHING_WORKFLOW_QUERIES: ', $matchedWorkflow);
         if (empty($matchedWorkflow)) {
             return false;
         }
