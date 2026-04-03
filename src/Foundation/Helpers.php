@@ -27,7 +27,10 @@ function setWorkflowDBConnection()
     $connectionToSet = getWorkflowDBConnection();
     if ($connectionToSet) {
         \Log::info('WORKFLOW - Setting workflow database connection to: '.$connectionToSet);
+        $previous = config('database.default');
         config(['database.default' => $connectionToSet]);
+        \DB::purge($previous);
+        \DB::reconnect($connectionToSet);
     }
 }
 
