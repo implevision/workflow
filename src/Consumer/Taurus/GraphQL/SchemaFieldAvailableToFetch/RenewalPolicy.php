@@ -4,7 +4,7 @@ namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 
-class Renewal extends AbstractSchema
+class RenewalPolicy extends AbstractSchema
 {
     /**
      * @var array
@@ -19,6 +19,8 @@ class Renewal extends AbstractSchema
      * @var string|null The name of the query associated with this class.
      */
     protected $queryName;
+
+    protected int $page = 1;
 
     public function __construct()
     {
@@ -108,7 +110,7 @@ class Renewal extends AbstractSchema
     public function getQueryArgs(): array
     {
         return [
-         'date' => '2026-06-30',
+            'date' => '2026-06-30',
             'days' => 15,
             'page' => $this->page,
         ];
