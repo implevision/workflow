@@ -1,6 +1,7 @@
 <?php
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
+use Carbon\Carbon;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 
@@ -110,7 +111,7 @@ class RenewalPolicy extends AbstractSchema
     public function getQueryArgs(): array
     {
         return [
-            'date' => '2026-06-30',
+            'date' => Carbon::today()->format('Y-m-d'),
             'days' => 15,
             'page' => $this->page,
         ];

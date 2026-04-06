@@ -9,17 +9,17 @@ use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
 class SES
 {
-public static function extractPlaceholders($html)
-{
-    preg_match_all('/{{\s*(.*?)\s*}}/', $html, $matches);
+    public static function extractPlaceholders($html)
+    {
+        preg_match_all('/{{\s*(.*?)\s*}}/', $html, $matches);
 
-    $placeholders = $matches[1] ?? [];
+        $placeholders = $matches[1] ?? [];
 
-    return array_filter($placeholders, function ($placeholder) {
-        return !str_starts_with($placeholder, '#')
-            && !str_starts_with($placeholder, '/');
-    });
-}
+        return array_filter($placeholders, function ($placeholder) {
+            return !str_starts_with($placeholder, '#')
+                && !str_starts_with($placeholder, '/');
+        });
+    }
     public static function getSesClient()
     {
         $awsProfile = config('workflow.aws_profile');
