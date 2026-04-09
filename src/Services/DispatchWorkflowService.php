@@ -195,6 +195,7 @@ class DispatchWorkflowService
             }
 
             foreach ($condition['instanceActions'] as $action) {
+                $data = [];
                 $actionToExecute = null;
                 $actionType = $action['actionType'];
                 $actionPayload = $action['payload'];
