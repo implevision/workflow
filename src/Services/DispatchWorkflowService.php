@@ -137,6 +137,8 @@ class DispatchWorkflowService extends AbstractDispatchService
             }
 
             foreach ($condition['instanceActions'] as $action) {
+                $data = []; // TODO review later with jimish sir
+                $actionToExecute = null;
                 $actionType = $action['actionType'];
                 $actionPayload = $action['payload'];
 
