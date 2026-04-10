@@ -406,13 +406,7 @@ class WorkflowService
     {
         $workflowToRun = [];
         foreach ($matchedWorkflow as $workflow) {
-            foreach ($workflow['conditions'] as $conditions) {
-                if ($conditions['conditions']['applyRuleTo'] == 'CERTAIN') {
-                    array_push($workflowToRun, $workflow['id']);
-                } else {
-                    array_push($workflowToRun, $workflow['id']);
-                }
-            }
+            array_push($workflowToRun, $workflow['id']);
         }
 
         return $workflowToRun;
@@ -721,7 +715,6 @@ class WorkflowService
             $data = $query->limit($limit)->offset($offset)->get();
 
             return ['data' => $data, 'total' => $total];
-
         } catch (\Exception $exception) {
             \Log::error('Error getting workflow log by module: '.$exception->getMessage());
 
@@ -768,7 +761,6 @@ class WorkflowService
             }
 
             return ['labels' => $labels, 'data' => $data];
-
         } catch (\Exception $exception) {
             \Log::error('Error getting workflow log chart data: '.$exception->getMessage());
 
@@ -801,7 +793,6 @@ class WorkflowService
                 ->unique('id')
                 ->values()
                 ->toArray();
-
         } catch (\Exception $e) {
             \Log::error('Error getting workflow log filter DD: '.$e->getMessage());
 
