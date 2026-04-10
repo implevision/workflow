@@ -11,6 +11,7 @@ class ActionFactory
     protected static array $actionMap = [
         'EMAIL' => EmailAction::class,
         'WEB_HOOK' => WebhookAction::class,
+        'WORKFLOW_OUTPUT' => WorkflowOutputAction::class,
     ];
 
     /**

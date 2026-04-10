@@ -36,7 +36,7 @@ class WorkflowRequest extends FormRequest
         $workflowActionTable = $tablePrefix.'_workflow_actions';
         $workflowConditionTable = $tablePrefix.'_workflow_conditions';
 
-        $actionTypes = ['EMAIL', 'CREATE_TASK', 'CREATE_RECORD', 'WEB_HOOK'];
+        $actionTypes = ['EMAIL', 'CREATE_TASK', 'CREATE_RECORD', 'WEB_HOOK', 'WORKFLOW_OUTPUT'];
 
         $rules = [
             'id' => 'sometimes|nullable|exists:'.$workflowTable.',id',
