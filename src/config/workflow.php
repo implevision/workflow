@@ -83,5 +83,6 @@ return [
     'modules' => [
         'claim' => Avatar\Infrastructure\Models\Api\v1\TbClaim::class,
         'policy' => Avatar\Infrastructure\Models\Api\v1\TbPotransaction::class,
+        'renewal' => Avatar\Infrastructure\Models\Api\v1\RenewalPolicy::class,
     ],
 ];
