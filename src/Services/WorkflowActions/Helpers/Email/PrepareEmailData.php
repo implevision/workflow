@@ -48,6 +48,10 @@ class PrepareEmailData
             'replyTo' => ! empty($this->emailInformation['replyTo']) ? explode(',', $this->emailInformation['replyTo']) : [],
             'postAction' => $this->payload['postAction'] ?? '',
             'actionPayload' => $this->payload['actionPayload'] ?? [],
+            // PDF letter template fields
+            'letterEditorMode' => $this->emailInformation['letterEditorMode'] ?? null,
+            'pdfS3Key' => $this->emailInformation['pdfS3Key'] ?? null,
+            'pdfPlaceholders' => $this->emailInformation['pdfPlaceholders'] ?? null,
         ];
 
         try {

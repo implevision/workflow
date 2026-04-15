@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Services\WorkflowActions\Helpers\WorkflowOutput;
 use Dompdf\Dompdf;
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Services\AWS\S3;
+use Taurus\Workflow\Services\WorkflowEmailService;
 
 class PrintAsPdf
 {
@@ -13,13 +14,17 @@ class PrintAsPdf
      */
     public function generate(int $jobWorkflowId, array $data, array $templateInformation): void
     {
-        $html = $templateInformation['html'] ?? '';
-
         $placeholders = ! empty($data[0]) ? $data[0] : [];
 
-        $html = $this->replacePlaceholders($html, $placeholders);
+        $isPdf = ($templateInformation['letterEditorMode'] ?? '') === 'PDF';
 
-        $pdfBuffer = $this->htmlToPdf($html);
+        if ($isPdf) {
+            $pdfBuffer = $this->generateFromPdfTemplate($templateInformation, $placeholders);
+        } else {
+            $html = $templateInformation['html'] ?? '';
+            $html = $this->replacePlaceholders($html, $placeholders);
+            $pdfBuffer = $this->htmlToPdf($html);
+        }
 
         $filename = 'workflow_output_' . microtime(true) . '.pdf';
         $s3Path = sprintf('%s/%s/%s/%s/workflowOutput/%s', getTenant(), date('Y'), date('m'), date('d'), $filename);
@@ -44,6 +49,25 @@ class PrintAsPdf
         event(new JobWorkflowUpdatedEvent($jobWorkflowId, [
             'total_no_of_records_executed' => 1,
         ]));
+    }
+
+    /**
+     * Generate PDF by stamping placeholder values onto an existing PDF template
+     * using FPDI locally. The source PDF is fetched from the email-builder backend
+     * (already normalized to v1.4 at upload time so FPDI can read it).
+     */
+    protected function generateFromPdfTemplate(array $templateInformation, array $placeholders): string
+    {
+        $pdfS3Key = $templateInformation['pdfS3Key'] ?? '';
+        $pdfPlaceholders = $templateInformation['pdfPlaceholders'] ?? [];
+
+        if (empty($pdfS3Key)) {
+            throw new \Exception('PDF template S3 key is missing.');
+        }
+
+        $pdfContent = WorkflowEmailService::fetchPdfFile($pdfS3Key);
+
+        return PdfStamper::stamp($pdfContent, $pdfPlaceholders, $placeholders);
     }
 
     protected function replacePlaceholders(string $content, array $placeholders): string
