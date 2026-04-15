@@ -10,6 +10,7 @@ use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 use Taurus\Workflow\Services\WorkflowActions\EmailAction;
 use Taurus\Workflow\Services\WorkflowActions\WebhookAction;
+use Taurus\Workflow\Services\WorkflowActions\WorkflowOutputAction;
 
 /**
  * Class DispatchWorkflowService
@@ -239,6 +240,23 @@ class DispatchWorkflowService
                                 $e->getMessage()
                             );
                             \Log::error('WORKFLOW - Error while initiating webhook action. '.$e->getMessage());
+
+                            continue 2;
+                        }
+                        break;
+
+                    case 'WORKFLOW_OUTPUT':
+                        try {
+                            $actionToExecute = new WorkflowOutputAction($actionType, $actionPayload);
+                            $actionToExecute->handle();
+                        } catch (\Exception $e) {
+                            $this->workflowService->addWorkflowLog(
+                                $this->workflowId,
+                                $jobWorkflowId,
+                                'ERROR_INITIATING_ACTION',
+                                $e->getMessage()
+                            );
+                            \Log::error('WORKFLOW - Error while initiating workflow output action. '.$e->getMessage());
 
                             continue 2;
                         }
