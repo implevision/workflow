@@ -575,7 +575,9 @@ class DispatchWorkflowService
         }
 
         if (! $totalPayloadToGenerate) {
-            return $parsedData;
+            // All values are scalars wrap so callers always get an array-of-rows,
+            // consistent with the multi-value path below.
+            return [$parsedData];
         }
 
         $payload = [];
