@@ -15,9 +15,16 @@ class WorkflowRepository implements WorkflowRepositoryInterface
         $this->model = $model;
     }
 
-    public function all(): ?Collection
+    public function all(bool $onlyActive = false): Collection
     {
-        return $this->model->all(['id', 'module', 'name', 'description']);
+        $query = $this->model
+            ->select('id', 'module', 'name', 'description', 'is_active');
+
+        if ($onlyActive) {
+            $query->active();
+        }
+
+        return $query->get();
     }
 
     public function create(array $data): Workflow
@@ -51,7 +58,6 @@ class WorkflowRepository implements WorkflowRepositoryInterface
     {
         $workflow = $this->model->findOrFail($id);
         $workflow->update($data);
-        $workflow->calculateAndUpdateNextExecution();
 
         return $workflow;
     }
@@ -66,21 +72,18 @@ class WorkflowRepository implements WorkflowRepositoryInterface
         return $this->model->where('id', $id)->restore() > 0;
     }
 
-    public function getScheduledForToday(): array
-    {
-        return $this->model
-            ->whereDate('workflow_next_date_to_execute', today())
-            ->where('is_active', true)
-            ->get()
-            ->toArray();
-    }
-
     public function getMatchingWorkflow($entityType, $entityAction, $withDeleted = false): ?array
     {
         $query = $this->model
             ->where('module', $entityType)
-            ->where('record_action_to_execute_workflow', $entityAction)
-            ->where('effective_action_to_execute_workflow', 'ON_RECORD_ACTION')
+            ->where(function ($query) use ($entityAction) {
+                $query->where('record_action_to_execute_workflow', $entityAction)
+                    ->orWhere('odyssey_action_to_execute_workflow', $entityAction);
+            })
+            ->where(function ($query) {
+                $query->where('effective_action_to_execute_workflow', 'ON_RECORD_ACTION')
+                    ->orWhere('effective_action_to_execute_workflow', 'ODYSSEY_ACTION');
+            })
             ->where('is_active', true)
             ->with([
                 'conditions' => function ($query) use ($withDeleted) {
@@ -93,5 +96,20 @@ class WorkflowRepository implements WorkflowRepositoryInterface
         $query = $withDeleted ? $query->withTrashed() : $query;
 
         return $query->get()->toArray();
+    }
+
+    /**
+     * Get workflows by module name.
+     *
+     * This method fetches all workflow records that belong to the given module.
+     * Only required columns are selected to optimize query performance.
+     */
+    public function getByModule(string $module): Collection
+    {
+        return $this->model
+            ->where('module', $module)
+            ->active()
+            ->select('id', 'name', 'description')
+            ->get();
     }
 }

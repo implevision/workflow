@@ -2,11 +2,11 @@
 
 namespace Taurus\Workflow\Services;
 
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 use Taurus\Workflow\Consumer\ConsumerService;
 use Taurus\Workflow\Data\WorkflowData;
+use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Contracts\JobWorkflowRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowActionRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
@@ -58,14 +58,10 @@ class WorkflowService
         DB::beginTransaction();
         try {
             $data = $data->toArray();
-            $workflowNextDateToExecute = null;
             $workflowExecutionFrequency = 'ONCE';
             if ($data['when']['effectiveActionToExecuteWorkflow'] == 'ON_DATE_TIME') {
                 if (! empty($data['when']['dateTimeInfoToExecuteWorkflow']['recurringFrequency'])) {
-                    $workflowNextDateToExecute = date('Y-m-d', strtotime('+1 day'));
                     $workflowExecutionFrequency = 'RECURRING';
-                } elseif (! empty($data['when']['dateTimeInfoToExecuteWorkflow']['executionEffectiveDate'])) {
-                    $workflowNextDateToExecute = date('Y-m-d', strtotime($data['when']['dateTimeInfoToExecuteWorkflow']['executionEffectiveDate']));
                 }
             }
 
@@ -77,9 +73,9 @@ class WorkflowService
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
+                'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? '',
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
-                'workflow_next_date_to_execute' => $workflowNextDateToExecute,
-                'is_active' => $data['detail']['isActive'] ?? true,
+                'is_active' => $data['detail']['isActive'] ?? false,
             ]);
 
             if (! empty($data['workFlowConditions'])) {
@@ -108,6 +104,12 @@ class WorkflowService
             }
 
             DB::commit();
+
+            if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow']) && $data['when']['effectiveActionToExecuteWorkflow'] === 'CUSTOM_DATE_AND_TIME') {
+                $workflowId = $workflow->id;
+                $workflows = $this->workflowRepo->getById($workflowId)->toArray();
+                $this->scheduleWorkflows([$workflows]);
+            }
 
             return $workflow;
         } catch (\Exception $e) {
@@ -170,7 +172,8 @@ class WorkflowService
                 'effectiveActionToExecuteWorkflow' => $workflow->effective_action_to_execute_workflow,
                 'recordActionToExecuteWorkflow' => $workflow->record_action_to_execute_workflow,
                 'dateTimeInfoToExecuteWorkflow' => $workflow->date_time_info_to_execute_workflow,
-                'customDateTimeInfoToExecuteWorkflow' => $workflow->custom_date_time_info_to_execute_workflow ?? [],
+                'customDateTimeInfoToExecuteWorkflow' => $workflow?->custom_date_time_info_to_execute_workflow ?? [],
+                'odysseyActionToExecuteWorkflow' => $workflow?->odyssey_action_to_execute_workflow ?? '',
             ],
             'workFlowConditions' => $workflowConditions,
         ]);
@@ -198,7 +201,7 @@ class WorkflowService
                 'record_action_to_execute_workflow' => $data['when']['recordActionToExecuteWorkflow'] ?? null,
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
-                // TODO: UPDATE workflow_execution_frequency & workflow_next_date_to_execute
+                'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? '',
             ]);
 
             // get existing condition IDs
@@ -375,18 +378,6 @@ class WorkflowService
         }
     }
 
-    public function calculateAndUpdateNextExecution(int $workflowId): ?string
-    {
-        $workflow = $this->workflowRepo->getById($workflowId);
-
-        return $workflow->calculateAndUpdateNextExecution()->toDateTimeString();
-    }
-
-    public function getWorkflowsExecutingToday(): array
-    {
-        return $this->workflowRepo->getScheduledForToday();
-    }
-
     /**
      * Retrieves the matching workflow for the given entity type, entity action, and entity.
      *
@@ -415,14 +406,7 @@ class WorkflowService
     {
         $workflowToRun = [];
         foreach ($matchedWorkflow as $workflow) {
-            foreach ($workflow['conditions'] as $conditions) {
-                if ($conditions['conditions']['applyRuleTo'] == 'CERTAIN') {
-                    $entityData = $entityType::find($entity);
-                    // TODO: Call workflow engine to check if the condition is met
-                } else {
-                    array_push($workflowToRun, $workflow['id']);
-                }
-            }
+            array_push($workflowToRun, $workflow['id']);
         }
 
         return $workflowToRun;
@@ -470,7 +454,7 @@ class WorkflowService
         foreach ($workflows as $workflow) {
             $groupName = getEventSchedulerGroupNameToExecuteWorkflow();
 
-            if ($workflow['effective_action_to_execute_workflow'] == 'ON_DATE_TIME') {
+            if (in_array($workflow['effective_action_to_execute_workflow'], ['ON_DATE_TIME', 'CUSTOM_DATE_AND_TIME'])) {
                 $scheduleGroupsArn = null;
                 try {
                     $scheduleGroupArnObject = $this->workflowConfigRepo->getByKey('schedule_group_arn');
@@ -498,26 +482,39 @@ class WorkflowService
                 }
 
                 if (! $workflow['aws_event_bridge_arn']) {
-                    // RUNNING WORKFLOW AT PARTICULAR TIME
-                    if (! empty($workflow['date_time_info_to_execute_workflow']['executionEffectiveDate'])) {
-                        $executionDateTime = sprintf(
-                            '%s %s:00',
-                            $workflow['date_time_info_to_execute_workflow']['executionEffectiveDate'],
-                            $workflow['date_time_info_to_execute_workflow']['executionEffectiveTime']
-                        );
+                    if ($workflow['effective_action_to_execute_workflow'] == 'ON_DATE_TIME') {
+                        // RUNNING WORKFLOW AT PARTICULAR TIME
+                        if (! empty($workflow['date_time_info_to_execute_workflow']['executionEffectiveDate'])) {
+                            $executionDateTime = sprintf(
+                                '%s %s:00',
+                                $workflow['date_time_info_to_execute_workflow']['executionEffectiveDate'],
+                                $workflow['date_time_info_to_execute_workflow']['executionEffectiveTime']
+                            );
 
-                        $configureTimeForEventSchedulerToAwakeWorkflowSystem = convertLocalToUTC($executionDateTime, 'm/d/Y H:i:s', config('workflow.timezone'));
-                        $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'at('.$configureTimeForEventSchedulerToAwakeWorkflowSystem.')'; // At specific date and time
-                    } elseif (! empty($workflow['date_time_info_to_execute_workflow']['recurringFrequency'])) {
-                        if ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'WEEK') { // SCHEDULE RECURRING WORKFLOW
-                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 ? * MON *)'; // At 00:00 on every Monday
-                        } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'MONTH') {
-                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 1 * ? *)'; // At 00:00 on the first day of every month
-                        } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'YEAR') {
-                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 1 1 ? *)'; // At 00:00 on the first day of January every year
-                        } else {
-                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 12 * * ? *)'; // At 00:00 every day
+                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = convertLocalToUTC($executionDateTime, 'm/d/Y H:i:s', config('workflow.timezone'));
+                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'at('.$configureTimeForEventSchedulerToAwakeWorkflowSystem.')'; // At specific date and time
+                        } elseif (! empty($workflow['date_time_info_to_execute_workflow']['recurringFrequency'])) {
+                            if ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'WEEK') { // SCHEDULE RECURRING WORKFLOW
+                                $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 ? * MON *)'; // At 00:00 on every Monday
+                            } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'MONTH') {
+                                $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 1 * ? *)'; // At 00:00 on the first day of every month
+                            } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'YEAR') {
+                                $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 1 1 ? *)'; // At 00:00 on the first day of January every year
+                            } else {
+                                $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 12 * * ? *)'; // At 00:00 every day
+                            }
                         }
+                    } elseif ($workflow['effective_action_to_execute_workflow'] == 'CUSTOM_DATE_AND_TIME') {
+                        $cronJobArray = $workflow['custom_date_time_info_to_execute_workflow'];
+                        $configureTimeForEventSchedulerToAwakeWorkflowSystem = sprintf(
+                            'cron(%s %s %s %s %s %s)',
+                            $cronJobArray['cronMinutes'],
+                            $cronJobArray['cronHours'],
+                            $cronJobArray['cronDayOfMonth'],
+                            $cronJobArray['cronMonth'],
+                            $cronJobArray['cronDayOfWeek'],
+                            $cronJobArray['cronYear']
+                        );
                     }
 
                     // SCHEDULE IN EVENT BRIDGE ONLY ONCE
@@ -528,22 +525,6 @@ class WorkflowService
                             'aws_event_bridge_arn' => $scheduleObj['ScheduleArn'] ?? null,
                         ]);
                     }
-                }
-
-                if (! empty($workflow['date_time_info_to_execute_workflow']['recurringFrequency'])) {
-                    if ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'WEEK') { // SCHEDULE RECURRING WORKFLOW
-                        $nextDateToRun = Carbon::now()->modify('next Monday')->format('Y-m-d '); // At 00:00 on every Monday
-                    } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'MONTH') {
-                        $nextDateToRun = Carbon::now()->modify('next Month')->startOfMonth()->format('Y-m-d'); // At 00:00 on the first day of every month
-                    } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'YEAR') {
-                        $nextDateToRun = Carbon::now()->modify('first day of January next year')->format('Y-m-d'); // At 00:00 on the first day of January every year
-                    } else {
-                        $nextDateToRun = Carbon::now()->modify('next day')->format('Y-m-d'); // At 00:00 every day
-                    }
-
-                    $this->workflowRepo->update($workflow['id'], [
-                        'workflow_next_date_to_execute' => $nextDateToRun,
-                    ]);
                 }
             }
         }
@@ -643,5 +624,230 @@ class WorkflowService
 
             return new stdClass;
         }
+    }
+
+    /**
+     * Update the active/inactive status of a workflow.
+     *
+     * @param  int  $id  The ID of the workflow to update.
+     * @return Workflow
+     */
+    public function changeWorkflowStatus(int $id)
+    {
+        $workflow = $this->workflowRepo->getById($id);
+
+        $workflow->is_active = $workflow->is_active ? 0 : 1;
+
+        $workflow->save();
+
+        return $workflow;
+    }
+
+    /**
+     * Get Odyssey actions grouped by module.
+     *
+     * @return array<array>
+     */
+    public function getOdysseyActions()
+    {
+        try {
+            $actions = DB::table('tb_paaccoutingactions')->get();
+            $response = [];
+
+            foreach ($actions as $action) {
+                $module = $action?->workflow_module ?? '';
+                $submodule = [
+                    'value' => $action?->s_PATranTypeCode ?? '',
+                    'label' => $action?->s_TranTypeScreenName ?? '',
+                    'n_PAActionCode_PK' => $action?->n_PAActionCode_PK ?? null,
+                ];
+                if (! isset($response[$module])) {
+                    $response[$module] = [];
+                }
+                $response[$module][] = $submodule;
+            }
+
+            return $response;
+        } catch (\Exception $exception) {
+            \Log::error('WORKFLOW: Error getting Odyssey actions', [
+                'message' => $exception->getMessage(),
+                'line' => $exception->getLine(),
+                'file' => $exception->getFile(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * Resolve the model class for a given module key from workflowBaseData config.
+     */
+    private function resolveModuleClass(string $moduleKey): ?string
+    {
+        $moduleConfig = collect(config('workflowBaseData.baseData.modules', []))
+            ->firstWhere('systemModuleIdentifier', strtoupper($moduleKey));
+
+        return $moduleConfig['model'] ?? null;
+    }
+
+    /**
+     * Retrieve completed workflow logs for a given module.
+     *
+     * @return array{data: \Illuminate\Support\Collection, total: int}
+     */
+    public function getWorkflowlog(string $moduleKey, int $limit = 50, int $offset = 0, ?int $workflowId = null): array
+    {
+        try {
+            $moduleClass = $this->resolveModuleClass($moduleKey);
+
+            if (! $moduleClass) {
+                return ['data' => collect(), 'total' => 0];
+            }
+
+            $query = WorkflowLog::with('workflow:id,name')
+                ->where('module', $moduleClass)
+                ->where('status', WorkflowLog::STATUS_COMPLETED)
+                ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))
+                ->orderBy('created_at', 'desc');
+
+            $total = $query->count();
+            $data = $query->limit($limit)->offset($offset)->get();
+
+            return ['data' => $data, 'total' => $total];
+        } catch (\Exception $exception) {
+            \Log::error('Error getting workflow log by module: '.$exception->getMessage());
+
+            return ['data' => collect(), 'total' => 0];
+        }
+    }
+
+    /**
+     * Get last 7 days workflow execution counts for chart.
+     *
+     * @return array{labels: string[], data: int[]}
+     */
+    public function getWorkflowLogChart(string $moduleKey, ?int $workflowId = null): array
+    {
+        try {
+            $moduleClass = $this->resolveModuleClass($moduleKey);
+
+            if (! $moduleClass) {
+                return ['labels' => [], 'data' => []];
+            }
+
+            $startDate = now()->subDays(6)->startOfDay();
+            $endDate = now()->endOfDay();
+
+            $rows = WorkflowLog::where('module', $moduleClass)
+                ->where('status', WorkflowLog::STATUS_COMPLETED)
+                ->where('created_at', '>=', $startDate)
+                ->where('created_at', '<=', $endDate)
+                ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))
+                ->selectRaw('DATE(created_at) as log_date, COUNT(*) as log_count')
+                ->groupBy('log_date')
+                ->orderBy('log_date')
+                ->get()
+                ->keyBy('log_date');
+
+            $labels = [];
+            $data = [];
+            $now = now();
+
+            for ($i = 6; $i >= 0; $i--) {
+                $date = $now->copy()->subDays($i)->format('Y-m-d');
+                $labels[] = $now->copy()->subDays($i)->format('M j');
+                $data[] = (int) ($rows->get($date)?->log_count ?? 0);
+            }
+
+            return ['labels' => $labels, 'data' => $data];
+        } catch (\Exception $exception) {
+            \Log::error('Error getting workflow log chart data: '.$exception->getMessage());
+
+            return ['labels' => [], 'data' => []];
+        }
+    }
+
+    /**
+     * Get distinct workflow names and IDs for dropdown filter.
+     */
+    public function getWorkflowLogFilterDD(string $moduleKey): array
+    {
+        try {
+            $moduleClass = $this->resolveModuleClass($moduleKey);
+
+            if (! $moduleClass) {
+                return [];
+            }
+
+            return WorkflowLog::with('workflow:id,name')
+                ->where('module', $moduleClass)
+                ->where('status', WorkflowLog::STATUS_COMPLETED)
+                ->select('workflow_id')
+                ->distinct()
+                ->get()
+                ->map(fn ($log) => [
+                    'id' => $log->workflow_id,
+                    'name' => $log->workflow?->name ?? 'Manual Workflow',
+                ])
+                ->unique('id')
+                ->values()
+                ->toArray();
+        } catch (\Exception $e) {
+            \Log::error('Error getting workflow log filter DD: '.$e->getMessage());
+
+            return [];
+        }
+    }
+
+    /**
+     * Retrieve workflows for a given module key.
+     *
+     * Resolves the module class from configuration using the provided module key
+     * and fetches related workflows from the repository.
+     *
+     *
+     * @return Collection
+     */
+    public function moduleWiseWorkflow(string $moduleKey)
+    {
+        $moduleClass = $this->resolveModuleClass($moduleKey);
+
+        if (! $moduleClass) {
+            return collect();
+        }
+
+        return $this->workflowRepo->all(true)->where('module', $moduleClass)->load(['conditions.actions'])->values();
+    }
+
+    /**
+     * Add or update a workflow log entry with error details.
+     *
+     * If a log entry exists for the given workflow and job workflow IDs, append the error to its error list.
+     * Otherwise, no action is taken.
+     *
+     * @param  int  $workflowId  The ID of the workflow.
+     * @param  int  $jobWorkflowId  The ID of the job workflow.
+     * @param  string  $errorType  The type of error to log.
+     * @param  mixed  $exception  Optional. The exception or error details to log.
+     */
+    public function addWorkflowLog($workflowId, $jobWorkflowId, $errorType, $exception = null): void
+    {
+        $log = WorkflowLog::where('workflow_id', $workflowId)
+            ->where('job_workflow_id', $jobWorkflowId)
+            ->first();
+
+        $existingErrors = [];
+        if ($log) {
+            $existingErrors = $log->error ? json_decode($log->error, true) : [];
+        }
+
+        $existingErrors[] = [
+            'errorType' => $errorType,
+            'exception' => $exception,
+        ];
+
+        $log->error = json_encode($existingErrors);
+        $log->save();
     }
 }

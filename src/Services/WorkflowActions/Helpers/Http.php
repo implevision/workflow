@@ -26,10 +26,15 @@ class Http
 
         $options = ['headers' => $headers];
 
+        if (config('app.env') != 'production') {
+            \Log::info('WORKFLOW - Request header.', $headers);
+            \Log::info('WORKFLOW - Request body.', $body);
+        }
+
         $contentType = strtolower($headers['Content-Type']);
         switch ($contentType) {
             case 'application/json':
-                $options['json'] = json_encode($body);
+                $options['json'] = $body;
                 break;
             case 'application/x-www-form-urlencoded':
                 $options['form_params'] = $body;
@@ -40,6 +45,9 @@ class Http
 
         try {
             $response = $client->request($method, $url, $options);
+
+            \Log::info('WORKFLOW - Response status code: '.$response->getStatusCode());
+            \Log::info('WORKFLOW - Response ', json_decode($response->getBody(), true));
 
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {

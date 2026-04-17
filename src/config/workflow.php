@@ -21,6 +21,8 @@ return [
 
     'table_prefix' => env('WORKFLOW_TABLE_PREFIX', 'tb_taurus'),
 
+    'db_connection' => '',
+
     'timezone' => env('WORKFLOW_TIMEZONE_TO_USE', 'America/New_York'),
 
     'aws_lambda_function_arn_to_invoke_workflow' => env('AWS_LAMBDA_FUNCTION_ARN_TO_INVOKE_WORKFLOW'),
@@ -75,5 +77,11 @@ return [
         'scheduler:CreateSchedule' => 'To create a new schedule, the user must have permission to create it in order to invoke the workflow at particular time.',
         'ses:SendEmail' => 'Allows sending single emails.',
         'ses:SendBulkEmail' => 'Allows sending bulk emails (via SendBulkEmail API).',
+        'ses:SendTemplatedEmail' => 'Allows sending templated emails.',
+    ],
+
+    'modules' => [
+        'claim' => Avatar\Infrastructure\Models\Api\v1\TbClaim::class,
+        'policy' => Avatar\Infrastructure\Models\Api\v1\TbPotransaction::class,
     ],
 ];

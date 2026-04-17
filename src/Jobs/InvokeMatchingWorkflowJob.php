@@ -19,15 +19,18 @@ class InvokeMatchingWorkflowJob implements ShouldQueue
 
     public array $data;
 
+    public array $appendPlaceHolders;
+
     /**
      * Create a new event instance.
      */
-    public function __construct(int $entity, string $entityAction, string $entityType, array $data = [])
+    public function __construct(int $entity, string $entityAction, string $entityType, array $data = [], array $appendPlaceHolders = [])
     {
         $this->entity = $entity;
         $this->entityAction = $entityAction;
         $this->entityType = $entityType;
         $this->data = $data;
+        $this->appendPlaceHolders = $appendPlaceHolders;
     }
 
     /**
@@ -35,6 +38,7 @@ class InvokeMatchingWorkflowJob implements ShouldQueue
      */
     public function handle(): void
     {
+        setWorkflowDBConnection();
         try {
             // Log the event details
             Log::info('WORKFLOW - Handling job workflow created event', [
@@ -42,9 +46,10 @@ class InvokeMatchingWorkflowJob implements ShouldQueue
                 'action' => $this->entityAction,
                 'type' => $this->entityType,
                 'data' => $this->data,
+                'appendPlaceHolders' => $this->appendPlaceHolders,
             ]);
 
-            $command = getCommandToDispatchMatchingWorkflow($this->entity, $this->entityAction, $this->entityType, $this->data);
+            $command = getCommandToDispatchMatchingWorkflow($this->entity, $this->entityAction, $this->entityType, $this->data, $this->appendPlaceHolders);
             try {
                 Artisan::call($command['command'], $command['options']);
             } catch (\Exception $e) {

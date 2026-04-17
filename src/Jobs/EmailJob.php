@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Taurus\Workflow\Events\PostActionEvent;
+use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Services\AWS\SES;
 
 class EmailJob implements ShouldQueue
@@ -35,6 +36,7 @@ class EmailJob implements ShouldQueue
      */
     public function handle(): void
     {
+        setWorkflowDBConnection();
         $jobWorkflowId = ! empty($this->payload['jobWorkflowId']) ? $this->payload['jobWorkflowId'] : 0;
         $workflowId = ! empty($this->payload['workflowId']) ? $this->payload['workflowId'] : 0;
         $recordIdentifier = ! empty($this->payload['recordIdentifier']) ? $this->payload['recordIdentifier'] : 0;
@@ -73,6 +75,14 @@ class EmailJob implements ShouldQueue
             \Log::info('WORKFLOW - Creating SES Request');
             $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo);
             \Log::info('WORKFLOW - SES Request created with Message ID: '.$messageId);
+            WorkflowLog::where([
+                'job_workflow_id' => $jobWorkflowId,
+                'workflow_id' => $workflowId,
+                'record_identifier' => $recordIdentifier,
+                'action_type' => 'EMAIL',
+            ])->update([
+                'action_track_id' => $messageId,
+            ]);
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error creating SES Request: '.$e->getMessage());
             throw $e; // Re-throw the exception to be handled by the queue system

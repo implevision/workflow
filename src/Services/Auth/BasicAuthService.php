@@ -49,6 +49,12 @@ class BasicAuthService extends AbstractAuthService
         $credentials = base64_encode($username.':'.$password);
         $authHeaders['Authorization'] = 'Basic '.$credentials;
 
+        foreach ($authHeaders as $index => $value) {
+            if ($value == '{{UUID}}') {
+                $authHeaders[$index] = \Str::uuid()->toString();
+            }
+        }
+
         try {
             $response = Http::makeRequest($authMethod, $authUrl, $authHeaders, $body);
         } catch (\Exception $e) {

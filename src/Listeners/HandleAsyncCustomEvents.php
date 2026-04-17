@@ -13,7 +13,8 @@ class HandleAsyncCustomEvents implements ShouldQueue
         $recordIdentifier = $event->data['recordIdentifier'] ?? 0;
         $data = $event->data;
         unset($data['recordIdentifier']);
-        InvokeMatchingWorkflowJob::dispatch($recordIdentifier, $event->event, $event->eventVirtualModel, $data);
+        $appendPlaceHolders = $event->appendPlaceHolders;
+        InvokeMatchingWorkflowJob::dispatch($recordIdentifier, $event->event, $event->eventVirtualModel, $data, $appendPlaceHolders);
 
         return true;
     }

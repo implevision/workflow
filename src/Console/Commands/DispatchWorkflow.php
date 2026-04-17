@@ -12,7 +12,7 @@ class DispatchWorkflow extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:dispatch-workflow {--workflowId=} {--recordIdentifier=} {--data=}';
+    protected $signature = 'taurus:dispatch-workflow {--workflowId=} {--recordIdentifier=} {--data=} {--appendPlaceHolders=}';
 
     /**
      * The console command description.
@@ -26,10 +26,13 @@ class DispatchWorkflow extends Command
      */
     public function handle()
     {
+        setWorkflowDBConnection();
         $workflowId = $this->option('workflowId');
         $recordIdentifier = $this->option('recordIdentifier', 0);
         $data = $this->option('data');
         $data = $data ? json_decode($data, true) : [];
+        $appendPlaceHolders = $this->option('appendPlaceHolders');
+        $appendPlaceHolders = $appendPlaceHolders ? json_decode($appendPlaceHolders, true) : [];
 
         if (! $workflowId) {
             $this->error('The --workflowId option is required.');
@@ -40,13 +43,13 @@ class DispatchWorkflow extends Command
         $this->info("Workflow Id provided: $workflowId");
 
         setRunningWorkflowId($workflowId);
-        setRunningJobWorkflowId($recordIdentifier);
+        setRecordIdentifierForRunningWorkflow($recordIdentifier);
 
         try {
             \Log::info('WORKFLOW - Dispatching workflow with ID '.$workflowId);
             $recordIdentifier ? \Log::info('WORKFLOW - Dispatching workflow with record identifier '.$recordIdentifier) : null;
 
-            $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier, $data);
+            $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier, $data, $appendPlaceHolders);
             $workflow->dispatch();
         } catch (\Exception $e) {
             $errorMessage = "WORKFLOW - Error dispatching workflow with ID $workflowId: ".$e->getMessage();

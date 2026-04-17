@@ -16,8 +16,8 @@ class InstanceActionData extends Data
     {
         return new self(
             id: $data['id'] ?? null,
-            actionType: $data['actionType'],
-            payload: $data['payload']
+            actionType: $data['actionType'] ?? '',
+            payload: $data['payload'] ?? []
         );
     }
 
@@ -26,9 +26,14 @@ class InstanceActionData extends Data
         $mapped = [];
 
         foreach ($actions as $action) {
-            if (isset($action['actionType'])) {
-                $mapped[$action['actionType']] = self::fromArray($action);
+            if (! isset($action['actionType'])) {
+                continue;
             }
+
+            $actionData = self::fromArray($action);
+
+            // Convert to array to keep structure consistent
+            $mapped[$action['actionType']] = $actionData->toArray();
         }
 
         return $mapped;
