@@ -28,7 +28,9 @@ class PdfStamper
 
         // FPDI needs a file path (setSourceFile), so dump the bytes to a temp file
         $tempSource = tempnam(sys_get_temp_dir(), 'pdf_src_');
-        file_put_contents($tempSource, $pdfContent);
+        if ($tempSource === false || file_put_contents($tempSource, $pdfContent) === false) {
+            throw new \RuntimeException('Failed to write temporary PDF file for stamping.');
+        }
 
         try {
             $pdf = new Fpdi;
