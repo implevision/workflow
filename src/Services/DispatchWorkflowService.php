@@ -46,13 +46,15 @@ class DispatchWorkflowService
 
     protected $isManuallyInvoked = false;
 
+    protected $referenceId;
+
     /**
      * DispatchWorkflowService constructor.
      *
      * @param  int  $workflowId  The ID of the workflow to be dispatched.
      * @param  int|string  $recordIdentifier  An optional identifier for the record, default is 0.
      */
-    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [])
+    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [], ?string $referenceId = null)
     {
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
@@ -61,6 +63,7 @@ class DispatchWorkflowService
         $this->data = $data;
         $this->appendPlaceHolders = $appendPlaceHolders;
         $this->isManuallyInvoked = count($data) ? true : false;
+        $this->referenceId = $referenceId;
         $this->getInfo();
     }
 
@@ -120,6 +123,9 @@ class DispatchWorkflowService
                 'total_no_of_records_executed' => 0,
                 'response' => [],
             ];
+            if ($this->referenceId !== null) {
+                $jobWorkflow['reference_id'] = $this->referenceId;
+            }
             $jobWorkflowId = $this->jobWorkflowRepo->createSingle($jobWorkflow);
             setRunningJobWorkflowId($jobWorkflowId);
         } catch (\Exception $e) {

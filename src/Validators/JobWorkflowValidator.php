@@ -23,6 +23,7 @@ class JobWorkflowValidator
             'total_no_of_records_to_execute' => ['nullable', 'integer'],
             'total_no_of_records_executed' => ['nullable', 'integer'],
             'response' => ['nullable', 'array'],
+            'reference_id' => ['nullable', 'string'],
         ])->validate();
     }
 }
