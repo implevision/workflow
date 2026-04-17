@@ -11,7 +11,7 @@ return new class extends Migration
         $tablePrefix = getTablePrefix();
         $jobWorkflowTable = "{$tablePrefix}_job_workflow";
 
-        if (! Schema::hasTable($jobWorkflowTable) || Schema::hasColumn($jobWorkflowTable, 'reference_id')) {
+        if (Schema::hasColumn($jobWorkflowTable, 'reference_id')) {
             \Log::error("WORKFLOW: Table $jobWorkflowTable does not exist or already has column 'reference_id'. Migration cannot be applied.");
 
             return;
@@ -27,7 +27,7 @@ return new class extends Migration
         $tablePrefix = getTablePrefix();
         $jobWorkflowTable = "{$tablePrefix}_job_workflow";
 
-        if (! Schema::hasTable($jobWorkflowTable) || ! Schema::hasColumn($jobWorkflowTable, 'reference_id')) {
+        if (! Schema::hasColumn($jobWorkflowTable, 'reference_id')) {
             \Log::error("WORKFLOW: Table $jobWorkflowTable does not exist or does not have column 'reference_id'. Migration cannot be reverted.");
 
             return;
