@@ -26,7 +26,7 @@ class PrintAsPdf
             $pdfBuffer = $this->htmlToPdf($html);
         }
 
-        $filename = 'workflow_output_' . microtime(true) . '.pdf';
+        $filename = 'workflow_output_'.microtime(true).'.pdf';
         $s3Path = sprintf('%s/%s/%s/%s/workflowOutput/%s', getTenant(), date('Y'), date('m'), date('d'), $filename);
         $bucketName = config('workflow.bucket_to_save_email_letters', config('filesystems.disks.s3.bucket'));
 
@@ -53,7 +53,7 @@ class PrintAsPdf
 
     /**
      * Generate PDF by stamping placeholder values onto an existing PDF template
-     * using FPDI locally. The source PDF is fetched from the email-builder backend
+     * using FPDI. The source PDF is fetched from the email-builder-backend
      * (already normalized to v1.4 at upload time so FPDI can read it).
      */
     protected function generateFromPdfTemplate(array $templateInformation, array $placeholders): string
@@ -75,10 +75,18 @@ class PrintAsPdf
         return preg_replace_callback('/{{\s*(.*?)\s*}}/', function ($matches) use ($placeholders) {
             $key = trim($matches[1]);
 
-            return $placeholders[$key] ?? '';
+            return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
         }, $content);
     }
 
+    /**
+     * Converts HTML content to a PDF document.
+     *
+     * @param  string  $html  The HTML content to be converted.
+     * @param  string  $pageSize  The size of the pages in the PDF (e.g., 'A4', 'Letter').
+     * @param  string  $pageOrientation  The orientation of the pages in the PDF (e.g., 'portrait', 'landscape').
+     * @return mixed The generated PDF document or an error message on failure.
+     */
     protected function htmlToPdf(string $html, string $pageSize = 'A4', string $pageOrientation = 'portrait'): string
     {
         $domPdf = new Dompdf;

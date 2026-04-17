@@ -10,14 +10,14 @@ class PdfStamper
      * Stamp placeholder values onto an existing PDF at stored coordinates.
      *
      * Requires the source PDF to be PDF v1.4 compatible (no object streams).
-     * PDFs uploaded through the email-builder backend are normalized via pikepdf
+     * PDFs uploaded through the email-builder-backend are normalized via pikepdf
      * at upload time so this holds true.
      *
      * @param  string  $pdfContent  Raw PDF binary content (must be v1.4 compatible).
      * @param  array  $pdfPlaceholders  Array of placeholder definitions: { page, x, y, placeholderText, fontSize }.
      *                                  x and y are percentages (0–100) of page dimensions.
      * @param  array  $resolvedValues  Associative array mapping placeholderText => actual value.
-     * @return string  The stamped PDF binary content.
+     * @return string The stamped PDF binary content.
      */
     public static function stamp(string $pdfContent, array $pdfPlaceholders, array $resolvedValues): string
     {
@@ -31,7 +31,7 @@ class PdfStamper
         file_put_contents($tempSource, $pdfContent);
 
         try {
-            $pdf = new Fpdi();
+            $pdf = new Fpdi;
             $pageCount = $pdf->setSourceFile($tempSource);
 
             // Group placeholders by page number so we stamp each page once

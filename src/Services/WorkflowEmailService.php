@@ -25,7 +25,7 @@ class WorkflowEmailService
      * Fetch a PDF file from S3 via the email-builder backend.
      *
      * @param  string  $s3Key  The S3 key of the PDF file.
-     * @return string  Raw PDF binary content.
+     * @return string Raw PDF binary content.
      *
      * @throws \Exception
      */
@@ -45,5 +45,4 @@ class WorkflowEmailService
             throw new \Exception('Failed to fetch PDF file from email-builder service: '.$response->body());
         }
     }
-
 }

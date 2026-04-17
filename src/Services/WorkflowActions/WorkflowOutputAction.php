@@ -31,9 +31,8 @@ class WorkflowOutputAction extends AbstractWorkflowAction
     public function getListOfRequiredData()
     {
         $extractedPlaceHolder = ! empty($this->templateInformation['extractedPlaceholders']) ? $this->templateInformation['extractedPlaceholders'] : [];
-        preg_match_all('/{{\s*(.*?)\s*}}/', $this->templateInformation['subject'] ?? '', $subjectPlaceholderMatches);
 
-        return [...$extractedPlaceHolder, ...$subjectPlaceholderMatches[1]];
+        return $extractedPlaceHolder;
     }
 
     public function getListOfMandateData()
@@ -55,7 +54,7 @@ class WorkflowOutputAction extends AbstractWorkflowAction
             case 'PRINT_AS_PDF':
                 \Log::info('WORKFLOW - Generating PDF output');
                 $printAsPdf = new PrintAsPdf;
-                $response = $printAsPdf->generate($jobWorkflowId, $data, $this->templateInformation);
+                $printAsPdf->generate($jobWorkflowId, $data, $this->templateInformation);
                 break;
             default:
                 throw new \Exception("Unsupported output action type: {$outputActionType}");

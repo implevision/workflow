@@ -42,7 +42,7 @@ class PrepareEmailData
                 $html = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
                     $key = trim($matches[1]);
 
-                    return $placeholders[$key] ?? '';
+                    return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
                 }, $payload['emailTemplate']);
 
                 $pdfBuffer = self::htmlToPdf($html, $pageSize, $pageOrientation);
@@ -57,7 +57,7 @@ class PrepareEmailData
         $subject = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
             $key = trim($matches[1]);
 
-            return $placeholders[$key] ?? '';
+            return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
         }, $payload['subject']);
 
         $filename = preg_replace('/[^A-Za-z0-9 ]/', '', $subject).' - '.microtime(true).'.pdf';
@@ -85,7 +85,7 @@ class PrepareEmailData
 
     /**
      * Generate PDF by stamping placeholder values onto an existing PDF template
-     * using FPDI locally. The source PDF is fetched from the email-builder backend
+     * using FPDI. The source PDF is fetched from the email-builder-backend
      * (already normalized to v1.4 at upload time so FPDI can read it).
      */
     protected static function generateFromPdfTemplate(array $payload, array $placeholders): string
