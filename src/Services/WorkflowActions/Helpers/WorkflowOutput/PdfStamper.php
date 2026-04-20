@@ -55,11 +55,6 @@ class PdfStamper
                 }
 
                 foreach ($placeholdersByPage[$pageNum] as $placeholder) {
-                    $text = $resolvedValues[$placeholder['placeholderText']] ?? '';
-                    if ($text === '') {
-                        continue;
-                    }
-
                     $fontSize = (int) ($placeholder['fontSize'] ?? 12);
                     $xPct = (float) ($placeholder['x'] ?? 0);
                     $yPct = (float) ($placeholder['y'] ?? 0);
@@ -67,17 +62,36 @@ class PdfStamper
                     $x = ($xPct / 100) * $size['width'];
                     $y = ($yPct / 100) * $size['height'];
 
-                    $pdf->SetFont('Helvetica', '', $fontSize);
-                    $pdf->SetTextColor(0, 0, 0);
-
-                    // FPDF's Text() positions y at the text baseline, but the
-                    // frontend stores the click point as the chip's top-left corner.
-                    // Shift the baseline down by the Helvetica cap-height (≈72% of
-                    // the em size) so the visual top of the rendered characters
-                    // aligns with the stored position.
-                    // em size in mm = fontSize (pts) × 0.3528 (pt→mm conversion).
+                    // Shift baseline down by cap-height so the visual top of the
+                    // character aligns with the stored click position (top-left).
+                    // em size in mm = fontSize (pts) × 0.3528; cap-height ≈ 72% of em.
                     $capHeightMm = $fontSize * 0.3528 * 0.72;
-                    $pdf->Text($x, $y + $capHeightMm, $text);
+
+                    $type = $placeholder['type'] ?? 'text';
+
+                    if ($type === 'checkbox') {
+                        $resolvedValue = $resolvedValues[$placeholder['placeholderText']] ?? '';
+                        $matchValue    = $placeholder['matchValue'] ?? '';
+
+                        if ($resolvedValue !== $matchValue) {
+                            continue; // no match — leave the checkbox blank
+                        }
+
+                        // ZapfDingbats is a built-in PDF font (no install needed).
+                        // chr(52) = 0x34 = U+2714 HEAVY CHECK MARK in ZapfDingbats.
+                        $pdf->SetFont('ZapfDingbats', '', $fontSize);
+                        $pdf->SetTextColor(0, 0, 0);
+                        $pdf->Text($x, $y + $capHeightMm, chr(52));
+                    } else {
+                        $text = $resolvedValues[$placeholder['placeholderText']] ?? '';
+                        if ($text === '') {
+                            continue;
+                        }
+
+                        $pdf->SetFont('Helvetica', '', $fontSize);
+                        $pdf->SetTextColor(0, 0, 0);
+                        $pdf->Text($x, $y + $capHeightMm, $text);
+                    }
                 }
             }
 
