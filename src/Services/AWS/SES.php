@@ -39,7 +39,7 @@ class SES
         $isRequireBulkEmailRequest = count($payload) > 1 ? true : false;
         try {
             if ($isRequireBulkEmailRequest) {
-                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant,$cc, $bcc);
+                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc);
             } else {
                 $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc);
             }

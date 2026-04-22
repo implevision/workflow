@@ -77,6 +77,12 @@ class WebhookAction extends AbstractWorkflowAction
     public function getListOfRequiredData()
     {
         $payload = $this->getPayload();
+        $extractedPlaceHolder = ! empty($payload['extractedPlaceholders']) ? $payload['extractedPlaceholders'] : [];
+
+        if (! empty($extractedPlaceHolder)) {
+            return $extractedPlaceHolder;
+        }
+
         $searchIn = [
             $payload['webhookRequestPayload'] ?? [],
             $payload['webhookRequestHeaders'] ?? [],
@@ -103,12 +109,9 @@ class WebhookAction extends AbstractWorkflowAction
      */
     public function getListOfMandateData()
     {
-        // TODO: Need to come from DB. HARDCODED for farmers release
-        return [
-            'Type',
-            'SubType',
-            'PolicyNumberWithoutPrefix',
-        ];
+        $payload = $this->getPayload();
+
+        return ! empty($payload['mandatoryPlaceholders']) ? $payload['mandatoryPlaceholders'] : [];
     }
 
     /**
