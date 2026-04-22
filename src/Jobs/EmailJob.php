@@ -68,12 +68,15 @@ class EmailJob implements ShouldQueue
         $postAction = $this->payload['postAction'];
         $module = ! empty($this->payload['module']) ? $this->payload['module'] : '';
         $replyTo = ! empty($this->payload['replyTo']) ? $this->payload['replyTo'] : '';
+        $cc = ! empty($this->payload['cc']) ? $this->payload['cc'] : [];
+        $bcc = ! empty($this->payload['bcc']) ? $this->payload['bcc'] : [];
+
 
         // SEND EMAIL
         $messageId = 0;
         try {
             \Log::info('WORKFLOW - Creating SES Request');
-            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo);
+            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo, '', '', $cc, $bcc);
             \Log::info('WORKFLOW - SES Request created with Message ID: '.$messageId);
             WorkflowLog::where([
                 'job_workflow_id' => $jobWorkflowId,
