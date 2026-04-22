@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
+use Avatar\Infrastructure\Models\Api\v1\TbProduct;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbPotransaction extends AbstractSchema
@@ -642,8 +644,9 @@ class TbPotransaction extends AbstractSchema
                             ],
                         ],
                     ],
+                    'policyId' => null,
                 ],
-                'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
+                'jqFilter' => '.policyQuery',
                 'parseResultCallback' => 'parseCompanyName',
             ],
             'AttachPaymentReceipt' => [
@@ -836,6 +839,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
+                'policyId' => null,
             ],
             'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
             'parseResultCallback' => 'resolveCompanyLogoUrl',
@@ -993,14 +997,28 @@ class TbPotransaction extends AbstractSchema
         return Helper::formatNumber($number);
     }
 
-    public function parseCompanyName($brandedCompanyArr)
+    public function parseCompanyName($response)
     {
+        $response = is_array($response) ? $response : [];
+        $brandedCompanyArr = $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [];
+        $policyId = $response['policyId'] ?? null;
+
         // Ensure we are working with an array and 'company' key exists and is an array
         if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
             $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
             if (! empty($companyName)) {
                 return $companyName;
             }
+        }
+
+        $policyData = TbPolicy::find($policyId) ?? null;
+        $product = TbProduct::find($policyData->n_ProductId_FK) ?? null;
+        $holdingCompanyId = $product->holding_company_id ?? null;
+
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
+
+        if (! empty($holdingCompanyDetail['wyo'])) {
+            return $holdingCompanyDetail['wyo'];
         }
 
         // Fallback to holding company name if not found
@@ -1118,9 +1136,13 @@ class TbPotransaction extends AbstractSchema
         return pathinfo($fileName, PATHINFO_FILENAME);
     }
 
-    public function resolveCompanyLogoUrl($brandedCompanyArr)
+    public function resolveCompanyLogoUrl($response)
     {
-        return Helper::parseCompanyLogo($brandedCompanyArr);
+        $response = is_array($response) ? $response : [];
+        $brandedCompanyArr = $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [];
+        $policyId = $response['policyId'] ?? null;
+
+        return Helper::parseCompanyLogo($brandedCompanyArr, $policyId);
     }
 
     public function getInsuredPortalUrl($insuredPortal)
