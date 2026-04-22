@@ -999,32 +999,22 @@ class TbPotransaction extends AbstractSchema
 
     public function parseCompanyName($response)
     {
-        $response = is_array($response) ? $response : [];
-        $brandedCompanyArr = $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [];
-        $policyId = $response['policyId'] ?? null;
+        [$brandedCompanyArr, $policyId] = $this->extractPolicyContext($response);
 
-        // Ensure we are working with an array and 'company' key exists and is an array
-        if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
-            $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
-            if (! empty($companyName)) {
-                return $companyName;
-            }
+        $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
+        if (! empty($companyName)) {
+            return $companyName;
         }
 
-        $policyData = TbPolicy::find($policyId) ?? null;
-        $product = TbProduct::find($policyData->n_ProductId_FK) ?? null;
-        $holdingCompanyId = $product->holding_company_id ?? null;
+        $policyData = TbPolicy::find($policyId);
+        $holdingCompanyId = TbProduct::find($policyData->n_ProductId_FK ?? null)->holding_company_id ?? null;
 
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
-
         if (! empty($holdingCompanyDetail['wyo'])) {
             return $holdingCompanyDetail['wyo'];
         }
 
-        // Fallback to holding company name if not found
-        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
-
-        return $holdingCompanyDetail['wyo'] ?? '';
+        return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
     }
 
     public function transactionSubTypeScreenNameResolver($policyData)
@@ -1138,11 +1128,19 @@ class TbPotransaction extends AbstractSchema
 
     public function resolveCompanyLogoUrl($response)
     {
-        $response = is_array($response) ? $response : [];
-        $brandedCompanyArr = $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [];
-        $policyId = $response['policyId'] ?? null;
+        [$brandedCompanyArr, $policyId] = $this->extractPolicyContext($response);
 
         return Helper::parseCompanyLogo($brandedCompanyArr, $policyId);
+    }
+
+    private function extractPolicyContext($response): array
+    {
+        $response = is_array($response) ? $response : [];
+
+        return [
+            $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [],
+            $response['policyId'] ?? null,
+        ];
     }
 
     public function getInsuredPortalUrl($insuredPortal)

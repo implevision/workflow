@@ -379,41 +379,39 @@ class TbClaim extends AbstractSchema
 
     public function resolveCompanyLogoUrl($response)
     {
-        $response = is_array($response) ? $response : [];
-        $brandedCompanyArr = $response['agency']['brandedCompany'] ?? [];
-        $policyId = $response['policyId'] ?? null;
+        [$brandedCompanyArr, $policyId] = $this->extractClaimContext($response);
 
         return Helper::parseCompanyLogo($brandedCompanyArr, $policyId);
     }
 
     public function parseCompanyName($response)
     {
-        $response = is_array($response) ? $response : [];
-        $brandedCompanyArr = $response['agency']['brandedCompany'] ?? [];
-        $policyId = $response['policyId'] ?? null;
+        [$brandedCompanyArr, $policyId] = $this->extractClaimContext($response);
 
-        // Ensure we are working with an array and 'company' key exists and is an array
-        if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
-            $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
-            if (! empty($companyName)) {
-                return $companyName;
-            }
+        $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
+        if (! empty($companyName)) {
+            return $companyName;
         }
 
-        $policyData = TbPolicy::find($policyId) ?? null;
-        $product = TbProduct::find($policyData->n_ProductId_FK) ?? null;
-        $holdingCompanyId = $product->holding_company_id ?? null;
+        $policyData = TbPolicy::find($policyId);
+        $holdingCompanyId = TbProduct::find($policyData->n_ProductId_FK ?? null)->holding_company_id ?? null;
 
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
-
         if (! empty($holdingCompanyDetail['wyo'])) {
             return $holdingCompanyDetail['wyo'];
         }
 
-        // Fallback to holding company name if not found
-        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+        return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+    }
 
-        return $holdingCompanyDetail['wyo'] ?? '';
+    private function extractClaimContext($response): array
+    {
+        $response = is_array($response) ? $response : [];
+
+        return [
+            $response['agency']['brandedCompany'] ?? [],
+            $response['policyId'] ?? null,
+        ];
     }
 
     public function getInsuredPortalUrl()
