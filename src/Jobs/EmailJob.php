@@ -71,7 +71,6 @@ class EmailJob implements ShouldQueue
         $cc = ! empty($this->payload['cc']) ? $this->payload['cc'] : [];
         $bcc = ! empty($this->payload['bcc']) ? $this->payload['bcc'] : [];
 
-
         // SEND EMAIL
         $messageId = 0;
         try {
