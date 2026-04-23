@@ -314,6 +314,7 @@ class DispatchManualWorkflowService
                 'total_no_of_records_to_execute' => 0,
                 'total_no_of_records_executed' => 0,
                 'response' => [],
+                'reference_id' => null,
             ]);
 
             setRunningWorkflowId(null);
