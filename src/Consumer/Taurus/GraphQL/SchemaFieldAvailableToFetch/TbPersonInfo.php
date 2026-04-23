@@ -115,6 +115,13 @@ class TbPersonInfo extends AbstractSchema
                 ],
                 'jqFilter' => '.producer.feinSsnNo',
             ],
+
+            'FullLegalName' => [
+                'GraphQLschemaToReplace' => [
+                    's_FullLegalName' => null,
+                ],
+                'jqFilter' => '.producer.s_FullLegalName',
+            ]
         ];
 
 
@@ -346,6 +353,42 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'parseFirstUser',
         ];
 
+        $mailingAddressStructure = [
+            'TbPersonaddress' => [
+                'addressTypeCode' => null,
+                's_AddressLine1' => null,
+                's_AddressLine2' => null,
+                's_AddressLine3' => null,
+                's_CityName' => null,
+                's_StateName' => null,
+                's_PostalCode' => null,
+            ],
+        ];
+
+        $fieldMapping['MailingAddress'] = [
+            'GraphQLschemaToReplace' => $mailingAddressStructure,
+            'jqFilter' => '.producer.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'parseResultCallback' => 'parseFullMailingAddress',
+        ];
+
+        $fieldMapping['LocationAddress'] = [
+            'GraphQLschemaToReplace' => $mailingAddressStructure,
+            'jqFilter' => '.producer.TbPersonaddress[] | select(.addressTypeCode == "Location")',
+            'parseResultCallback' => 'parseFullLocationAddress',
+        ];
+
+        $fieldMapping['MailingAddressLine'] = [
+            'GraphQLschemaToReplace' => $mailingAddressStructure,
+            'jqFilter' => '.producer.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'parseResultCallback' => 'parseMailingAddressLine',
+        ];
+
+        $fieldMapping['MailingCityStateZip'] = [
+            'GraphQLschemaToReplace' => $mailingAddressStructure,
+            'jqFilter' => '.producer.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'parseResultCallback' => 'parseMailingCityStateZip',
+        ];
+
         return $fieldMapping;
     }
 
@@ -405,5 +448,63 @@ class TbPersonInfo extends AbstractSchema
             'UserScreenName' => $user['screenName'] ?? null,
             'UserLevelName' => $user['level']['UserLevel_Name'] ?? null,
         ];
+    }
+
+    private function parseFullAddress($addressArr)
+    {
+        if (empty($addressArr)) {
+            return null;
+        }
+
+        $parts = array_filter(array_map('trim', [
+            $addressArr['s_AddressLine1'] ?? '',
+            $addressArr['s_AddressLine2'] ?? '',
+            $addressArr['s_AddressLine3'] ?? '',
+            $addressArr['s_CityName'] ?? '',
+            $addressArr['s_StateName'] ?? '',
+            $addressArr['s_PostalCode'] ?? '',
+        ]));
+
+        return implode(', ', $parts) ?: null;
+    }
+
+    public function parseFullMailingAddress($addressArr)
+    {
+        return $this->parseFullAddress($addressArr);
+    }
+
+    public function parseFullLocationAddress($addressArr)
+    {
+        return $this->parseFullAddress($addressArr);
+    }
+
+    public function parseMailingAddressLine($addressArr)
+    {
+        if (empty($addressArr)) {
+            return null;
+        }
+
+        $parts = array_filter(array_map('trim', [
+            $addressArr['s_AddressLine1'] ?? '',
+            $addressArr['s_AddressLine2'] ?? '',
+            $addressArr['s_AddressLine3'] ?? '',
+        ]));
+
+        return implode(', ', $parts) ?: null;
+    }
+
+    public function parseMailingCityStateZip($addressArr)
+    {
+        if (empty($addressArr)) {
+            return null;
+        }
+
+        $parts = array_filter(array_map('trim', [
+            $addressArr['s_CityName'] ?? '',
+            $addressArr['s_StateName'] ?? '',
+            $addressArr['s_PostalCode'] ?? '',
+        ]));
+
+        return implode(', ', $parts) ?: null;
     }
 }
