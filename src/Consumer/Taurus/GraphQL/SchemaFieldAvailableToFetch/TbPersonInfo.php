@@ -354,38 +354,42 @@ class TbPersonInfo extends AbstractSchema
         ];
 
         $mailingAddressStructure = [
-            'TbPersonaddress' => [
+            'addresses' => [
                 'addressTypeCode' => null,
-                's_AddressLine1' => null,
-                's_AddressLine2' => null,
-                's_AddressLine3' => null,
-                's_CityName' => null,
-                's_StateName' => null,
-                's_PostalCode' => null,
+                'addressLine1' => null,
+                'addressLine2' => null,
+                'addressLine3' => null,
+                'postalCode' => null,
+                'tbCity' => [
+                    'name' => null,
+                ],
+                'tbState' => [
+                    'name' => null,
+                ],
             ],
         ];
 
         $fieldMapping['MailingAddress'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producer.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => '.producer.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseFullMailingAddress',
         ];
 
         $fieldMapping['LocationAddress'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producer.TbPersonaddress[] | select(.addressTypeCode == "Location")',
+            'jqFilter' => '.producer.addresses[] | select(.addressTypeCode == "LOCATION")',
             'parseResultCallback' => 'parseFullLocationAddress',
         ];
 
         $fieldMapping['MailingAddressLine'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producer.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => '.producer.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseMailingAddressLine',
         ];
 
         $fieldMapping['MailingCityStateZip'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producer.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => '.producer.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseMailingCityStateZip',
         ];
 
@@ -457,12 +461,12 @@ class TbPersonInfo extends AbstractSchema
         }
 
         $parts = array_filter(array_map('trim', [
-            $addressArr['s_AddressLine1'] ?? '',
-            $addressArr['s_AddressLine2'] ?? '',
-            $addressArr['s_AddressLine3'] ?? '',
-            $addressArr['s_CityName'] ?? '',
-            $addressArr['s_StateName'] ?? '',
-            $addressArr['s_PostalCode'] ?? '',
+            $addressArr['addressLine1'] ?? '',
+            $addressArr['addressLine2'] ?? '',
+            $addressArr['addressLine3'] ?? '',
+            $addressArr['tbCity']['name'] ?? '',
+            $addressArr['tbState']['name'] ?? '',
+            $addressArr['postalCode'] ?? '',
         ]));
 
         return implode(', ', $parts) ?: null;
@@ -485,9 +489,9 @@ class TbPersonInfo extends AbstractSchema
         }
 
         $parts = array_filter(array_map('trim', [
-            $addressArr['s_AddressLine1'] ?? '',
-            $addressArr['s_AddressLine2'] ?? '',
-            $addressArr['s_AddressLine3'] ?? '',
+            $addressArr['addressLine1'] ?? '',
+            $addressArr['addressLine2'] ?? '',
+            $addressArr['addressLine3'] ?? '',
         ]));
 
         return implode(', ', $parts) ?: null;
@@ -500,9 +504,9 @@ class TbPersonInfo extends AbstractSchema
         }
 
         $parts = array_filter(array_map('trim', [
-            $addressArr['s_CityName'] ?? '',
-            $addressArr['s_StateName'] ?? '',
-            $addressArr['s_PostalCode'] ?? '',
+            $addressArr['tbCity']['name'] ?? '',
+            $addressArr['tbState']['name'] ?? '',
+            $addressArr['postalCode'] ?? '',
         ]));
 
         return implode(', ', $parts) ?: null;
