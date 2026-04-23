@@ -50,6 +50,10 @@ class PrepareEmailData
             'bcc' => ! empty($this->payload['actionPayload']['bcc']) ? array_values(array_filter(array_map('trim', explode(',', $this->payload['actionPayload']['bcc'])))) : [],
             'postAction' => $this->payload['postAction'] ?? '',
             'actionPayload' => $this->payload['actionPayload'] ?? [],
+            // PDF letter template fields
+            'letterEditorMode' => $this->emailInformation['letterEditorMode'] ?? null,
+            'pdfS3Key' => $this->emailInformation['pdfS3Key'] ?? null,
+            'pdfPlaceholders' => $this->emailInformation['pdfPlaceholders'] ?? null,
         ];
 
         try {

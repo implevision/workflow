@@ -28,6 +28,7 @@ class JobWorkflowRepository implements JobWorkflowRepositoryInterface
                 'total_no_of_records_to_execute' => $data['total_no_of_records_to_execute'] ?? 0,
                 'total_no_of_records_executed' => $data['total_no_of_records_executed'] ?? 0,
                 'response' => $data['response'] ?? [],
+                'reference_id' => $data['reference_id'] ?? null,
             ]);
 
             return $jobWorkflow->id;
@@ -53,6 +54,7 @@ class JobWorkflowRepository implements JobWorkflowRepositoryInterface
                     'total_no_of_records_to_execute' => $record['total_no_of_records_to_execute'] ?? 0,
                     'total_no_of_records_executed' => $record['total_no_of_records_executed'] ?? 0,
                     'response' => json_encode($record['response'] ?? []),
+                    'reference_id' => $record['reference_id'] ?? null,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
