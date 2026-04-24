@@ -26,7 +26,7 @@ function setWorkflowDBConnection()
 {
     $connectionToSet = getWorkflowDBConnection();
     if ($connectionToSet) {
-        \Log::info('WORKFLOW - Setting workflow database connection to: '.$connectionToSet);
+        \Log::info('WORKFLOW - Setting workflow database connection to: ' . $connectionToSet);
         $previous = config('database.default');
         config(['database.default' => $connectionToSet]);
         \DB::purge($previous);
@@ -83,12 +83,12 @@ function getNoTenantIdentifier()
  */
 function getEventSchedulerGroupNameToExecuteWorkflow()
 {
-    return 'workflow-auto-generated-'.getTenant();
+    return 'workflow-auto-generated-' . getTenant();
 }
 
 function getEventSchedulerNameToExecuteWorkflow($identifier)
 {
-    return 'workflow-id-'.$identifier;
+    return 'workflow-id-' . $identifier;
 }
 
 function getScheduleGroupTagsToExecuteWorkflow()
@@ -186,7 +186,7 @@ function gitCommandToDispatchManualWorkflow(
     ];
 }
 
-function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [])
+function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [], $updatedFields = [])
 {
     $entityData = json_encode((array) $entityData);
     $appendPlaceHolders = json_encode((array) $appendPlaceHolders);
@@ -198,7 +198,7 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
             'options' => [
                 'commandname' => 'taurus:invoke-matching-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders"],
+                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders", "EntityUpdatedFields=$updatedFields"],
             ],
         ];
     } else {
@@ -262,5 +262,5 @@ function isBound($parameter)
 
 function getDefaultQueue()
 {
-    return config('queue.connections.'.config('queue.default').'.queue');
+    return config('queue.connections.' . config('queue.default') . '.queue');
 }

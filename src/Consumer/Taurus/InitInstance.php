@@ -69,4 +69,15 @@ class InitInstance
             throw new \Exception("Post action service class '$postActionServiceClass' does not exist.");
         }
     }
+
+    public function getParentClassService()
+    {
+        $parentClassServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\ParentClass\\ParentClassService';
+
+        if (class_exists($parentClassServiceClass)) {
+            return new $parentClassServiceClass;
+        } else {
+            throw new \Exception("Parent class service class '$parentClassServiceClass' does not exist.");
+        }
+    }
 }
