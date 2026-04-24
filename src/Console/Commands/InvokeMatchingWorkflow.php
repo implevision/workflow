@@ -63,7 +63,7 @@ class InvokeMatchingWorkflow extends Command
         try {
             $matchedWorkflow = $this->workflowService->getMatchingWorkflow($entityType, $entityAction, $entity, $entityUpdatedFields);
         } catch (\Exception $e) {
-            $errorMessage = 'WORKFLOW - Error finding match workflow for EntityType: ' . $entityType . ', EntityAction: ' . $entityAction . ', Entity: ' . $entity . ': ' . $e->getMessage();
+            $errorMessage = 'WORKFLOW - Error finding match workflow for EntityType: '.$entityType.', EntityAction: '.$entityAction.', Entity: '.$entity.': '.$e->getMessage();
             Log::error($errorMessage);
             $this->error($errorMessage);
 
@@ -71,7 +71,7 @@ class InvokeMatchingWorkflow extends Command
         }
 
         if (empty($matchedWorkflow)) {
-            $message = 'WORKFLOW - No matching workflow found for EntityType: ' . $entityType . ', EntityAction: ' . $entityAction . ', Entity: ' . $entity;
+            $message = 'WORKFLOW - No matching workflow found for EntityType: '.$entityType.', EntityAction: '.$entityAction.', Entity: '.$entity;
             Log::info($message);
             $this->info($message);
 
@@ -79,7 +79,7 @@ class InvokeMatchingWorkflow extends Command
         }
 
         foreach ($matchedWorkflow as $workflowId) {
-            $message = 'WORKFLOW - Matched Workflow found with ID: ' . $workflowId . ' for EntityType: ' . $entityType . ', EntityAction: ' . $entityAction . ', Entity: ' . $entity;
+            $message = 'WORKFLOW - Matched Workflow found with ID: '.$workflowId.' for EntityType: '.$entityType.', EntityAction: '.$entityAction.', Entity: '.$entity;
             Log::info($message);
             $this->info($message);
 
@@ -87,7 +87,7 @@ class InvokeMatchingWorkflow extends Command
                 $command = gitCommandToDispatchWorkflow($workflowId, $entity, $entityData, $entityPlaceHoldersToAppend);
                 Artisan::call($command['command'], $command['options']);
             } catch (\Exception $e) {
-                $errorMessage = 'WORKFLOW - Error dispatching workflow with ID ' . $workflowId . ': ' . $e->getMessage();
+                $errorMessage = 'WORKFLOW - Error dispatching workflow with ID '.$workflowId.': '.$e->getMessage();
                 Log::error($errorMessage);
                 $this->error($errorMessage);
 
@@ -95,7 +95,7 @@ class InvokeMatchingWorkflow extends Command
             }
         }
 
-        $message = 'WORKFLOW - Matching workflow dispatched successfully. for EntityType: ' . $entityType . ', EntityAction: ' . $entityAction . ', Entity: ' . $entity;
+        $message = 'WORKFLOW - Matching workflow dispatched successfully. for EntityType: '.$entityType.', EntityAction: '.$entityAction.', Entity: '.$entity;
         Log::info($message);
         $this->info($message);
 

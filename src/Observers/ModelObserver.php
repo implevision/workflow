@@ -21,6 +21,7 @@ class ModelObserver implements ShouldHandleEventsAfterCommit
                         'entity' => $entity,
                         'type' => get_class($model),
                     ]);
+
                     return;
                 }
             }
@@ -34,7 +35,7 @@ class ModelObserver implements ShouldHandleEventsAfterCommit
             ]);
             InvokeMatchingWorkflowJob::dispatch($entity, $entityAction, $entityType, [], [], $updatedFields ?? []);
         } catch (\Exception $e) {
-            Log::info('WORKFLOW - Error dispatching matching workflow: ' . $e->getMessage());
+            Log::info('WORKFLOW - Error dispatching matching workflow: '.$e->getMessage());
         }
     }
 

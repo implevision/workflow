@@ -114,7 +114,7 @@ class WorkflowService
             return $workflow;
         } catch (\Exception $e) {
             DB::rollback();
-            throw new \Exception('Failed to save workflow: ' . $e->getMessage());
+            throw new \Exception('Failed to save workflow: '.$e->getMessage());
         }
     }
 
@@ -132,7 +132,7 @@ class WorkflowService
         try {
             $workflow = $this->workflowRepo->getById($workflowId, $withDeleted);
         } catch (\Exception $e) {
-            throw new \Exception('No data found for the provided workflow ID: ' . $workflowId);
+            throw new \Exception('No data found for the provided workflow ID: '.$workflowId);
         }
 
         $workflowConditions = [];
@@ -277,7 +277,7 @@ class WorkflowService
             return $workflow;
         } catch (\Exception $e) {
             DB::rollback();
-            throw new \Exception('Failed to save workflow: ' . $e->getMessage());
+            throw new \Exception('Failed to save workflow: '.$e->getMessage());
         }
     }
 
@@ -293,7 +293,7 @@ class WorkflowService
     {
         $workflow = $this->workflowRepo->getById($workflowId, $withDeleted);
         $conditionIds = $workflow->conditions->pluck('id')->toArray();
-        $actionIds = $workflow->conditions->flatMap(fn($condition) => $condition->actions->pluck('id'))->toArray();
+        $actionIds = $workflow->conditions->flatMap(fn ($condition) => $condition->actions->pluck('id'))->toArray();
 
         return [
             'id' => $workflow->id,
@@ -336,7 +336,7 @@ class WorkflowService
             return true;
         } catch (\Exception $e) {
             DB::rollback();
-            throw new \Exception('Failed to delete workflow: ' . $e->getMessage());
+            throw new \Exception('Failed to delete workflow: '.$e->getMessage());
         }
     }
 
@@ -374,7 +374,7 @@ class WorkflowService
             return true;
         } catch (\Exception $e) {
             DB::rollback();
-            throw new \Exception('Failed to restore workflow: ' . $e->getMessage());
+            throw new \Exception('Failed to restore workflow: '.$e->getMessage());
         }
     }
 
@@ -420,7 +420,7 @@ class WorkflowService
         try {
             return EventBridgeScheduler::createScheduleGroup($groupName, $tags);
         } catch (\Throwable $e) {
-            \Log::error('Error creating schedule group: ' . $e->getMessage());
+            \Log::error('Error creating schedule group: '.$e->getMessage());
 
             return false;
         }
@@ -444,7 +444,7 @@ class WorkflowService
 
             return EventBridgeScheduler::createSchedule($scheduleGroupName, $scheduleExpression, $target, $groupName);
         } catch (\Throwable $e) {
-            \Log::error('Error creating schedule: ' . $e->getMessage());
+            \Log::error('Error creating schedule: '.$e->getMessage());
 
             return false;
         }
@@ -461,7 +461,7 @@ class WorkflowService
                     $scheduleGroupArnObject = $this->workflowConfigRepo->getByKey('schedule_group_arn');
                     $scheduleGroupsArn = $scheduleGroupArnObject->config_value ?? null;
                 } catch (\Exception $e) {
-                    \Log::error('Error fetching schedule group ARN: ' . $e->getMessage());
+                    \Log::error('Error fetching schedule group ARN: '.$e->getMessage());
                 }
 
                 $isAwsInfraAlreadySetup = $scheduleGroupsArn ? true : false;
@@ -493,7 +493,7 @@ class WorkflowService
                             );
 
                             $configureTimeForEventSchedulerToAwakeWorkflowSystem = convertLocalToUTC($executionDateTime, 'm/d/Y H:i:s', config('workflow.timezone'));
-                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'at(' . $configureTimeForEventSchedulerToAwakeWorkflowSystem . ')'; // At specific date and time
+                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'at('.$configureTimeForEventSchedulerToAwakeWorkflowSystem.')'; // At specific date and time
                         } elseif (! empty($workflow['date_time_info_to_execute_workflow']['recurringFrequency'])) {
                             if ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'WEEK') { // SCHEDULE RECURRING WORKFLOW
                                 $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 ? * MON *)'; // At 00:00 on every Monday
@@ -536,7 +536,7 @@ class WorkflowService
         try {
             $this->jobWorkflowRepo->getInfo($workflowId);
         } catch (\Exception $exception) {
-            \Log::error('Error getting workflow stats: ' . $exception->getMessage());
+            \Log::error('Error getting workflow stats: '.$exception->getMessage());
 
             return [];
         }
@@ -725,7 +725,7 @@ class WorkflowService
             $query = WorkflowLog::with('workflow:id,name')
                 ->where('module', $moduleClass)
                 ->where('status', WorkflowLog::STATUS_COMPLETED)
-                ->when($workflowId !== null, fn($q) => $q->where('workflow_id', $workflowId))
+                ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))
                 ->orderBy('created_at', 'desc');
 
             $total = $query->count();
@@ -733,7 +733,7 @@ class WorkflowService
 
             return ['data' => $data, 'total' => $total];
         } catch (\Exception $exception) {
-            \Log::error('Error getting workflow log by module: ' . $exception->getMessage());
+            \Log::error('Error getting workflow log by module: '.$exception->getMessage());
 
             return ['data' => collect(), 'total' => 0];
         }
@@ -760,7 +760,7 @@ class WorkflowService
                 ->where('status', WorkflowLog::STATUS_COMPLETED)
                 ->where('created_at', '>=', $startDate)
                 ->where('created_at', '<=', $endDate)
-                ->when($workflowId !== null, fn($q) => $q->where('workflow_id', $workflowId))
+                ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))
                 ->selectRaw('DATE(created_at) as log_date, COUNT(*) as log_count')
                 ->groupBy('log_date')
                 ->orderBy('log_date')
@@ -779,7 +779,7 @@ class WorkflowService
 
             return ['labels' => $labels, 'data' => $data];
         } catch (\Exception $exception) {
-            \Log::error('Error getting workflow log chart data: ' . $exception->getMessage());
+            \Log::error('Error getting workflow log chart data: '.$exception->getMessage());
 
             return ['labels' => [], 'data' => []];
         }
@@ -803,7 +803,7 @@ class WorkflowService
                 ->select('workflow_id')
                 ->distinct()
                 ->get()
-                ->map(fn($log) => [
+                ->map(fn ($log) => [
                     'id' => $log->workflow_id,
                     'name' => $log->workflow?->name ?? 'Manual Workflow',
                 ])
@@ -811,7 +811,7 @@ class WorkflowService
                 ->values()
                 ->toArray();
         } catch (\Exception $e) {
-            \Log::error('Error getting workflow log filter DD: ' . $e->getMessage());
+            \Log::error('Error getting workflow log filter DD: '.$e->getMessage());
 
             return [];
         }
