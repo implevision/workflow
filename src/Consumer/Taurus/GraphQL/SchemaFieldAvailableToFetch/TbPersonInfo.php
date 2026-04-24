@@ -118,8 +118,18 @@ class TbPersonInfo extends AbstractSchema
             ]
         ];
 
+        $fieldMapping['BrandedCompany'] = [
+            'GraphQLschemaToReplace' => [
+                'brandedCompany' => [
+                    'company' => [
+                        'companyName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producer.brandedCompany[].company.companyName',
+        ];
 
-        $fieldMapping['CompanyName'] = [
+        $fieldMapping['ContactName'] = [
             'GraphQLschemaToReplace' => [
                 'personContacts' => [
                     'contactName' => null,
@@ -300,14 +310,6 @@ class TbPersonInfo extends AbstractSchema
             'jqFilter' => '.producerQuery.wyoUpn',
         ];
 
-        $fieldMapping['Naic'] = [
-            'GraphQLschemaToReplace' => [
-                'referenceNo' => null,
-            ],
-            'jqFilter' => '.producerQuery.referenceNo',
-            'parseResultCallback' => 'parseNaic',
-        ];
-
         $fieldMapping['User'] = [
             'GraphQLschemaToReplace' => [
                 'userAgents' => [
@@ -365,49 +367,6 @@ class TbPersonInfo extends AbstractSchema
         ];
 
         return $fieldMapping;
-    }
-
-    private function parseAddress($addressArr)
-    {
-        if (empty($addressArr)) {
-            return null;
-        }
-
-        $address = [
-            'addressLine1' => ($addressArr['houseNo'] ?? '') . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
-            'city' => $addressArr['tbCity']['name'] ?? null,
-            // 'county' => $addressArr['tbCounty']['name'] ?? null,
-            'state' => $addressArr['tbState']['name'] ?? null,
-            'postalCode' => $addressArr['postalCode'] ?? null,
-        ];
-
-        if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
-            $address['postalCode'] .= ' - ' . $addressArr['postalCodeSuffix'];
-        }
-
-        $address = array_filter(array_map('trim', $address), function ($item) {
-            return ! empty($item);
-        });
-
-        return implode(', ', $address);
-    }
-
-    public function parseMailingAddress($addressArr)
-    {
-        return $this->parseAddress($addressArr);
-    }
-
-    public function parsePropertyAddress($addressArr)
-    {
-        return $this->parseAddress($addressArr);
-    }
-
-    public function parseNaic($referenceNo)
-    {
-        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
-        $tenant = getTenant();
-
-        return sprintf('%s%s%s', ucfirst(substr($tenant, 0, 1)), $holdingCompanyDetail['naic_number'], $referenceNo);
     }
 
     public function parseFirstUser($userAgent)
