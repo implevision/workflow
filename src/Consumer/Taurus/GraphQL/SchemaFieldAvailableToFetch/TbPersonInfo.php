@@ -126,7 +126,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.producer.brandedCompany[].company.companyName',
+            'jqFilter' => '.producerQuery.brandedCompany[0].company.companyName',
         ];
 
         $fieldMapping['ContactName'] = [
@@ -265,7 +265,7 @@ class TbPersonInfo extends AbstractSchema
                     'metadata' => null,
                 ],
             ],
-            'jqFilter' => '.producerQuery.al3Details[].metadata[].flood.originating_addr',
+            'jqFilter' => '.producerQuery.al3Details[0].metadata[0].flood.originating_addr',
         ];
 
         $fieldMapping['LastFourDigitAccountNumber'] = [
@@ -276,7 +276,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.producerQuery.accounts[].achConfigurations[].lastFourDigitOfAccountNumber',
+            'jqFilter' => '.producerQuery.accounts[0].achConfigurations[0].lastFourDigitOfAccountNumber',
         ];
 
         $fieldMapping['TodayDate'] = [
@@ -432,7 +432,6 @@ class TbPersonInfo extends AbstractSchema
 
         return implode(', ', $parts) ?: null;
     }
-
     public function getTodaysDate(): string
     {
         return Helper::getTodaysDate();
