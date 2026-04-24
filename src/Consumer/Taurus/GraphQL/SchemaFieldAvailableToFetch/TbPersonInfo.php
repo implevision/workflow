@@ -209,10 +209,8 @@ class TbPersonInfo extends AbstractSchema
         $fieldMapping['ManagerName'] = [
             'GraphQLschemaToReplace' => [
                 'managers' => [
-                    [
-                        'managerPerson' => [
-                            'firstName' => null,
-                        ],
+                    'managerPerson' => [
+                        'firstName' => null,
                     ],
                 ],
             ],
@@ -222,13 +220,9 @@ class TbPersonInfo extends AbstractSchema
         $fieldMapping['ManagerPhone'] = [
             'GraphQLschemaToReplace' => [
                 'managers' => [
-                    [
-                        'managerPerson' => [
-                            'phoneInfo' => [
-                                [
-                                    'phoneNumber' => null,
-                                ],
-                            ],
+                    'managerPerson' => [
+                        'phoneInfo' => [
+                            'phoneNumber' => null,
                         ],
                     ],
                 ],
@@ -239,13 +233,9 @@ class TbPersonInfo extends AbstractSchema
         $fieldMapping['ManagerEmail'] = [
             'GraphQLschemaToReplace' => [
                 'managers' => [
-                    [
-                        'managerPerson' => [
-                            'emailInfo' => [
-                                [
-                                    'email' => null,
-                                ],
-                            ],
+                    'managerPerson' => [
+                        'emailInfo' => [
+                            'email' => null,
                         ],
                     ],
                 ],
@@ -291,6 +281,7 @@ class TbPersonInfo extends AbstractSchema
 
         $fieldMapping['TodayDate'] = [
             'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
             'parseResultCallback' => 'getTodaysDate',
         ];
 
@@ -441,7 +432,7 @@ class TbPersonInfo extends AbstractSchema
 
         return implode(', ', $parts) ?: null;
     }
-    
+
     public function getTodaysDate(): string
     {
         return Helper::getTodaysDate();
