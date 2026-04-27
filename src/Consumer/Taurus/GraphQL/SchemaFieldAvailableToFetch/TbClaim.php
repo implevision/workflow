@@ -407,9 +407,16 @@ class TbClaim extends AbstractSchema
     private function extractClaimContext($response): array
     {
         $response = is_array($response) ? $response : [];
+        $brandedCompany = $response['agency']['brandedCompany'] ?? [];
+
+        if (is_array($brandedCompany) && array_key_exists('company', $brandedCompany)) {
+            $normalizedBrandedCompany = $brandedCompany;
+        } else {
+            $normalizedBrandedCompany = is_array($brandedCompany) ? ($brandedCompany[0] ?? []) : [];
+        }
 
         return [
-            $response['agency']['brandedCompany'] ?? [],
+            $normalizedBrandedCompany,
             $response['policyId'] ?? null,
         ];
     }
