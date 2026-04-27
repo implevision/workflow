@@ -61,7 +61,7 @@ class InvokeMatchingWorkflow extends Command
         setModuleForCurrentWorkflow($entityType);
 
         try {
-            $matchedWorkflow = $this->workflowService->getMatchingWorkflow($entityType, $entityAction, $entity, $entityUpdatedFields);
+            $matchedWorkflow = $this->workflowService->getMatchingWorkflow($entityType, $entityAction, $entityUpdatedFields);
         } catch (\Exception $e) {
             $errorMessage = 'WORKFLOW - Error finding match workflow for EntityType: '.$entityType.', EntityAction: '.$entityAction.', Entity: '.$entity.': '.$e->getMessage();
             Log::error($errorMessage);

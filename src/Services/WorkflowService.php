@@ -386,7 +386,7 @@ class WorkflowService
      * @param  string  $entityAction  The action performed on the entity (e.g., create, update, delete).
      * @param  mixed  $entity  The entity instance to evaluate.
      * @param  array  $entityUpdatedFields  (optional) The fields of the entity that were updated.
-     * @return bool|array Returns an array with workflow details if a match is found, or false otherwise.
+     * @return bool|array Returns an array with workflow ids if a match is found, or false otherwise.
      */
     public function getMatchingWorkflow($entityType, $entityAction, $entity, $entityUpdatedFields = []): bool|array
     {
