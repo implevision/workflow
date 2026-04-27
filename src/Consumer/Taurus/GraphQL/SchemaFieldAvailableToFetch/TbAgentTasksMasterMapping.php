@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
+use Avatar\Infrastructure\Models\Api\v1\TbProduct;
 use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
@@ -1059,12 +1061,37 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                                     ],
                                 ],
                             ],
+                            'policyId' => null,
                         ],
                     ],
+
                 ],
-                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.brandedCompany[]',
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction',
                 'parseResultCallback' => 'parseCompanyName',
             ],
+        ];
+
+        $fieldMapping['CompanyLogo'] = [
+            'GraphQLschemaToReplace' => [
+                'agentTask' => [
+                    'policyTransaction' => [
+                        'tbAccountMaster' => [
+                            'TbPersoninfo' => [
+                                'brandedCompany' => [
+                                    'company' => [
+                                        'logo' => null,
+                                        'publicLogo' => null,
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'policyId' => null,
+                    ],
+                ],
+
+            ],
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction',
+            'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
@@ -1551,20 +1578,55 @@ class TbAgentTasksMasterMapping extends AbstractSchema
         return $additionalInterest['additionalPersonInfo']['fullName'] ?? null;
     }
 
-    public function parseCompanyName($brandedCompanyArr)
+    public function parseCompanyName($response)
     {
-        // Ensure we are working with an array and 'company' key exists and is an array
-        if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
-            $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
-            if (! empty($companyName)) {
-                return $companyName;
-            }
+        [$brandedCompanyArr, $policyId] = $this->extractPolicyContext($response);
+
+        $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
+        if (! empty($companyName)) {
+            return $companyName;
         }
 
-        // Fallback to holding company name if not found
-        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+        $policyData = TbPolicy::find($policyId);
+        $productId = $policyData?->n_ProductId_FK;
+        if (empty($productId)) {
+            return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+        }
 
-        return $holdingCompanyDetail['wyo'] ?? '';
+        $holdingCompanyId = TbProduct::find($productId)?->holding_company_id ?? null;
+        if (empty($holdingCompanyId)) {
+            return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+        }
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
+        if (! empty($holdingCompanyDetail['wyo'])) {
+            return $holdingCompanyDetail['wyo'];
+        }
+
+        return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+    }
+
+    public function resolveCompanyLogoUrl($response)
+    {
+        [$brandedCompanyArr, $policyId] = $this->extractPolicyContext($response);
+
+        return Helper::parseCompanyLogo($brandedCompanyArr, $policyId);
+    }
+
+    private function extractPolicyContext($response): array
+    {
+        $response = is_array($response) ? $response : [];
+        $brandedCompany = $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [];
+
+        if (! is_array($brandedCompany)) {
+            $brandedCompany = [];
+        } elseif (isset($brandedCompany[0]) && is_array($brandedCompany[0])) {
+            $brandedCompany = $brandedCompany[0];
+        }
+
+        return [
+            $brandedCompany,
+            $response['policyId'] ?? null,
+        ];
     }
 
     public function parsePaymentTransactionNumber($data)
