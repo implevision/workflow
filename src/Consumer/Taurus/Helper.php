@@ -2,16 +2,36 @@
 
 namespace Taurus\Workflow\Consumer\Taurus;
 
+use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
+use Avatar\Infrastructure\Models\Api\v1\TbProduct;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 
 class Helper
 {
-    public static function getHoldingCompanyDetail()
+    public static function getHoldingCompanyDetail($holdingCompanyId = null)
     {
-        $holdingCompanyDetail = \DB::table('tb_holdingcompanies')->first();
-        $metadata = json_decode($holdingCompanyDetail->metadata, true);
+        if ($holdingCompanyId) {
+            $holdingCompanyDetail = \DB::table('tb_holdingcompanies')
+                ->where('n_HoldingCompanyId_PK', $holdingCompanyId)
+                ->first();
+        } else {
+            $holdingCompanyDetail = \DB::table('tb_holdingcompanies')->first();
+        }
+
+        if (! $holdingCompanyDetail) {
+            return [
+                'logo' => null,
+                'public_logo' => null,
+                'wyo' => null,
+                'naic_number' => null,
+                'insured_portal' => self::createPortalURL('InsuredPortal'),
+                'agent_portal' => null,
+            ];
+        }
+
+        $metadata = json_decode($holdingCompanyDetail->metadata, true) ?: [];
 
         return [
             'logo' => $holdingCompanyDetail->logo_url,
@@ -259,7 +279,7 @@ class Helper
      *
      * @param  mixed  $brandedCompanyArr
      */
-    public static function parseCompanyLogo($brandedCompanyArr)
+    public static function parseCompanyLogo($brandedCompanyArr, $policyId = null)
     {
         $logo = '';
         $logoHasPublicUrl = false;
@@ -271,6 +291,23 @@ class Helper
         if (is_array($brandedCompanyArr) && ! empty($brandedCompanyArr['company']['publicLogo'])) {
             $logo = $brandedCompanyArr['company']['publicLogo'];
             $logoHasPublicUrl = true;
+        }
+
+        $holdingCompanyId = null;
+
+        if (! $logo && $policyId) {
+            $policyData = TbPolicy::find($policyId);
+            $product = TbProduct::find($policyData?->n_ProductId_FK);
+            $holdingCompanyId = $product?->holding_company_id;
+        }
+        if (! $logo && $holdingCompanyId !== null) {
+            $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
+            $logo = $holdingCompanyDetail['logo'] ?? null;
+
+            if ($holdingCompanyDetail['public_logo']) {
+                $logo = $holdingCompanyDetail['public_logo'];
+                $logoHasPublicUrl = true;
+            }
         }
 
         if (! $logo) {
