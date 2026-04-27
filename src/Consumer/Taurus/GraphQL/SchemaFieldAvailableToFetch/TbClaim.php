@@ -394,7 +394,7 @@ class TbClaim extends AbstractSchema
         }
 
         $policyData = TbPolicy::find($policyId);
-        $holdingCompanyId = TbProduct::find($policyData->n_ProductId_FK ?? null)->holding_company_id ?? null;
+        $holdingCompanyId = TbProduct::find($policyData?->n_ProductId_FK)?->holding_company_id;
 
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
         if (! empty($holdingCompanyDetail['wyo'])) {
