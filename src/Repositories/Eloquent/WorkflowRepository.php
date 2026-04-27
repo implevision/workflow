@@ -86,10 +86,14 @@ class WorkflowRepository implements WorkflowRepositoryInterface
             })
             ->where('is_active', true)
             ->where(function ($query) use ($entityUpdatedFields) {
+                $fieldNames = array_is_list($entityUpdatedFields)
+                    ? $entityUpdatedFields
+                    : array_keys($entityUpdatedFields);
+
                 $query->whereNull('field_to_observe')
                     ->orWhere('field_to_observe', '')
-                    ->orWhere(function ($q) use ($entityUpdatedFields) {
-                        foreach ($entityUpdatedFields as $field) {
+                    ->orWhere(function ($q) use ($fieldNames) {
+                        foreach ($fieldNames as $field) {
                             $q->orWhereRaw('FIND_IN_SET(?, field_to_observe)', [$field]);
                         }
                     });
