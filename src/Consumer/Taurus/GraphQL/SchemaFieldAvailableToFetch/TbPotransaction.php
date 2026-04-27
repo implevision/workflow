@@ -1143,9 +1143,16 @@ class TbPotransaction extends AbstractSchema
     private function extractPolicyContext($response): array
     {
         $response = is_array($response) ? $response : [];
+        $brandedCompany = $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [];
+
+        if (!is_array($brandedCompany)) {
+            $brandedCompany = [];
+        } elseif (isset($brandedCompany[0]) && is_array($brandedCompany[0])) {
+            $brandedCompany = $brandedCompany[0];
+        }
 
         return [
-            $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [],
+            $brandedCompany,
             $response['policyId'] ?? null,
         ];
     }
