@@ -91,12 +91,15 @@ class WorkflowRepository implements WorkflowRepositoryInterface
                     : array_keys($entityUpdatedFields);
 
                 $query->whereNull('field_to_observe')
-                    ->orWhere('field_to_observe', '')
-                    ->orWhere(function ($q) use ($fieldNames) {
+                    ->orWhere('field_to_observe', '');
+
+                if (!empty($fieldNames)) {
+                    $query->orWhere(function ($q) use ($fieldNames) {
                         foreach ($fieldNames as $field) {
                             $q->orWhereRaw('FIND_IN_SET(?, field_to_observe)', [$field]);
                         }
                     });
+                }
             })
             ->with([
                 'conditions' => function ($query) use ($withDeleted) {
