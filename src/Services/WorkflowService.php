@@ -388,7 +388,7 @@ class WorkflowService
      * @param  array  $entityUpdatedFields  (optional) The fields of the entity that were updated.
      * @return bool|array Returns an array with workflow ids if a match is found, or false otherwise.
      */
-    public function getMatchingWorkflow($entityType, $entityAction, $entity, $entityUpdatedFields = []): bool|array
+    public function getMatchingWorkflow($entityType, $entityAction, $entityUpdatedFields = []): bool|array
     {
         $matchedWorkflow = $this->workflowRepo->getMatchingWorkflow($entityType, $entityAction, false, $entityUpdatedFields);
         if (empty($matchedWorkflow)) {
