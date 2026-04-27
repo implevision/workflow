@@ -14,7 +14,7 @@ class ParentClassService
 
     private function resolveParentEntity($entity)
     {
-        $appMasterInfo = \Avatar\Infrastructure\Models\Api\v1\TbPoappsmaster::where('id', $entity)->first();
+        $appMasterInfo = \Avatar\Infrastructure\Models\Api\v1\TbPoappsmaster::where('n_POAppsMaster_PK', $entity)->first();
 
         if ($appMasterInfo) {
             return [
