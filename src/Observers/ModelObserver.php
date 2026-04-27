@@ -10,17 +10,30 @@ class ModelObserver implements ShouldHandleEventsAfterCommit
 {
     public function handle($model, $method)
     {
-        // $updatedFields = $model->getDirty();
         try {
             $entity = $model->getKey();
             $entityAction = $method;
+
+            if ($entityAction == 'UPDATE') {
+                $updatedFields = array_keys($model->getChanges());
+                if (empty($updatedFields)) {
+                    Log::info('WORKFLOW - No fields updated, skipping workflow dispatch', [
+                        'entity' => $entity,
+                        'type' => get_class($model),
+                    ]);
+
+                    return;
+                }
+            }
+
             $entityType = get_class($model);
             Log::info('WORKFLOW - Creating job for invoke matching workflow', [
                 'entity' => $entity,
                 'action' => $entityAction,
                 'type' => $entityType,
+                'updatedFields' => $updatedFields ?? null,
             ]);
-            InvokeMatchingWorkflowJob::dispatch($entity, $entityAction, $entityType);
+            InvokeMatchingWorkflowJob::dispatch($entity, $entityAction, $entityType, [], [], $updatedFields ?? []);
         } catch (\Exception $e) {
             Log::info('WORKFLOW - Error dispatching matching workflow: '.$e->getMessage());
         }
