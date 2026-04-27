@@ -395,16 +395,8 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             ],
 
             'TodaysDate' => [
-                'GraphQLschemaToReplace' => [
-                    'agentTask' => [
-                        'policyTransaction' => [
-                            'policy' => [
-                                'todaysDate' => null,
-                            ],
-                        ],
-                    ],
-                ],
-                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.todaysDate',
+                'GraphQLschemaToReplace' => [],
+                'jqFilter' => '',
                 'parseResultCallback' => 'getTodaysDate',
             ],
 
@@ -1557,6 +1549,22 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     public function parseAdditionalInsuredName($additionalInterest)
     {
         return $additionalInterest['additionalPersonInfo']['fullName'] ?? null;
+    }
+
+    public function parseCompanyName($brandedCompanyArr)
+    {
+        // Ensure we are working with an array and 'company' key exists and is an array
+        if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
+            $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
+            if (! empty($companyName)) {
+                return $companyName;
+            }
+        }
+
+        // Fallback to holding company name if not found
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+        return $holdingCompanyDetail['wyo'] ?? '';
     }
 
     public function parsePaymentTransactionNumber($data)
