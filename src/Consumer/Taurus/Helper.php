@@ -292,10 +292,13 @@ class Helper
             $logoHasPublicUrl = true;
         }
 
-        $policyData = TbPolicy::find($policyId) ?? null;
-        $product = TbProduct::find($policyData->n_ProductId_FK) ?? null;
-        $holdingCompanyId = $product->holding_company_id ?? null;
+        $holdingCompanyId = null;
 
+        if (! $logo && $policyId) {
+            $policyData = TbPolicy::find($policyId);
+            $product = TbProduct::find($policyData?->n_ProductId_FK);
+            $holdingCompanyId = $product?->holding_company_id;
+        }
         if (! $logo) {
             $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
             $logo = $holdingCompanyDetail['logo'] ?? null;
