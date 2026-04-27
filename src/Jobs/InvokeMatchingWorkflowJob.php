@@ -57,7 +57,7 @@ class InvokeMatchingWorkflowJob implements ShouldQueue
             $parentClassService = $workflowService->getParentClassService();
             $overrideEntityParams = $parentClassService->getParentEntity($this->entityType, $this->entity);
 
-            if ($overrideEntityParams !== false) {
+            if (is_array($overrideEntityParams)) {
                 $this->entity = $overrideEntityParams['entity'] ?? $this->entity;
                 $this->entityType = $overrideEntityParams['entityType'] ?? $this->entityType;
             }
