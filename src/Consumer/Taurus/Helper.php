@@ -32,6 +32,7 @@ class Helper
         }
 
         $metadata = json_decode($holdingCompanyDetail->metadata, true) ?: [];
+
         return [
             'logo' => $holdingCompanyDetail->logo_url,
             'public_logo' => $holdingCompanyDetail->public_logo_url,

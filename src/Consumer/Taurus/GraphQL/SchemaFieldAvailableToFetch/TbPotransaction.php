@@ -841,7 +841,7 @@ class TbPotransaction extends AbstractSchema
                 ],
                 'policyId' => null,
             ],
-            'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
+            'jqFilter' => '.policyQuery',
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
