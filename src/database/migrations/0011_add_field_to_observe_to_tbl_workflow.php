@@ -14,7 +14,7 @@ return new class extends Migration
         if (Schema::hasTable($workflowTable)) {
             if (! Schema::hasColumn($workflowTable, 'field_to_observe')) {
                 Schema::table($workflowTable, function (Blueprint $table) {
-                    $table->string('field_to_observe')->nullable()->after('record_action_to_execute_workflow');
+                    $table->text('field_to_observe')->nullable()->after('record_action_to_execute_workflow');
                 });
             }
         }
