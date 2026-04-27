@@ -1012,7 +1012,7 @@ class TbPotransaction extends AbstractSchema
             return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
         }
 
-        $holdingCompanyId = TbProduct::find($productId)->holding_company_id ?? null;
+        $holdingCompanyId = TbProduct::find($productId)?->holding_company_id ?? null;
         if (empty($holdingCompanyId)) {
             return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
         }
