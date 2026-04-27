@@ -1007,8 +1007,15 @@ class TbPotransaction extends AbstractSchema
         }
 
         $policyData = TbPolicy::find($policyId);
-        $holdingCompanyId = TbProduct::find($policyData->n_ProductId_FK ?? null)->holding_company_id ?? null;
+        $productId = $policyData?->n_ProductId_FK;
+        if (empty($productId)) {
+            return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+        }
 
+        $holdingCompanyId = TbProduct::find($productId)->holding_company_id ?? null;
+        if (empty($holdingCompanyId)) {
+            return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+        }
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
         if (! empty($holdingCompanyDetail['wyo'])) {
             return $holdingCompanyDetail['wyo'];
