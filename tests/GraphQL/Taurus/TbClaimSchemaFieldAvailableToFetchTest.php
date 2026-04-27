@@ -209,12 +209,12 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
     private function makeHoldingCompanyRecord(array $overrides = []): object
     {
         return (object) array_merge([
-            'metadata'              => '{}',
-            'logo_url'              => null,
-            'public_logo_url'       => null,
-            's_HoldingCompanyName'  => null,
-            'naic_number'           => '12345',
-            'payment_wesite_url'    => 'https://portal.example.com',
+            'metadata' => '{}',
+            'logo_url' => null,
+            'public_logo_url' => null,
+            's_HoldingCompanyName' => null,
+            'naic_number' => '12345',
+            'payment_wesite_url' => 'https://portal.example.com',
         ], $overrides);
     }
 }

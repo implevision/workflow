@@ -1145,7 +1145,7 @@ class TbPotransaction extends AbstractSchema
         $response = is_array($response) ? $response : [];
         $brandedCompany = $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [];
 
-        if (!is_array($brandedCompany)) {
+        if (! is_array($brandedCompany)) {
             $brandedCompany = [];
         } elseif (isset($brandedCompany[0]) && is_array($brandedCompany[0])) {
             $brandedCompany = $brandedCompany[0];
