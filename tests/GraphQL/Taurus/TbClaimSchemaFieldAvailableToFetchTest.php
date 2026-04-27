@@ -80,12 +80,9 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
         TbPolicy::$findMap[100] = (object) ['n_ProductId_FK' => 200];
         TbProduct::$findMap[200] = (object) ['holding_company_id' => 5];
 
-        $queryBuilder = \Mockery::mock('Illuminate\Database\Query\Builder');
-        $queryBuilder->shouldReceive('where')->andReturnSelf();
-        $queryBuilder->shouldReceive('first')->andReturn($this->makeHoldingCompanyRecord([
+        $this->mockHoldingCompanyQuery($this->makeHoldingCompanyRecord([
             's_HoldingCompanyName' => 'Product WYO Co',
         ]));
-        DB::shouldReceive('table')->with('tb_holdingcompanies')->andReturn($queryBuilder);
 
         $tbClaim = new TbClaim;
         $response = [
@@ -99,12 +96,9 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
     public function test_parse_company_name_falls_back_to_default_holding_company_when_policy_id_absent()
     {
         // No policyId → skip policy/product lookup → query first holding company
-        $queryBuilder = \Mockery::mock('Illuminate\Database\Query\Builder');
-        $queryBuilder->shouldReceive('where')->andReturnSelf();
-        $queryBuilder->shouldReceive('first')->andReturn($this->makeHoldingCompanyRecord([
+        $this->mockHoldingCompanyQuery($this->makeHoldingCompanyRecord([
             's_HoldingCompanyName' => 'Default WYO Co',
         ]));
-        DB::shouldReceive('table')->with('tb_holdingcompanies')->andReturn($queryBuilder);
 
         $tbClaim = new TbClaim;
         $response = [
@@ -120,12 +114,9 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
         // policyId present but TbPolicy::find returns null (policy not in DB)
         TbPolicy::$findMap[999] = null;
 
-        $queryBuilder = \Mockery::mock('Illuminate\Database\Query\Builder');
-        $queryBuilder->shouldReceive('where')->andReturnSelf();
-        $queryBuilder->shouldReceive('first')->andReturn($this->makeHoldingCompanyRecord([
+        $this->mockHoldingCompanyQuery($this->makeHoldingCompanyRecord([
             's_HoldingCompanyName' => 'Default WYO Co',
         ]));
-        DB::shouldReceive('table')->with('tb_holdingcompanies')->andReturn($queryBuilder);
 
         $tbClaim = new TbClaim;
         $response = [
@@ -162,12 +153,9 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
         TbPolicy::$findMap[100] = (object) ['n_ProductId_FK' => 200];
         TbProduct::$findMap[200] = (object) ['holding_company_id' => 5];
 
-        $queryBuilder = \Mockery::mock('Illuminate\Database\Query\Builder');
-        $queryBuilder->shouldReceive('where')->andReturnSelf();
-        $queryBuilder->shouldReceive('first')->andReturn($this->makeHoldingCompanyRecord([
+        $this->mockHoldingCompanyQuery($this->makeHoldingCompanyRecord([
             'public_logo_url' => 'https://cdn.example.com/hc-logo.png',
         ]));
-        DB::shouldReceive('table')->with('tb_holdingcompanies')->andReturn($queryBuilder);
 
         $tbClaim = new TbClaim;
         $response = [
@@ -181,12 +169,9 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
     public function test_resolve_company_logo_url_falls_back_to_default_holding_company_logo_when_no_policy_id()
     {
         // No policyId → skip product lookup → default holding company
-        $queryBuilder = \Mockery::mock('Illuminate\Database\Query\Builder');
-        $queryBuilder->shouldReceive('where')->andReturnSelf();
-        $queryBuilder->shouldReceive('first')->andReturn($this->makeHoldingCompanyRecord([
+        $this->mockHoldingCompanyQuery($this->makeHoldingCompanyRecord([
             'public_logo_url' => 'https://cdn.example.com/default-logo.png',
         ]));
-        DB::shouldReceive('table')->with('tb_holdingcompanies')->andReturn($queryBuilder);
 
         $tbClaim = new TbClaim;
         $response = [
@@ -202,7 +187,22 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
     // -------------------------------------------------------------------------
 
     /**
+     * Mock the DB query chain for the tb_holdingcompanies table, returning the
+     * given $record from any ->first() call (with or without a preceding ->where()).
+     */
+    private function mockHoldingCompanyQuery(object $record): void
+    {
+        $queryBuilder = \Mockery::mock('Illuminate\Database\Query\Builder');
+        $queryBuilder->shouldReceive('where')->andReturnSelf();
+        $queryBuilder->shouldReceive('first')->andReturn($record);
+        DB::shouldReceive('table')->with('tb_holdingcompanies')->andReturn($queryBuilder);
+    }
+
+    /**
      * Build a fake holding-company DB record with sensible defaults.
+     *
+     * Note: the 'payment_wesite_url' key intentionally preserves the typo
+     * found in the actual DB column name accessed by Helper::getHoldingCompanyDetail().
      *
      * @param  array<string, mixed>  $overrides
      */
