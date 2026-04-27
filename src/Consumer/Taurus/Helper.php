@@ -19,8 +19,19 @@ class Helper
         } else {
             $holdingCompanyDetail = \DB::table('tb_holdingcompanies')->first();
         }
-        $metadata = json_decode($holdingCompanyDetail->metadata, true);
 
+        if (! $holdingCompanyDetail) {
+            return [
+                'logo' => null,
+                'public_logo' => null,
+                'wyo' => null,
+                'naic_number' => null,
+                'insured_portal' => self::createPortalURL('InsuredPortal'),
+                'agent_portal' => null,
+            ];
+        }
+
+        $metadata = json_decode($holdingCompanyDetail->metadata, true) ?: [];
         return [
             'logo' => $holdingCompanyDetail->logo_url,
             'public_logo' => $holdingCompanyDetail->public_logo_url,
