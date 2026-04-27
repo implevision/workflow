@@ -300,7 +300,7 @@ class Helper
             $product = TbProduct::find($policyData?->n_ProductId_FK);
             $holdingCompanyId = $product?->holding_company_id;
         }
-        if (! $logo) {
+        if (! $logo && $holdingCompanyId !== null) {
             $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
             $logo = $holdingCompanyDetail['logo'] ?? null;
 
