@@ -15,7 +15,7 @@ class ModelObserver implements ShouldHandleEventsAfterCommit
             $entityAction = $method;
 
             if ($entityAction == 'UPDATE') {
-                $updatedFields = $model->getDirty();
+                $updatedFields = array_keys($model->getDirty());
                 if (empty($updatedFields)) {
                     Log::info('WORKFLOW - No fields updated, skipping workflow dispatch', [
                         'entity' => $entity,
