@@ -8,9 +8,14 @@ class WorkflowEmailService
 {
     public static function getEmailInformation($id)
     {
-        $response = Http::withHeaders(['x-client-key' => config('workflow.email_template_service_client_key'), 'X-Tenant' => getTenant()])
-            ->acceptJson()
-            ->get(config('workflow.email_template_service_url').'/api/email/template/get/'.$id);
+        $http = Http::withHeaders(['x-client-key' => config('workflow.email_template_service_client_key'), 'X-Tenant' => getTenant()])
+            ->acceptJson();
+
+        if (! app()->environment('production')) {
+            $http = $http->withoutVerifying();
+        }
+
+        $response = $http->get(config('workflow.email_template_service_url').'/api/email/template/get/'.$id);
 
         if ($response->successful()) {
             $response = $response->json();

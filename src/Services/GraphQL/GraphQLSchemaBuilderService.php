@@ -246,23 +246,114 @@ class GraphQLSchemaBuilderService
 
     public function extractValue($data, $jqFilter)
     {
-        if (is_array($data)) {
-            $json = json_encode($data);
-        } else {
-            $json = $data;
+        if (!is_array($data)) {
+            $data = json_decode($data, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return false;
+            }
         }
 
-        // Use jq to filter the JSON data
-        $command = 'echo '.escapeshellarg($json).' | jq -r '.escapeshellarg($jqFilter);
-        exec($command.' 2>&1', $result, $returnCode);
+        $selectFilter = null;
+        $path = $jqFilter;
 
-        if ($returnCode !== 0) {
-            // echo "Command failed with return code: " . $returnCode;
-            // echo "Error output: " . implode("\n", $result);
-            return false;
-        } else {
-            return implode("\n", $result);
+        // Handle: .path[] | select(.key == "value")
+        if (str_contains($jqFilter, ' | select(')) {
+            [$path, $selectExpr] = explode(' | select(', $jqFilter, 2);
+            $selectExpr = rtrim($selectExpr, ')');
+            if (preg_match('/^\.(\w+)\s*==\s*"([^"]*)"$/', $selectExpr, $m)) {
+                $selectFilter = ['key' => $m[1], 'value' => $m[2]];
+            }
         }
+
+        $result = $this->navigatePath($data, ltrim($path, '.'));
+
+        if ($selectFilter !== null && is_array($result)) {
+            $filtered = array_values(array_filter($result, function ($item) use ($selectFilter) {
+                return is_array($item) && ($item[$selectFilter['key']] ?? null) === $selectFilter['value'];
+            }));
+            if (empty($filtered)) {
+                return 'null';
+            }
+            $result = count($filtered) === 1 ? $filtered[0] : $filtered;
+        }
+
+        if ($result === null) {
+            return 'null';
+        }
+
+        if (is_array($result)) {
+            return json_encode($result);
+        }
+
+        return (string) $result;
+    }
+
+    private function navigatePath($data, string $path)
+    {
+        if ($path === '' || $path === '.') {
+            return $data;
+        }
+
+        $tokens = [];
+        foreach (explode('.', $path) as $part) {
+            if ($part === '') {
+                continue;
+            }
+            if (preg_match('/^(.*)\[(\d*)\]$/', $part, $m)) {
+                if ($m[1] !== '') {
+                    $tokens[] = ['type' => 'key', 'key' => $m[1]];
+                }
+                $tokens[] = $m[2] === '' ? ['type' => 'all'] : ['type' => 'index', 'index' => (int) $m[2]];
+            } else {
+                $tokens[] = ['type' => 'key', 'key' => $part];
+            }
+        }
+
+        return $this->applyTokens($data, $tokens);
+    }
+
+    private function applyTokens($data, array $tokens)
+    {
+        if (empty($tokens)) {
+            return $data;
+        }
+
+        $token = array_shift($tokens);
+
+        if ($token['type'] === 'key') {
+            if (!is_array($data) || !array_key_exists($token['key'], $data)) {
+                return null;
+            }
+
+            return $this->applyTokens($data[$token['key']], $tokens);
+        }
+
+        if ($token['type'] === 'index') {
+            if (!is_array($data) || !isset($data[$token['index']])) {
+                return null;
+            }
+
+            return $this->applyTokens($data[$token['index']], $tokens);
+        }
+
+        if ($token['type'] === 'all') {
+            if (!is_array($data)) {
+                return null;
+            }
+            $results = [];
+            foreach ($data as $item) {
+                $r = $this->applyTokens($item, $tokens);
+                if (is_array($r) && array_is_list($r)) {
+                    $results = array_merge($results, $r);
+                } else {
+                    $results[] = $r;
+                }
+            }
+
+            return $results;
+        }
+
+        return null;
     }
 
     /**

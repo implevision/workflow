@@ -113,8 +113,8 @@ class SES
                     ],
                 ],
                 'BulkEmailEntries' => $bulkEmailEntries,
-                ...[count($replyTo) ? ["ReplyToAddresses => $replyTo"] : []],
-                ...[! empty($tenant) ? ["Tenant => $tenant"] : []],
+                ...($replyTo ? ['ReplyToAddresses' => (array) $replyTo] : []),
+                ...(!empty($tenant) ? ['DefaultEmailTags' => [['Name' => 'tenant', 'Value' => $tenant]]] : []),
             ];
 
             $response = $sesClient->sendBulkEmail($bulkEmailPayload);
@@ -199,7 +199,7 @@ class SES
                 ],
                 'FromEmailAddress' => $from,
                 ...($replyTo ? ['ReplyToAddresses' => (array) $replyTo] : []),
-                ...[! empty($tenant) ? ['Tenant' => $tenant] : []],
+                ...(!empty($tenant) ? ['EmailTags' => [['Name' => 'tenant', 'Value' => $tenant]]] : []),
             ]);
 
             if ($jobWorkflowId) {

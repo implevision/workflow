@@ -28,7 +28,10 @@ class Client
 
     public function query(string $query, array $variables = []): array
     {
+        $timeout = config('workflow.graphql.timeout', 30);
+
         $response = Http::withHeaders($this->headers)
+            ->timeout($timeout)
             ->post($this->endpoint, [
                 'query' => $query,
                 'variables' => $variables,

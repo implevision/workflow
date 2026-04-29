@@ -315,11 +315,10 @@ class DispatchWorkflowService
 
                     // Handle GraphQL query execution
                     try {
-                        // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        // \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
+                        \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
                         $graphQLClient = new GraphQLClient($graphQLHeaders);
                         $response = $graphQLClient->query($graphQLRequestPayload);
-                        // \Log::info('WORKFLOW - GraphQL Response: ', $response);
+                        \Log::info('WORKFLOW - GraphQL Response: ', $response);
                     } catch (\Exception $e) {
                         $this->workflowService->addWorkflowLog(
                             $this->workflowId,
@@ -349,11 +348,20 @@ class DispatchWorkflowService
                                 continue;
                             }
 
-                            $jqFilter = $fieldMapping[$placeHolder]['jqFilter'];
+                            $phpFilter = $fieldMapping[$placeHolder]['phpFilter'] ?? null;
+                            $jqFilter = $fieldMapping[$placeHolder]['jqFilter'] ?? null;
                             $parseResultCallback = ! empty($fieldMapping[$placeHolder]['parseResultCallback']) ? $fieldMapping[$placeHolder]['parseResultCallback'] : null;
 
                             $placeHolderValue = '';
-                            if (! $jqFilter && $parseResultCallback) {
+                            if ($phpFilter && method_exists($moduleClassForGraphQL, $phpFilter)) {
+                                $placeHolderValue = $moduleClassForGraphQL->$phpFilter($response);
+
+                                if ($placeHolderValue !== null && $placeHolderValue !== '' && $parseResultCallback) {
+                                    if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
+                                        $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback($placeHolderValue);
+                                    }
+                                }
+                            } elseif (! $jqFilter && $parseResultCallback) {
                                 if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
                                     $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback();
                                 }

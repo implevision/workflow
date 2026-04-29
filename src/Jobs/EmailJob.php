@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Taurus\Workflow\Events\PostActionEvent;
+use Taurus\Workflow\Models\EmailDeliveryEvent;
 use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Services\AWS\SES;
 
@@ -68,14 +69,24 @@ class EmailJob implements ShouldQueue
         $postAction = $this->payload['postAction'];
         $module = ! empty($this->payload['module']) ? $this->payload['module'] : '';
         $replyTo = ! empty($this->payload['replyTo']) ? $this->payload['replyTo'] : '';
+<<<<<<< Updated upstream
         $cc = ! empty($this->payload['cc']) ? $this->payload['cc'] : [];
         $bcc = ! empty($this->payload['bcc']) ? $this->payload['bcc'] : [];
+=======
+        $configurationSetName = ! empty($this->payload['configurationSetName']) ? $this->payload['configurationSetName'] : '';
+        $tenant = ! empty($this->payload['tenant']) ? $this->payload['tenant'] : '';
+>>>>>>> Stashed changes
 
         // SEND EMAIL
         $messageId = 0;
         try {
+            \Log::info('WORKFLOW - SES Params', ['configurationSetName' => $configurationSetName, 'tenant' => $tenant]);
             \Log::info('WORKFLOW - Creating SES Request');
+<<<<<<< Updated upstream
             $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo, '', '', $cc, $bcc);
+=======
+            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
+>>>>>>> Stashed changes
             \Log::info('WORKFLOW - SES Request created with Message ID: '.$messageId);
             WorkflowLog::where([
                 'job_workflow_id' => $jobWorkflowId,
@@ -85,6 +96,16 @@ class EmailJob implements ShouldQueue
             ])->update([
                 'action_track_id' => $messageId,
             ]);
+
+            if ($messageId) {
+                EmailDeliveryEvent::create([
+                    'message_id'      => $messageId,
+                    'event_type'      => 'SEND',
+                    'workflow_id'     => $workflowId,
+                    'event_timestamp' => now(),
+                    'payload'         => array_diff_key($this->payload, array_flip(['emailTemplate', 'plainEmailTemplate'])),
+                ]);
+            }
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error creating SES Request: '.$e->getMessage());
             throw $e; // Re-throw the exception to be handled by the queue system

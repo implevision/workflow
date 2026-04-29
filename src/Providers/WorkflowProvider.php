@@ -32,6 +32,8 @@ class WorkflowProvider extends ServiceProvider
      */
     public function boot()
     {
+        $this->loadRoutesFrom(__DIR__.'/../routes/webhook.php');
+
         $this->publishes([
             __DIR__.'/../config/workflow.php' => config_path('workflow.php'),
         ]);
