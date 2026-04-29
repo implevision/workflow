@@ -69,24 +69,17 @@ class EmailJob implements ShouldQueue
         $postAction = $this->payload['postAction'];
         $module = ! empty($this->payload['module']) ? $this->payload['module'] : '';
         $replyTo = ! empty($this->payload['replyTo']) ? $this->payload['replyTo'] : '';
-<<<<<<< Updated upstream
         $cc = ! empty($this->payload['cc']) ? $this->payload['cc'] : [];
         $bcc = ! empty($this->payload['bcc']) ? $this->payload['bcc'] : [];
-=======
         $configurationSetName = ! empty($this->payload['configurationSetName']) ? $this->payload['configurationSetName'] : '';
         $tenant = ! empty($this->payload['tenant']) ? $this->payload['tenant'] : '';
->>>>>>> Stashed changes
 
         // SEND EMAIL
         $messageId = 0;
         try {
             \Log::info('WORKFLOW - SES Params', ['configurationSetName' => $configurationSetName, 'tenant' => $tenant]);
             \Log::info('WORKFLOW - Creating SES Request');
-<<<<<<< Updated upstream
-            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo, '', '', $cc, $bcc);
-=======
-            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
->>>>>>> Stashed changes
+            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc);
             \Log::info('WORKFLOW - SES Request created with Message ID: '.$messageId);
             WorkflowLog::where([
                 'job_workflow_id' => $jobWorkflowId,
