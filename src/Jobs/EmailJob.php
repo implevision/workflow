@@ -5,7 +5,6 @@ namespace Taurus\Workflow\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Taurus\Workflow\Events\PostActionEvent;
-use Taurus\Workflow\Models\EmailDeliveryEvent;
 use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Services\AWS\SES;
 
@@ -90,15 +89,6 @@ class EmailJob implements ShouldQueue
                 'action_track_id' => $messageId,
             ]);
 
-            if ($messageId) {
-                EmailDeliveryEvent::create([
-                    'message_id'      => $messageId,
-                    'event_type'      => 'SEND',
-                    'workflow_id'     => $workflowId,
-                    'event_timestamp' => now(),
-                    'payload'         => array_diff_key($this->payload, array_flip(['emailTemplate', 'plainEmailTemplate'])),
-                ]);
-            }
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error creating SES Request: '.$e->getMessage());
             throw $e; // Re-throw the exception to be handled by the queue system
