@@ -35,6 +35,11 @@ class DispatchWorkflow extends Command
         $appendPlaceHolders = $appendPlaceHolders ? json_decode($appendPlaceHolders, true) : [];
         $page = (int) ($this->option('page') ?? 1);
 
+        if (config('app.env') != 'production' && $page > 3) {
+            $this->info("Page $page exceeds the allowed limit of 3 pages. Dispatch aborted.");
+            return 0;
+        }
+
         if (! $workflowId) {
             $this->error('The --workflowId option is required.');
 
