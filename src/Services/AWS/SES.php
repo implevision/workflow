@@ -34,14 +34,14 @@ class SES
         return new SesV2Client($awsConfig);
     }
 
-    public static function createRequest($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [])
+    public static function createRequest($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [], $workflowId = 0)
     {
         $isRequireBulkEmailRequest = count($payload) > 1 ? true : false;
         try {
             if ($isRequireBulkEmailRequest) {
-                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc);
+                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc, $workflowId);
             } else {
-                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc);
+                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc, $workflowId);
             }
         } catch (\Exception $e) {
             throw new \Exception('Error sending email: '.$e->getMessage());
@@ -50,7 +50,7 @@ class SES
         return $messageId;
     }
 
-    public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [])
+    public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [], $workflowId = 0)
     {
         try {
             $sesClient = self::getSesClient();
@@ -113,8 +113,11 @@ class SES
                     ],
                 ],
                 'BulkEmailEntries' => $bulkEmailEntries,
-                ...[count($replyTo) ? ["ReplyToAddresses => $replyTo"] : []],
-                ...[! empty($tenant) ? ["Tenant => $tenant"] : []],
+               ...($replyTo ? ['ReplyToAddresses' => (array) $replyTo] : []),
+                ...(!empty($tenant) ? ['DefaultEmailTags' => array_filter([
+                    ['Name' => 'tenant', 'Value' => $tenant],
+                    ...($workflowId ? [['Name' => 'workflow_id', 'Value' => (string) $workflowId]] : []),
+                ])] : []),
             ];
 
             $response = $sesClient->sendBulkEmail($bulkEmailPayload);
