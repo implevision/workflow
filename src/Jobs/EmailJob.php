@@ -78,7 +78,7 @@ class EmailJob implements ShouldQueue
         try {
             \Log::info('WORKFLOW - SES Params', ['configurationSetName' => $configurationSetName, 'tenant' => $tenant]);
             \Log::info('WORKFLOW - Creating SES Request');
-            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc);
+            $messageId = SES::createRequest($from, $subject, $emailTemplate, $this->payload['payload'], $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc, $workflowId);
             \Log::info('WORKFLOW - SES Request created with Message ID: '.$messageId);
             WorkflowLog::where([
                 'job_workflow_id' => $jobWorkflowId,
