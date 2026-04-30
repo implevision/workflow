@@ -21,8 +21,6 @@ class RenewalPolicy extends AbstractSchema
      */
     protected $queryName;
 
-    protected int $page = 1;
-
     public function __construct()
     {
         $this->fieldMapping = $this->initializeFieldMapping();
@@ -95,9 +93,9 @@ class RenewalPolicy extends AbstractSchema
             'AgentEmail'              => $agent['agentEmail']         ?? '',
             'CompanyName'             => $agent['companyName']        ?? '',
             'CompanyAddress'          => $agent['companyAddress']     ?? '',
-            'companyPhoneNumber'      => $agent['companyPhoneNumber'] ?? '',
-            'logo'                    => $agent['logo']               ?? '',
-            'agentUrl'                => $agent['agentUrl']           ?? '',
+            'CompanyPhoneNumber'      => $agent['companyPhoneNumber'] ?? '',
+            'Logo'                    => $agent['logo']               ?? '',
+            'AgentUrl'                => $agent['agentUrl']           ?? '',
             'ExpiredRenewalListData'  => [],
             'ExpiringRenewalListData' => [],
         ];
@@ -126,8 +124,8 @@ class RenewalPolicy extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
-        // GraphQL schema — sirf query banane ke liye use hota hai.
-        // Data extraction getRecordsFromResponse() me hoti hai.
+        // GraphQL schema — used only for building the query.
+        // Data extraction happens in getRecordsFromResponse().
         $agentSchema = [
             [
                 'companyPhoneNumber' => null,
@@ -151,15 +149,15 @@ class RenewalPolicy extends AbstractSchema
         $expiringSchema = ['PoliciesExpiringIn15Days'    => $agentSchema];
         $bothSchema     = $expiredSchema + $expiringSchema;
 
-        // jqFilter nahi — data getRecordsFromResponse() se aata hai
+        // No jqFilter — data comes from getRecordsFromResponse()
         return [
             'AgentEmail'              => ['GraphQLschemaToReplace' => $bothSchema],
             'CompanyName'             => ['GraphQLschemaToReplace' => $bothSchema],
             'CompanyAddress'          => ['GraphQLschemaToReplace' => $bothSchema],
-            'companyPhoneNumber'      => ['GraphQLschemaToReplace' => $bothSchema],
-            'logo'                    => ['GraphQLschemaToReplace' => $bothSchema],
-            'agentUrl'                => ['GraphQLschemaToReplace' => $bothSchema],
-            'renewalListData'         => ['GraphQLschemaToReplace' => $bothSchema],
+            'CompanyPhoneNumber'      => ['GraphQLschemaToReplace' => $bothSchema],
+            'Logo'                    => ['GraphQLschemaToReplace' => $bothSchema],
+            'AgentUrl'                => ['GraphQLschemaToReplace' => $bothSchema],
+            'RenewalListData'         => ['GraphQLschemaToReplace' => $bothSchema],
             'ExpiredAgentEmail'       => ['GraphQLschemaToReplace' => $expiredSchema],
             'ExpiredCompanyName'      => ['GraphQLschemaToReplace' => $expiredSchema],
             'ExpiredCompanyAddress'   => ['GraphQLschemaToReplace' => $expiredSchema],
