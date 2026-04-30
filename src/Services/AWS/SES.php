@@ -123,7 +123,7 @@ class SES
             $response = $sesClient->sendBulkEmail($bulkEmailPayload);
 
             if ($jobWorkflowId) {
-                self::updateStat($jobWorkflowId, count($payload));
+                self::updateState($jobWorkflowId, count($payload));
             }
 
             $response = $response['BulkEmailEntryResults'][0];
@@ -140,7 +140,7 @@ class SES
         }
     }
 
-    public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [])
+    public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [], $workflowId = 0)
     {
         try {
             $sesClient = self::getSesClient();
@@ -202,7 +202,10 @@ class SES
                 ],
                 'FromEmailAddress' => $from,
                 ...($replyTo ? ['ReplyToAddresses' => (array) $replyTo] : []),
-                ...[! empty($tenant) ? ['Tenant' => $tenant] : []],
+                ...(!empty($tenant) ? ['EmailTags' => array_filter([
+                    ['Name' => 'tenant', 'Value' => $tenant],
+                    ...($workflowId ? [['Name' => 'workflow_id', 'Value' => (string) $workflowId]] : []),
+                ])] : []),
             ]);
 
             if ($jobWorkflowId) {
