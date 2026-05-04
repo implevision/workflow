@@ -24,7 +24,7 @@ class RenewalPolicy extends AbstractSchema
     public function __construct()
     {
         $this->fieldMapping = $this->initializeFieldMapping();
-        $this->queryName = 'PolicyRenewal';
+        $this->queryName = 'policyRenewal';
     }
 
     /**
@@ -63,8 +63,8 @@ class RenewalPolicy extends AbstractSchema
      */
     public function getRecordsFromResponse(array $response): array
     {
-        $expired  = $response['PolicyRenewal']['PoliciesExpiredInLast15Days']  ?? [];
-        $expiring = $response['PolicyRenewal']['PoliciesExpiringIn15Days']      ?? [];
+        $expired  = $response['policyRenewal']['PoliciesExpiredInLast15Days']  ?? [];
+        $expiring = $response['policyRenewal']['PoliciesExpiringIn15Days']      ?? [];
 
         $agentMap = [];
 
@@ -102,7 +102,7 @@ class RenewalPolicy extends AbstractSchema
     }
 
     /**
-     * Returns the date and days arguments required by PolicyRenewal query.
+     * Returns the date and days arguments required by policyRenewal query.
      * date = today's date (dynamic at runtime)
      * days = 15 (fixed renewal window)
      */
