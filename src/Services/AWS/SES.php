@@ -38,14 +38,14 @@ class SES
         return new SesV2Client($awsConfig);
     }
 
-    public static function createRequest($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo = [], $configurationSetName = '', $tenant = '')
+    public static function createRequest($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [])
     {
         $isRequireBulkEmailRequest = count($payload) > 1 ? true : false;
         try {
             if ($isRequireBulkEmailRequest) {
-                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
+                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc);
             } else {
-                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
+                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc);
             }
         } catch (\Exception $e) {
             throw new \Exception('Error sending email: '.$e->getMessage());
@@ -54,7 +54,7 @@ class SES
         return $messageId;
     }
 
-    public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')
+    public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [])
     {
         // If template has block helpers ({{#if}}, {{#each}}), SES inline TemplateContent
         // cannot process them. Fall back to per-recipient sendEmail() so renderTemplate()
@@ -99,6 +99,8 @@ class SES
             $bulkEmailEntries[] = [
                 'Destination' => [
                     'ToAddresses' => (array) $item['email'],
+                    ...($cc ? ['CcAddresses' => (array) $cc] : []),
+                    ...($bcc ? ['BccAddresses' => (array) $bcc] : []),
                 ],
                 'ReplacementEmailContent' => [
                     'ReplacementTemplate' => [
@@ -207,7 +209,7 @@ class SES
         return $content;
     }
 
-    public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')
+    public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [])
     {
         try {
             $sesClient = self::getSesClient();
@@ -261,6 +263,8 @@ class SES
                 ...(! empty($configurationSetName) ? ['ConfigurationSetName' => $configurationSetName] : []),
                 'Destination' => [
                     'ToAddresses' => (array) $recipient,
+                    ...($cc ? ['CcAddresses' => (array) $cc] : []),
+                    ...($bcc ? ['BccAddresses' => (array) $bcc] : []),
                 ],
                 'Content' => [
                     'Template' => [

@@ -72,7 +72,7 @@ class WorkflowRepository implements WorkflowRepositoryInterface
         return $this->model->where('id', $id)->restore() > 0;
     }
 
-    public function getMatchingWorkflow($entityType, $entityAction, $withDeleted = false): ?array
+    public function getMatchingWorkflow($entityType, $entityAction, $withDeleted = false, $entityUpdatedFields = []): ?array
     {
         $query = $this->model
             ->where('module', $entityType)
@@ -85,6 +85,22 @@ class WorkflowRepository implements WorkflowRepositoryInterface
                     ->orWhere('effective_action_to_execute_workflow', 'ODYSSEY_ACTION');
             })
             ->where('is_active', true)
+            ->where(function ($query) use ($entityUpdatedFields) {
+                $fieldNames = array_is_list($entityUpdatedFields)
+                    ? $entityUpdatedFields
+                    : array_keys($entityUpdatedFields);
+
+                $query->whereNull('field_to_observe')
+                    ->orWhere('field_to_observe', '');
+
+                if (! empty($fieldNames)) {
+                    $query->orWhere(function ($q) use ($fieldNames) {
+                        foreach ($fieldNames as $field) {
+                            $q->orWhereRaw('FIND_IN_SET(?, field_to_observe)', [$field]);
+                        }
+                    });
+                }
+            })
             ->with([
                 'conditions' => function ($query) use ($withDeleted) {
                     if ($withDeleted) {

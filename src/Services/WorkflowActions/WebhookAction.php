@@ -76,22 +76,26 @@ class WebhookAction extends AbstractWorkflowAction
      */
     public function getListOfRequiredData()
     {
-        // TODO: Need to come from DB. HARDCODED for farmers release
-        return [
-            'Type',
-            'DueDate',
-            'SubType',
-            'ReasonCode',
-            'CreatedAt',
-            'Task',
-            'DocumentName',
-            'PolicyNumber',
-            'SourceSystem',
-            'WyoAgencyAgentCode',
-            'PremiumDue',
-            'PremiumCapDiscountAmount',
-            'PolicyNumberWithoutPrefix',
+        $payload = $this->getPayload();
+        $extractedPlaceHolder = ! empty($payload['extractedPlaceholders']) ? $payload['extractedPlaceholders'] : [];
+
+        if (! empty($extractedPlaceHolder)) {
+            return $extractedPlaceHolder;
+        }
+
+        $searchIn = [
+            $payload['webhookRequestPayload'] ?? [],
+            $payload['webhookRequestHeaders'] ?? [],
+            $payload['webhookRequestUrl'] ?? '',
         ];
+
+        $placeholders = [];
+        array_walk_recursive($searchIn, function ($value) use (&$placeholders) {
+            preg_match_all('/{{\s*(.*?)\s*}}/', $value ?? '', $matches);
+            $placeholders = array_merge($placeholders, $matches[1]);
+        });
+
+        return array_unique($placeholders);
     }
 
     /**
@@ -105,12 +109,9 @@ class WebhookAction extends AbstractWorkflowAction
      */
     public function getListOfMandateData()
     {
-        // TODO: Need to come from DB. HARDCODED for farmers release
-        return [
-            'Type',
-            'SubType',
-            'PolicyNumberWithoutPrefix',
-        ];
+        $payload = $this->getPayload();
+
+        return ! empty($payload['mandatoryPlaceholders']) ? $payload['mandatoryPlaceholders'] : [];
     }
 
     /**

@@ -21,16 +21,19 @@ class InvokeMatchingWorkflowJob implements ShouldQueue
 
     public array $appendPlaceHolders;
 
+    public array $updatedFields;
+
     /**
      * Create a new event instance.
      */
-    public function __construct(int $entity, string $entityAction, string $entityType, array $data = [], array $appendPlaceHolders = [])
+    public function __construct(int $entity, string $entityAction, string $entityType, array $data = [], array $appendPlaceHolders = [], array $updatedFields = [])
     {
         $this->entity = $entity;
         $this->entityAction = $entityAction;
         $this->entityType = $entityType;
         $this->data = $data;
         $this->appendPlaceHolders = $appendPlaceHolders;
+        $this->updatedFields = $updatedFields;
     }
 
     /**
@@ -47,9 +50,19 @@ class InvokeMatchingWorkflowJob implements ShouldQueue
                 'type' => $this->entityType,
                 'data' => $this->data,
                 'appendPlaceHolders' => $this->appendPlaceHolders,
+                'updatedFields' => $this->updatedFields,
             ]);
 
-            $command = getCommandToDispatchMatchingWorkflow($this->entity, $this->entityAction, $this->entityType, $this->data, $this->appendPlaceHolders);
+            $workflowService = app()->make('Taurus\Workflow\Services\WorkflowService');
+            $parentClassService = $workflowService->getParentClassService();
+            $overrideEntityParams = $parentClassService->getParentEntity($this->entityType, $this->entity);
+
+            if (is_array($overrideEntityParams)) {
+                $this->entity = $overrideEntityParams['entity'] ?? $this->entity;
+                $this->entityType = $overrideEntityParams['entityType'] ?? $this->entityType;
+            }
+
+            $command = getCommandToDispatchMatchingWorkflow($this->entity, $this->entityAction, $this->entityType, $this->data, $this->appendPlaceHolders, $this->updatedFields);
             try {
                 Artisan::call($command['command'], $command['options']);
             } catch (\Exception $e) {

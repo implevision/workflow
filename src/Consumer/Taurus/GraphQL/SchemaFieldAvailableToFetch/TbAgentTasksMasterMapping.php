@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
+use Avatar\Infrastructure\Models\Api\v1\TbProduct;
 use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
@@ -395,16 +397,8 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             ],
 
             'TodaysDate' => [
-                'GraphQLschemaToReplace' => [
-                    'agentTask' => [
-                        'policyTransaction' => [
-                            'policy' => [
-                                'todaysDate' => null,
-                            ],
-                        ],
-                    ],
-                ],
-                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.policy.todaysDate',
+                'GraphQLschemaToReplace' => [],
+                'jqFilter' => '',
                 'parseResultCallback' => 'getTodaysDate',
             ],
 
@@ -1067,12 +1061,37 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                                     ],
                                 ],
                             ],
+                            'policyId' => null,
                         ],
                     ],
+
                 ],
-                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.brandedCompany[]',
+                'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction',
                 'parseResultCallback' => 'parseCompanyName',
             ],
+        ];
+
+        $fieldMapping['CompanyLogo'] = [
+            'GraphQLschemaToReplace' => [
+                'agentTask' => [
+                    'policyTransaction' => [
+                        'tbAccountMaster' => [
+                            'TbPersoninfo' => [
+                                'brandedCompany' => [
+                                    'company' => [
+                                        'logo' => null,
+                                        'publicLogo' => null,
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'policyId' => null,
+                    ],
+                ],
+
+            ],
+            'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction',
+            'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
@@ -1184,7 +1203,6 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             'jqFilter' => '.policyAgentTaskQuery?.agentTask?.policyTransaction?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
             'parseResultCallback' => 'getAgentPortalUrl',
         ];
-
 
         return $fieldMapping;
     }
@@ -1346,7 +1364,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             ->pluck('s_PolicyNoInitial') // Fetch the column values
             ->toArray();
 
-        $regex = '/^(' . implode('|', $policyNoInitials) . ')/';
+        $regex = '/^('.implode('|', $policyNoInitials).')/';
 
         return preg_replace($regex, '', $policyNumber);
     }
@@ -1355,6 +1373,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     {
         return Helper::getTodaysDate();
     }
+
     public function transactionSubTypeScreenNameResolver($policyData)
     {
         $policyTransaction = $policyData['policyTransaction'] ?? [];
@@ -1431,6 +1450,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     {
         return Helper::formatCurrency($amount);
     }
+
     public function parseBillTo($appCodeName)
     {
         $ddGroup = 'BILLTOFLOOD'; // TODO: Confirm whether 'BILLTO' should be used for non-flood products
@@ -1438,6 +1458,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         return $label;
     }
+
     public function parsePropertyAddress($addressArr)
     {
         return $this->parseAddress($addressArr);
@@ -1447,6 +1468,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     {
         return is_array($emailArr) && count($emailArr) ? (last($emailArr)['email'] ?? null) : null;
     }
+
     public function parseInsuredPersonPhone($phoneArr)
     {
         $phone = is_array($phoneArr) && count($phoneArr) ? (last($phoneArr)['phoneNumber'] ?? null) : null;
@@ -1456,12 +1478,13 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         return $phone;
     }
-     public function formatNumber($number)
+
+    public function formatNumber($number)
     {
         return Helper::formatNumber($number);
     }
 
-        private function parseAddress($addressArr)
+    private function parseAddress($addressArr)
     {
         if (empty($addressArr)) {
             return null;
@@ -1485,19 +1508,23 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         return implode(', ', $address);
     }
+
     public function parseMailingAddress($addressArr)
     {
         return $this->parseAddress($addressArr);
     }
+
     public function parsePrimaryMortgageeAddress($mortgagee)
     {
         return $this->parseAddress($mortgagee['mortgageeAddress'] ?? []);
     }
-     public function parseLoanNumber($mortgagee)
+
+    public function parseLoanNumber($mortgagee)
     {
         return $mortgagee['loanNumber'] ?? null;
     }
-        public function parsePaymentReceivedDate($data)
+
+    public function parsePaymentReceivedDate($data)
     {
         if (! is_array($data)) {
             return null;
@@ -1540,13 +1567,66 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         return $transactionDate ? $this->formatDate($transactionDate) : null;
     }
+
     public function parsePrimaryMortgageeName($mortgagee)
     {
         return $mortgagee['mortgageePersonInfo']['fullName'] ?? null;
     }
+
     public function parseAdditionalInsuredName($additionalInterest)
     {
         return $additionalInterest['additionalPersonInfo']['fullName'] ?? null;
+    }
+
+    public function parseCompanyName($response)
+    {
+        [$brandedCompanyArr, $policyId] = $this->extractPolicyContext($response);
+
+        $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
+        if (! empty($companyName)) {
+            return $companyName;
+        }
+
+        $policyData = TbPolicy::find($policyId);
+        $productId = $policyData?->n_ProductId_FK;
+        if (empty($productId)) {
+            return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+        }
+
+        $holdingCompanyId = TbProduct::find($productId)?->holding_company_id ?? null;
+        if (empty($holdingCompanyId)) {
+            return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+        }
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
+        if (! empty($holdingCompanyDetail['wyo'])) {
+            return $holdingCompanyDetail['wyo'];
+        }
+
+        return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+    }
+
+    public function resolveCompanyLogoUrl($response)
+    {
+        [$brandedCompanyArr, $policyId] = $this->extractPolicyContext($response);
+
+        return Helper::parseCompanyLogo($brandedCompanyArr, $policyId);
+    }
+
+    private function extractPolicyContext($response): array
+    {
+        $response = is_array($response) ? $response : [];
+        $brandedCompany = $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [];
+
+        if (! is_array($brandedCompany)) {
+            $brandedCompany = [];
+        } elseif (isset($brandedCompany[0]) && is_array($brandedCompany[0])) {
+            $brandedCompany = $brandedCompany[0];
+        }
+
+        return [
+            $brandedCompany,
+            $response['policyId'] ?? null,
+        ];
     }
 
     public function parsePaymentTransactionNumber($data)

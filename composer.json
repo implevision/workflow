@@ -30,5 +30,10 @@
   "require-dev": {
     "orchestra/testbench": "^9.14",
     "phpunit/phpunit": "^12.1"
+  },
+  "autoload-dev": {
+    "files": [
+      "tests/Stubs/AvatarModelsStub.php"
+    ]
   }
 }
