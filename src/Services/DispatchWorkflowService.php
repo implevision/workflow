@@ -290,7 +290,7 @@ class DispatchWorkflowService
                 }
 
                 if ($this->isManuallyInvoked) {
-                    $data = $this->data;
+                    $data[] = $this->data;
                 } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
                     // Build GraphQL query
                     try {

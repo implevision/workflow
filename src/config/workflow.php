@@ -79,10 +79,4 @@ return [
         'ses:SendBulkEmail' => 'Allows sending bulk emails (via SendBulkEmail API).',
         'ses:SendTemplatedEmail' => 'Allows sending templated emails.',
     ],
-
-    'modules' => [
-        'claim' => Avatar\Infrastructure\Models\Api\v1\TbClaim::class,
-        'policy' => Avatar\Infrastructure\Models\Api\v1\TbPotransaction::class,
-        'renewal' => Avatar\Infrastructure\Models\Api\v1\RenewalPolicy::class,
-    ],
 ];
