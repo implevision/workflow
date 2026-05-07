@@ -239,7 +239,7 @@ class UploadAsDocument
 
         $policyNo = DB::table('tb_policies as policy')
             ->where('n_PolicyNoId_PK', '=', $policyId)
-            ->value('policy.PolicyNo') ?? '';
+            ->value('policy.Policy_No') ?? '';
 
         return [
             'module' => $module,
