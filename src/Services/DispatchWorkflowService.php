@@ -43,6 +43,8 @@ class DispatchWorkflowService
 
     protected $appendPlaceHolders;
 
+    protected $page;
+
     protected $isManuallyInvoked = false;
 
     /**
@@ -51,7 +53,7 @@ class DispatchWorkflowService
      * @param  int  $workflowId  The ID of the workflow to be dispatched.
      * @param  int|string  $recordIdentifier  An optional identifier for the record, default is 0.
      */
-    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [])
+    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [], int $page = 1)
     {
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
@@ -59,6 +61,7 @@ class DispatchWorkflowService
         $this->recordIdentifier = $recordIdentifier;
         $this->data = $data;
         $this->appendPlaceHolders = $appendPlaceHolders;
+        $this->page = $page;
         $this->isManuallyInvoked = count($data) ? true : false;
         $this->getInfo();
     }
@@ -300,7 +303,9 @@ class DispatchWorkflowService
                             $graphQLSchemaBuilder->addField($placeHolder);
                         }
                         $schemaData = $graphQLSchemaBuilder->getSchema();
-                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery);
+                        $moduleClassForGraphQL->setPage($this->page);
+                        $queryArgs = $moduleClassForGraphQL->getQueryArgs();
+                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery, $queryArgs);
                     } catch (\Exception $e) {
                         $this->workflowService->addWorkflowLog(
                             $this->workflowId,
@@ -331,6 +336,14 @@ class DispatchWorkflowService
 
                         continue;
                     }
+
+                    // If schema provides custom record extraction, use it directly (skip jqFilter)
+                    if ($moduleClassForGraphQL->hasCustomRecordExtraction()) {
+                        foreach ($moduleClassForGraphQL->getRecordsFromResponse($response) as $record) {
+                            $record = array_merge($record, $placeHolderWithValues);
+                            $data[] = $record;
+                        }
+                    } else {
 
                     $parsedData = [];
 
@@ -384,7 +397,7 @@ class DispatchWorkflowService
                         if ($actionType == 'WEB_HOOK') {
                             $data = $this->generatePayloadFromParsedData($parsedData);
                         } else {
-                            // SET DATA FOP ACTION
+                            // SET DATA FOR ACTION
                             $data[] = $parsedData;
                         }
                     } catch (\Exception $e) {
@@ -405,6 +418,7 @@ class DispatchWorkflowService
 
                         continue;
                     }
+                    } // end else (jqFilter path)
                 }
 
                 if (config('app.env') != 'production') {
