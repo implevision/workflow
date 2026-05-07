@@ -290,6 +290,21 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'getInsuredPortalUrl',
         ];
 
+        $fieldMapping['AdjusterEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'adjuster' => [
+                    'TbPersonInfo' => [
+                        'emailInfo' => [
+                            'email' => null,
+                            'isDefault' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '[.claim.adjuster.TbPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
+            'parseResultCallback' => 'parseAdjustingFirmEmail',
+        ];
+
         return $fieldMapping;
     }
 
