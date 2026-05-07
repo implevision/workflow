@@ -83,10 +83,16 @@ class WorkflowService
                     $instanceActions = $condition['instanceActions'] ?? [];
                     unset($condition['instanceActions']);
                     unset($condition['id']);
+                    $notes = $condition['notes'] ?? null;
+                    unset($condition['notes']);
+                    $status = isset($condition['status']) ? (int) $condition['status'] : 1;
+                    unset($condition['status']);
 
                     $conditionEntry = $this->workflowConditionRepo->create([
                         'workflow_id' => $workflow->id,
                         'conditions' => $condition ?? [],
+                        'notes' => $notes,
+                        'status' => $status,
                     ]);
 
                     // Save workflow actions related to the condition
@@ -147,6 +153,8 @@ class WorkflowService
                 'applyRuleTo' => $applyRuleTo,
                 's3FilePath' => $conditions['s3FilePath'] ?? null,
                 'applyConditionRules' => $conditions['applyConditionRules'] ?? [],
+                'notes' => $condition->notes ?? '',
+                'status' => $condition->status ?? 1,
                 'instanceActions' => $condition->actions->map(function ($action) {
                     $payload = $action->payload ?? [];
 
@@ -215,18 +223,26 @@ class WorkflowService
 
                     $conditionId = $condition['id'] ?? null;
                     unset($condition['id']);
+                    $notes = $condition['notes'] ?? null;
+                    unset($condition['notes']);
+                    $status = isset($condition['status']) ? (int) $condition['status'] : 1;
+                    unset($condition['status']);
 
                     // Update or Create Condition
                     if (! empty($conditionId)) {
                         $conditionEntry = $this->workflowConditionRepo->update($conditionId, [
                             'workflow_id' => $workflow->id,
                             'conditions' => $condition ?? [],
+                            'notes' => $notes,
+                            'status' => $status,
                         ]);
                         $newConditionIds[] = $conditionId;
                     } else {
                         $conditionEntry = $this->workflowConditionRepo->create([
                             'workflow_id' => $workflow->id,
                             'conditions' => $condition ?? [],
+                            'notes' => $notes,
+                            'status' => $status,
                         ]);
                         $newConditionIds[] = $conditionEntry->id;
                     }

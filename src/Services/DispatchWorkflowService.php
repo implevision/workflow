@@ -168,6 +168,11 @@ class DispatchWorkflowService
         }
 
         foreach ($allConditions as $condition) {
+            if (isset($condition['status']) && (int) $condition['status'] === 0) {
+                \Log::info('WORKFLOW - Condition skipped (inactive): '.($condition['id'] ?? ''));
+                continue;
+            }
+
             $feedFile = '';
             $data = [];
 

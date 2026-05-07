@@ -11,6 +11,8 @@ class WorkflowConditionData extends Data
         public ?int $id,
         public string $applyRuleTo,
         public ?string $s3FilePath,
+        public ?string $notes,
+        public int $status,
         public array $applyConditionRules,
         public array $instanceActions
     ) {}
@@ -35,8 +37,10 @@ class WorkflowConditionData extends Data
         return new self(
             id: $data['id'] ?? null,
             applyRuleTo: $data['applyRuleTo'] ?? '',
-            applyConditionRules: $data['applyConditionRules'] ?? [],
             s3FilePath: $data['s3FilePath'] ?? null,
+            notes: $data['notes'] ?? null,
+            status: isset($data['status']) ? (int) $data['status'] : 1,
+            applyConditionRules: $data['applyConditionRules'] ?? [],
             instanceActions: InstanceActionData::mapByActionType(
                 $data['instanceActions'] ?? []
             )
