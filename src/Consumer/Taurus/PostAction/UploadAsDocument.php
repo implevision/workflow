@@ -233,7 +233,7 @@ class UploadAsDocument
     public static function getAgentTasksMappingModuleAndReferenceNo(object $recordInfo, string $module): array
     {
         $policyId = DB::table('tb_agent_tasks_master as atm')
-            ->leftJoin('tb_agent_tasks_master_mapping as atmm', 'atmm.n_AgentTasksMaster_PK', '=', 'atm.id')
+            ->leftJoin('tb_agent_tasks_master_mapping as atmm', 'atmm.agent_tasks_masters_id', '=', 'atm.id')
             ->where('atmm.id', '=', $recordInfo->id)
             ->value('atm.policymaster_FK');
 
