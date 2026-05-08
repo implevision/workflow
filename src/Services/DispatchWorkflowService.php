@@ -399,7 +399,12 @@ class DispatchWorkflowService
                         }
 
                         $parsedData = array_merge($parsedData, $placeHolderWithValues);
+                        $hasAtLeastOneValue = ! empty(array_filter($parsedData, fn ($v) => $v !== null && $v !== '' && $v !== false && $v !== 'null'));
 
+                        if ($this->recordIdentifier && ! empty($parsedData) && ! $hasAtLeastOneValue) {
+                            \Log::warning('WORKFLOW -  Data unavailable or all required fields are empty');
+                            break 2;
+                        }
                         if ($actionType == 'WEB_HOOK') {
                             $data = $this->generatePayloadFromParsedData($parsedData);
                         } else {
@@ -600,7 +605,9 @@ class DispatchWorkflowService
         }
 
         if (! $totalPayloadToGenerate) {
-            return $parsedData;
+            // All values are scalars wrap so callers always get an array-of-rows,
+            // consistent with the multi-value path below.
+            return [$parsedData];
         }
 
         $payload = [];

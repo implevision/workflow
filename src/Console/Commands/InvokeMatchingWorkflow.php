@@ -22,7 +22,7 @@ class InvokeMatchingWorkflow extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:invoke-matching-workflow {--Entity=} {--EntityAction=} {--EntityType=} {--EntityData=} {--EntityPlaceHoldersToAppend=} {--referenceId=}';
+    protected $signature = 'taurus:invoke-matching-workflow {--Entity=} {--EntityAction=} {--EntityType=} {--EntityData=} {--EntityPlaceHoldersToAppend=} {--EntityUpdatedFields=} {--EntityReferenceId=}';
 
     /**
      * The console command description.
@@ -44,7 +44,9 @@ class InvokeMatchingWorkflow extends Command
         $entityData = $entityData ? json_decode($entityData, true) : [];
         $entityPlaceHoldersToAppend = $this->option('EntityPlaceHoldersToAppend');
         $entityPlaceHoldersToAppend = $entityPlaceHoldersToAppend ? json_decode($entityPlaceHoldersToAppend, true) : [];
-        $referenceId = $this->option('referenceId');
+        $referenceId = $this->option('EntityReferenceId');
+        $entityUpdatedFields = $this->option('EntityUpdatedFields');
+        $entityUpdatedFields = $entityUpdatedFields ? json_decode($entityUpdatedFields, true) : [];
 
         if (empty($entity) || empty($entityAction) || empty($entityType)) {
             $errorMessage = 'WORKFLOW - Entity, EntityAction and EntityType are required.';
@@ -60,7 +62,7 @@ class InvokeMatchingWorkflow extends Command
         setModuleForCurrentWorkflow($entityType);
 
         try {
-            $matchedWorkflow = $this->workflowService->getMatchingWorkflow($entityType, $entityAction, $entity);
+            $matchedWorkflow = $this->workflowService->getMatchingWorkflow($entityType, $entityAction, $entityUpdatedFields);
         } catch (\Exception $e) {
             $errorMessage = 'WORKFLOW - Error finding match workflow for EntityType: '.$entityType.', EntityAction: '.$entityAction.', Entity: '.$entity.': '.$e->getMessage();
             Log::error($errorMessage);

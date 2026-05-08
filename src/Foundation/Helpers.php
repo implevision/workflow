@@ -196,10 +196,11 @@ function gitCommandToDispatchManualWorkflow(
     ];
 }
 
-function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [])
+function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [], $updatedFields = [])
 {
     $entityData = json_encode((array) $entityData);
     $appendPlaceHolders = json_encode((array) $appendPlaceHolders);
+    $updatedFields = json_encode((array) $updatedFields);
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
 
@@ -208,7 +209,7 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
             'options' => [
                 'commandname' => 'taurus:invoke-matching-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders"],
+                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders", "EntityUpdatedFields=$updatedFields"],
             ],
         ];
     } else {
@@ -220,6 +221,7 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
                 '--EntityType' => $entityType,
                 '--EntityData' => $entityData,
                 '--EntityPlaceHoldersToAppend' => $appendPlaceHolders,
+                '--EntityUpdatedFields' => $updatedFields,
             ],
         ];
     }

@@ -379,30 +379,32 @@ class WorkflowService
     }
 
     /**
-     * Retrieves the matching workflow for the given entity type, entity action, and entity.
+     * Retrieves the matching workflow based on the provided entity type, action, entity instance,
+     * and optionally, the updated fields of the entity.
      *
-     * @param  string  $entityType  The type of the entity.
-     * @param  string  $entityAction  The action performed on the entity.
-     * @param  mixed  $entity  The entity object.
-     * @return array|bool The matching workflow, or false if no matching workflow is found.
+     * @param  string  $entityType  The type of the entity to match the workflow against.
+     * @param  string  $entityAction  The action performed on the entity (e.g., create, update, delete).
+     * @param  mixed  $entity  The entity instance to evaluate.
+     * @param  array  $entityUpdatedFields  (optional) The fields of the entity that were updated.
+     * @return bool|array Returns an array with workflow ids if a match is found, or false otherwise.
      */
-    public function getMatchingWorkflow($entityType, $entityAction, $entity): bool|array
+    public function getMatchingWorkflow($entityType, $entityAction, $entityUpdatedFields = []): bool|array
     {
-        $matchedWorkflow = $this->workflowRepo->getMatchingWorkflow($entityType, $entityAction);
+        $matchedWorkflow = $this->workflowRepo->getMatchingWorkflow($entityType, $entityAction, false, $entityUpdatedFields);
         if (empty($matchedWorkflow)) {
             return false;
         }
 
-        return $this->findMatchingWorkflowForEntity($entityType, $entity, $matchedWorkflow);
+        return $this->findMatchingWorkflowForEntity($matchedWorkflow);
     }
 
     /**
-     * Finds the matching workflow for the given entity.
+     * Finds and returns the matching workflow(s) for the given entity.
      *
-     * @param  mixed  $entity  The entity to find the matching workflow for.
-     * @param  mixed  $matchedWorkflow  The matched workflow for the entity.
+     * @param  mixed  $matchedWorkflow  The workflow or criteria used to find the matching workflow(s).
+     * @return array The array of matching workflows for the specified entity.
      */
-    public function findMatchingWorkflowForEntity($entityType, $entity, $matchedWorkflow): array
+    public function findMatchingWorkflowForEntity($matchedWorkflow): array
     {
         $workflowToRun = [];
         foreach ($matchedWorkflow as $workflow) {
@@ -608,6 +610,22 @@ class WorkflowService
             }
 
             return $consumerService->getPostActionService();
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return new stdClass;
+        }
+    }
+
+    public function getParentClassService()
+    {
+        try {
+            $consumerService = $this->getConsumerService();
+            if ($consumerService instanceof \stdClass) {
+                return new stdClass;
+            }
+
+            return $consumerService->getParentClassService();
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 

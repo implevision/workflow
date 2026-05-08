@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Services\WorkflowActions\Helpers;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Facades\Log;
 
 class Http
 {
@@ -27,8 +28,8 @@ class Http
         $options = ['headers' => $headers];
 
         if (config('app.env') != 'production') {
-            \Log::info('WORKFLOW - Request header.', $headers);
-            \Log::info('WORKFLOW - Request body.', $body);
+            Log::info('WORKFLOW - Request header.', $headers);
+            Log::info('WORKFLOW - Request body.', $body);
         }
 
         $contentType = strtolower($headers['Content-Type']);
@@ -46,10 +47,16 @@ class Http
         try {
             $response = $client->request($method, $url, $options);
 
-            \Log::info('WORKFLOW - Response status code: '.$response->getStatusCode());
-            \Log::info('WORKFLOW - Response ', json_decode($response->getBody(), true));
+            $responseBody = json_decode($response->getBody(), true);
 
-            return json_decode($response->getBody(), true);
+            Log::info('WORKFLOW - Response status code: '.$response->getStatusCode());
+            if ($responseBody === null) {
+                Log::warning('WORKFLOW - Response body is empty or not valid JSON.');
+            } else {
+                Log::info('WORKFLOW - Response ', $responseBody);
+            }
+
+            return $responseBody;
         } catch (RequestException $e) {
             throw new \Exception('HTTP Request failed: '.$e->getMessage());
         }
