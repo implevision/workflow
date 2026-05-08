@@ -22,7 +22,7 @@ class WorkflowCondition extends Model
         parent::__construct($attributes);
 
         $prefix = getTablePrefix();
-        $this->table = 'tb_taurus_workflow_conditions';
+        $this->table = $prefix.'_workflow_conditions';
     }
 
     public function workflow()
