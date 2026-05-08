@@ -196,7 +196,7 @@ function gitCommandToDispatchManualWorkflow(
     ];
 }
 
-function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [], $updatedFields = [])
+function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [], $updatedFields = [], ?string $referenceId = null)
 {
     $entityData = json_encode((array) $entityData);
     $appendPlaceHolders = json_encode((array) $appendPlaceHolders);
@@ -204,25 +204,35 @@ function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityTyp
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
 
+        $options = ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders", "EntityUpdatedFields=$updatedFields"];
+        if ($referenceId !== null) {
+            $options[] = "EntityReferenceId=$referenceId";
+        }
+
         return [
             'command' => 'tenants:run',
             'options' => [
                 'commandname' => 'taurus:invoke-matching-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders", "EntityUpdatedFields=$updatedFields"],
+                '--option' => $options,
             ],
         ];
     } else {
+        $options = [
+            '--EntityAction' => $entityAction,
+            '--Entity' => $entity,
+            '--EntityType' => $entityType,
+            '--EntityData' => $entityData,
+            '--EntityPlaceHoldersToAppend' => $appendPlaceHolders,
+            '--EntityUpdatedFields' => $updatedFields,
+        ];
+        if ($referenceId !== null) {
+            $options['--EntityReferenceId'] = $referenceId;
+        }
+
         return [
             'command' => 'taurus:invoke-matching-workflow',
-            'options' => [
-                '--EntityAction' => $entityAction,
-                '--Entity' => $entity,
-                '--EntityType' => $entityType,
-                '--EntityData' => $entityData,
-                '--EntityPlaceHoldersToAppend' => $appendPlaceHolders,
-                '--EntityUpdatedFields' => $updatedFields,
-            ],
+            'options' => $options,
         ];
     }
 }
