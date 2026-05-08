@@ -6,6 +6,7 @@ use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 use Taurus\Workflow\Services\WorkflowActions\EmailAction;
+use Taurus\Workflow\Services\WorkflowActions\WorkflowOutputAction;
 
 /**
  * Class DispatchManualWorkflowService
@@ -94,6 +95,17 @@ class DispatchManualWorkflowService
                         $actionToExecute->handle();
                     } catch (\Exception $e) {
                         \Log::error('MANUAL WORKFLOW - Error initiating email action: '.$e->getMessage());
+
+                        continue 2;
+                    }
+                    break;
+
+                case 'WORKFLOW_OUTPUT':
+                    try {
+                        $actionToExecute = new WorkflowOutputAction($actionType, $actionPayload);
+                        $actionToExecute->handle();
+                    } catch (\Exception $e) {
+                        \Log::error('MANUAL WORKFLOW - Error initiating workflow output action: '.$e->getMessage());
 
                         continue 2;
                     }
