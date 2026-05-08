@@ -154,7 +154,7 @@ class WorkflowService
                 's3FilePath' => $conditions['s3FilePath'] ?? null,
                 'applyConditionRules' => $conditions['applyConditionRules'] ?? [],
                 'notes' => $condition->notes ?? '',
-                'status' => $condition->status ?? 1,
+                'status' => (bool) ($condition->status ?? true),
                 'instanceActions' => $condition->actions->map(function ($action) {
                     $payload = $action->payload ?? [];
 
@@ -258,7 +258,7 @@ class WorkflowService
                             $actionId = $action['id'] ?? null;
                             unset($action['id']); // unset if exist
 
-                            if (! empty($action['id'])) {
+                            if (! empty($actionId)) {
                                 $this->workflowActionRepo->update($actionId, [
                                     'condition_id' => $conditionEntry->id,
                                     'payload' => $action ?? [],
