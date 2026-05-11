@@ -27,7 +27,7 @@ class WorkflowSeeder extends Command
      */
     protected $description = 'Seed all the required details for a workflow to work.';
 
-    protected $initialFilePath = 'seeders/workflow';
+    protected $initialFilePath = 'seeders/Workflow';
 
     protected $workflowService;
 
