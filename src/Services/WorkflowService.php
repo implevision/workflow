@@ -258,7 +258,7 @@ class WorkflowService
                             $actionId = $action['id'] ?? null;
                             unset($action['id']); // unset if exist
 
-                            if (! empty($actionId)) {
+                            if (! empty($action['id'])) {
                                 $this->workflowActionRepo->update($actionId, [
                                     'condition_id' => $conditionEntry->id,
                                     'payload' => $action ?? [],
