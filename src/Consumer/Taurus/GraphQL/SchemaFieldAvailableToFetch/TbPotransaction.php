@@ -693,6 +693,41 @@ class TbPotransaction extends AbstractSchema
                 ',
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
+            'AttachRenewalNotice' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'docuploadinfo' => [
+                            'doctypes' => [
+                                'docTypeCode' => null,
+                            ],
+                            'docUploadDocInfoRel' => [
+                                'docUploadReference' => [
+                                    'tableRefId' => null,
+                                ],
+                                'docInfo' => [
+                                    'docPath' => null,
+                                    'docName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '
+                [
+                      .policyQuery?.policy?.docuploadinfo[]?
+                      | select(.doctypes?.docTypeCode? == "RENEWALNOTICE")
+                      | .docUploadDocInfoRel[]?
+                      | .docUploadReference?.tableRefId? as $tableRefId
+                      | .docInfo[]?
+                      | {
+                          name: .docName?,
+                          path: .docPath?,
+                          tableRefId: $tableRefId
+                        }
+                    ]
+                ',
+                'parseResultCallback' => 'generatePresignedUrl',
+            ],
             'PaymentTransactionNumber' => [
                 'GraphQLschemaToReplace' => [
                     'id' => null,
@@ -900,7 +935,7 @@ class TbPotransaction extends AbstractSchema
         }
 
         $address = [
-            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'addressLine1' => ($addressArr['houseNo'] ?? '') . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
             'city' => $addressArr['tbCity']['name'] ?? null,
             // 'county' => $addressArr['tbCounty']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
@@ -908,7 +943,7 @@ class TbPotransaction extends AbstractSchema
         ];
 
         if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
-            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
+            $address['postalCode'] .= ' - ' . $addressArr['postalCodeSuffix'];
         }
 
         $address = array_filter(array_map('trim', $address), function ($item) {
