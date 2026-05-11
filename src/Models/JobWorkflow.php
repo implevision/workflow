@@ -20,6 +20,7 @@ class JobWorkflow extends Model
     public const STATUS_FAILED = 'FAILED';
 
     protected $fillable = [
+        'tenant_id',
         'workflow_id',
         'batch_id',
         'status',

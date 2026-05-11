@@ -13,6 +13,7 @@ class Workflow extends Model
     protected $table;
 
     protected $fillable = [
+        'tenant_id',
         'module',
         'name',
         'description',

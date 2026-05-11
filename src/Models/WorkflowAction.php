@@ -12,6 +12,7 @@ class WorkflowAction extends Model
     protected $table;
 
     protected $fillable = [
+        'tenant_id',
         'condition_id',
         'payload',
     ];

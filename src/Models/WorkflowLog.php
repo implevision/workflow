@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class WorkflowLog extends Model
 {
     protected $fillable = [
+        'tenant_id',
         'workflow_id',
         'record_identifier',
         'module',
