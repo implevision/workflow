@@ -99,6 +99,12 @@ class TbPotransaction extends AbstractSchema
                 'jqFilter' => '.policyQuery',
                 'parseResultCallback' => 'parsePremiumDue',
             ],
+            'PolicyFees' => [
+                'GraphQLschemaToReplace' => [
+                    'policyFees' => null,
+                ],
+                'jqFilter' => '.policyQuery.policyFees',
+            ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
                     'policy' => [
