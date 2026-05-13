@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class WorkflowLog extends Model
 {
+    //tenant_id is for Nova, it is ignored for odyssey
     protected $fillable = [
         'tenant_id',
         'workflow_id',

@@ -18,7 +18,7 @@ class JobWorkflow extends Model
     public const STATUS_COMPLETED = 'COMPLETED';
 
     public const STATUS_FAILED = 'FAILED';
-
+    //tenant_id is for Nova, it is ignored for odyssey
     protected $fillable = [
         'tenant_id',
         'workflow_id',
