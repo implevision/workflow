@@ -305,7 +305,7 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'parseAdjustingFirmEmail',
         ];
 
-        $fieldMapping['AdjusterChanged'] = [
+        $fieldMapping['AttachClaimAssignmentForm'] = [
             'GraphQLschemaToReplace' => [
                 'docuploadinfo' => [
                     'uploadDate' => null,
