@@ -25,6 +25,7 @@ class Workflow extends Model
         'workflow_execution_frequency',
         'is_active',
         'aws_event_bridge_arn',
+        'field_to_observe',
     ];
 
     protected $casts = [
