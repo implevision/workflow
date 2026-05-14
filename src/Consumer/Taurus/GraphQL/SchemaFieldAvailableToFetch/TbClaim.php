@@ -350,7 +350,7 @@ class TbClaim extends AbstractSchema
         return Helper::formatDate($dateToFormat);
     }
 
-     private function parseAddress($addressArr)
+    private function parseAddress($addressArr)
     {
         if (empty($addressArr)) {
             return null;
