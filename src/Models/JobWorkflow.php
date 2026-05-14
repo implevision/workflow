@@ -27,6 +27,7 @@ class JobWorkflow extends Model
         'total_no_of_records_to_execute',
         'total_no_of_records_executed',
         'response',
+        'reference_id',
     ];
 
     protected $casts = [
