@@ -305,6 +305,43 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'parseAdjustingFirmEmail',
         ];
 
+        $fieldMapping['AttachClaimAssignmentForm'] = [
+            'GraphQLschemaToReplace' => [
+                'docuploadinfo' => [
+                    'uploadDate' => null,
+                    'doctypes' => [
+                        'docTypeCode' => null,
+                    ],
+                    'docUploadDocInfoRel' => [
+                        'docUploadReference' => [
+                            'tableRefId' => null,
+                        ],
+                        'docInfo' => [
+                            'docPath' => null,
+                            'docName' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '
+                [
+                    .claim.docuploadinfo[]
+                    | select(.doctypes.docTypeCode == "ASSIGNMENTS")
+                    | .uploadDate as $uploadDate
+                    | .docUploadDocInfoRel[]
+                    | .docUploadReference.tableRefId as $tableRefId
+                    | .docInfo[]
+                    | {
+                        name: .docName,
+                        path: .docPath,
+                        tableRefId: $tableRefId,
+                        uploadDate: $uploadDate
+                      }
+                ] | sort_by(.uploadDate) | reverse | .[0:1]
+            ',
+            'parseResultCallback' => 'parseAssignmentDocument',
+        ];
+
         return $fieldMapping;
     }
 
@@ -447,5 +484,30 @@ class TbClaim extends AbstractSchema
         $tenant = getTenant();
 
         return sprintf('%s%s%s', ucfirst(substr($tenant, 0, 1)), $holdingCompanyDetail['naic_number'], $referenceNo);
+    }
+
+    public static function formatFileName(?string $fileName): string
+    {
+        if (empty($fileName)) {
+            return '';
+        }
+
+        return pathinfo($fileName, PATHINFO_FILENAME);
+    }
+
+    public function generatePresignedUrl(array $documents): array
+    {
+        return array_values(array_map(
+            function ($doc) {
+                return [
+                    'name' => $this->formatFileName($doc['name']),
+                    'path' => Helper::generatePresignedUrl($doc['path']),
+                ];
+            },
+            array_filter($documents, function ($doc) {
+                return isset($doc['tableRefId'], $doc['name'])
+                    && str_contains($doc['name'], (string) $doc['tableRefId']);
+            })
+        ));
     }
 }
