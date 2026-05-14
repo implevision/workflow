@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
+use Avatar\Infrastructure\Models\Api\v1\TbProduct;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbPotransaction extends AbstractSchema
@@ -96,6 +98,12 @@ class TbPotransaction extends AbstractSchema
                 ],
                 'jqFilter' => '.policyQuery',
                 'parseResultCallback' => 'parsePremiumDue',
+            ],
+            'PolicyFees' => [
+                'GraphQLschemaToReplace' => [
+                    'policyFees' => null,
+                ],
+                'jqFilter' => '.policyQuery.policyFees',
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
@@ -642,9 +650,58 @@ class TbPotransaction extends AbstractSchema
                             ],
                         ],
                     ],
+                    'policyId' => null,
                 ],
-                'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
+                'jqFilter' => '.policyQuery',
                 'parseResultCallback' => 'parseCompanyName',
+            ],
+            'CompanyEmail' => [
+                'GraphQLschemaToReplace' => [
+                    'tbAccountMaster' => [
+                        'TbPersoninfo' => [
+                            'brandedCompany' => [
+                                'company' => [
+                                    'companyEmail' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                    'policyId' => null,
+                ],
+                'jqFilter' => '.policyQuery',
+                'parseResultCallback' => 'parseCompanyEmail',
+            ],
+            'CompanyPhone' => [
+                'GraphQLschemaToReplace' => [
+                    'tbAccountMaster' => [
+                        'TbPersoninfo' => [
+                            'brandedCompany' => [
+                                'company' => [
+                                    'companyPhone' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                    'policyId' => null,
+                ],
+                'jqFilter' => '.policyQuery',
+                'parseResultCallback' => 'parseCompanyPhone',
+            ],
+            'CompanyAddress' => [
+                'GraphQLschemaToReplace' => [
+                    'tbAccountMaster' => [
+                        'TbPersoninfo' => [
+                            'brandedCompany' => [
+                                'company' => [
+                                    'companyAddress' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                    'policyId' => null,
+                ],
+                'jqFilter' => '.policyQuery',
+                'parseResultCallback' => 'parseCompanyAddress',
             ],
             'AttachPaymentReceipt' => [
                 'GraphQLschemaToReplace' => [
@@ -836,8 +893,9 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
+                'policyId' => null,
             ],
-            'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.brandedCompany[]',
+            'jqFilter' => '.policyQuery',
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
@@ -896,7 +954,7 @@ class TbPotransaction extends AbstractSchema
         }
 
         $address = [
-            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'addressLine1' => ($addressArr['houseNo'] ?? '') . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
             'city' => $addressArr['tbCity']['name'] ?? null,
             // 'county' => $addressArr['tbCounty']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
@@ -904,7 +962,7 @@ class TbPotransaction extends AbstractSchema
         ];
 
         if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
-            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
+            $address['postalCode'] .= ' - ' . $addressArr['postalCodeSuffix'];
         }
 
         $address = array_filter(array_map('trim', $address), function ($item) {
@@ -993,21 +1051,53 @@ class TbPotransaction extends AbstractSchema
         return Helper::formatNumber($number);
     }
 
-    public function parseCompanyName($brandedCompanyArr)
+    public function parseCompanyName($response)
     {
-        // Ensure we are working with an array and 'company' key exists and is an array
-        if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
-            $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
-            if (! empty($companyName)) {
-                return $companyName;
-            }
+        return $this->resolveCompanyDetail($response, 'companyName', 'wyo');
+    }
+
+    public function parseCompanyEmail($response)
+    {
+        return $this->resolveCompanyDetail($response, 'companyEmail', 'company_email');
+    }
+
+    public function parseCompanyPhone($response)
+    {
+        return $this->resolveCompanyDetail($response, 'companyPhone', 'company_phone');
+    }
+
+    public function parseCompanyAddress($response)
+    {
+        return $this->resolveCompanyDetail($response, 'companyAddress', 'company_address');
+    }
+
+    private function resolveCompanyDetail($response, string $companyKey, string $holdingKey): string
+    {
+        [$brandedCompanyArr, $policyId] = $this->extractPolicyContext($response);
+
+        $value = $brandedCompanyArr['company'][$companyKey] ?? null;
+        if (! empty($value)) {
+            return $value;
         }
 
-        // Fallback to holding company name if not found
-        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+        $productId = TbPolicy::find($policyId)?->n_ProductId_FK;
+        if (empty($productId)) {
+            return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
+        }
 
-        return $holdingCompanyDetail['wyo'] ?? '';
+        $holdingCompanyId = TbProduct::find($productId)?->holding_company_id ?? null;
+        if (empty($holdingCompanyId)) {
+            return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
+        }
+
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
+        if (! empty($holdingCompanyDetail[$holdingKey])) {
+            return $holdingCompanyDetail[$holdingKey];
+        }
+
+        return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
     }
+
 
     public function transactionSubTypeScreenNameResolver($policyData)
     {
@@ -1118,9 +1208,28 @@ class TbPotransaction extends AbstractSchema
         return pathinfo($fileName, PATHINFO_FILENAME);
     }
 
-    public function resolveCompanyLogoUrl($brandedCompanyArr)
+    public function resolveCompanyLogoUrl($response)
     {
-        return Helper::parseCompanyLogo($brandedCompanyArr);
+        [$brandedCompanyArr, $policyId] = $this->extractPolicyContext($response);
+
+        return Helper::parseCompanyLogo($brandedCompanyArr, $policyId);
+    }
+
+    private function extractPolicyContext($response): array
+    {
+        $response = is_array($response) ? $response : [];
+        $brandedCompany = $response['tbAccountMaster']['TbPersoninfo']['brandedCompany'] ?? [];
+
+        if (! is_array($brandedCompany)) {
+            $brandedCompany = [];
+        } elseif (isset($brandedCompany[0]) && is_array($brandedCompany[0])) {
+            $brandedCompany = $brandedCompany[0];
+        }
+
+        return [
+            $brandedCompany,
+            $response['policyId'] ?? null,
+        ];
     }
 
     public function getInsuredPortalUrl($insuredPortal)

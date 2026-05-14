@@ -10,8 +10,9 @@ class WorkflowAction extends Model
     use SoftDeletes;
 
     protected $table;
-
+    //tenant_id is for Nova, it is ignored for odyssey
     protected $fillable = [
+        'tenant_id',
         'condition_id',
         'payload',
     ];
