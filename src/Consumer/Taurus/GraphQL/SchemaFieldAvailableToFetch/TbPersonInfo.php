@@ -371,7 +371,7 @@ class TbPersonInfo extends AbstractSchema
         return [
             'UserId' => $user['id'] ?? null,
             'UserScreenName' => $user['screenName'] ?? null,
-            'UserLevelName' => $user['level']['UserLevel_Name'] ?? null,
+            'UserLevelName' => $user['level']['userLevelName'] ?? null,
         ];
     }
 
