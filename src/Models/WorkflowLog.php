@@ -4,9 +4,20 @@ namespace Taurus\Workflow\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int|null $workflow_id
+ * @property int|null $record_identifier
+ * @property string|null $module
+ * @property string|null $status
+ * @property int|null $job_workflow_id
+ * @property string|null $action_type
+ * @property int|null $action_track_id
+ * @property string|null $error
+ * @property \Carbon\Carbon|null $created_at
+ */
 class WorkflowLog extends Model
 {
-    //tenant_id is for Nova, it is ignored for odyssey
+    // tenant_id is for Nova, it is ignored for odyssey
     protected $fillable = [
         'tenant_id',
         'workflow_id',
