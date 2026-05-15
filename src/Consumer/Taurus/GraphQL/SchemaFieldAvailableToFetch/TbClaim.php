@@ -339,7 +339,7 @@ class TbClaim extends AbstractSchema
                       }
                 ] | sort_by(.uploadDate) | reverse | .[0:1]
             ',
-            'parseResultCallback' => 'parseAssignmentDocument',
+            'parseResultCallback' => 'generatePresignedUrl',
         ];
 
         return $fieldMapping;
