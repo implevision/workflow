@@ -181,10 +181,26 @@ class WebhookAction extends AbstractWorkflowAction
 
     private function updateHeadersWithAuthResponse($webhookRequestHeaders)
     {
-        // GET UPDATED PAYLOAD WITH AUTH RESPONSE
         $payload = $this->getPayload();
+        $authResponse = $payload['authResponse'] ?? [];
+        $flattenedAuthResponse = is_array($authResponse) ? $this->flattenArray($authResponse) : $authResponse;
 
-        // TODO: add support for multilevel auth token extraction.
-        return $this->replacePlaceholders($webhookRequestHeaders, $payload['authResponse'] ?? []);
+        return $this->replacePlaceholders($webhookRequestHeaders, $flattenedAuthResponse);
+    }
+
+    private function flattenArray(array $array, string $prefix = ''): array
+    {
+        $result = [];
+        foreach ($array as $key => $value) {
+            $flatKey = $prefix !== '' ? $prefix.'.'.$key : (string) $key;
+            if (is_array($value)) {
+                $result[$flatKey] = $value;
+                $result = array_merge($result, $this->flattenArray($value, $flatKey));
+            } else {
+                $result[$flatKey] = $value;
+            }
+        }
+
+        return $result;
     }
 }
