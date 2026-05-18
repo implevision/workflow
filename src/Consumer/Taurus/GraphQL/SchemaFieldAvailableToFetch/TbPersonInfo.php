@@ -330,31 +330,52 @@ class TbPersonInfo extends AbstractSchema
                 'tbState' => [
                     'name' => null,
                 ],
+                'isDefaultAddress' => null,
             ],
         ];
 
         $fieldMapping['MailingAddress'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "MAILING")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "Mailing")',
             'parseResultCallback' => 'parseFullMailingAddress',
         ];
 
         $fieldMapping['LocationAddress'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "LOCATION")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Location")',
             'parseResultCallback' => 'parseFullLocationAddress',
         ];
 
         $fieldMapping['MailingAddressLine'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "MAILING")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "Mailing")',
             'parseResultCallback' => 'parseMailingAddressLine',
         ];
 
         $fieldMapping['MailingCityStateZip'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "MAILING")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "Mailing")',
             'parseResultCallback' => 'parseMailingCityStateZip',
+        ];
+
+        $fieldMapping['W9FormAddress'] = [
+            'GraphQLschemaToReplace' => $mailingAddressStructure,
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "Mailing")',
+            'parseResultCallback' => 'parseW9FormAddress',
+        ];
+
+        $fieldMapping['W9FormCityStateZip'] = [
+            'GraphQLschemaToReplace' => $mailingAddressStructure,
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "Mailing")',
+            'parseResultCallback' => 'parseW9FormCityStateZip',
+        ];
+
+        $fieldMapping['W9FormFeinSsnNo'] = [
+            'GraphQLschemaToReplace' => [
+                    'feinSsnNo' => null,
+                ],
+            'jqFilter' => '.producerQuery.feinSsnNo',
+            'parseResultCallback' => 'parseW9FormFeinSsnNo',
         ];
 
         return $fieldMapping;
@@ -432,6 +453,56 @@ class TbPersonInfo extends AbstractSchema
 
         return implode(', ', $parts) ?: null;
     }
+
+    public function parseW9FormAddress($addressArr)
+    {
+        if (empty($addressArr)) {
+            return null;
+        }
+
+        $parts = array_filter(array_map('trim', [
+            $addressArr['addressLine1'] ?? '',
+            $addressArr['addressLine2'] ?? '',
+        ]));
+
+        return implode(', ', $parts) ?: null;
+    }
+
+    public function parseW9FormCityStateZip($addressArr)
+    {
+        if (empty($addressArr)) {
+            return null;
+        }
+
+        $parts = array_filter(array_map('trim', [
+            $addressArr['tbCity']['name'] ?? '',
+            $addressArr['tbState']['name'] ?? '',
+            $addressArr['postalCode'] ?? '',
+        ]));
+
+        return implode(', ', $parts) ?: null;
+    }
+
+    public function parseW9FormFeinSsnNo($feinSsnNo)
+    {
+        if (empty($feinSsnNo)) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', $feinSsnNo);
+
+        // SSN format: XXX-XX-XXXX — each digit spaced, groups separated by 3 spaces
+        if (strlen($digits) === 9) {
+            $part1 = implode(' ', str_split(substr($digits, 0, 3)));
+            $part2 = implode(' ', str_split(substr($digits, 3, 2)));
+            $part3 = implode(' ', str_split(substr($digits, 5, 4)));
+
+            return $part1 . '    ' . $part2 . '   ' . $part3;
+        }
+
+        return implode(' ', str_split($digits));
+    }
+
     public function getTodaysDate(): string
     {
         return Helper::getTodaysDate();
