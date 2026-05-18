@@ -330,7 +330,6 @@ class TbPersonInfo extends AbstractSchema
                 'tbState' => [
                     'name' => null,
                 ],
-                'isDefaultAddress' => null,
             ],
         ];
 
@@ -342,7 +341,7 @@ class TbPersonInfo extends AbstractSchema
 
         $fieldMapping['LocationAddress'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "LOCATION")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "LOCATION")',
             'parseResultCallback' => 'parseFullLocationAddress',
         ];
 
