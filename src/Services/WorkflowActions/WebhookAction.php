@@ -162,29 +162,51 @@ class WebhookAction extends AbstractWorkflowAction
         }
     }
 
-    private function replacePlaceholders($input, $placeholders, $replaceWithEmptySpaceIfNotAvailable = false)
+    private function replacePlaceholders($input, $placeholders, $replaceWithEmptySpaceIfNotAvailable = false, $resolveNested = false)
     {
         if (is_array($input)) {
-            return array_map(function ($item) use ($placeholders, $replaceWithEmptySpaceIfNotAvailable) {
-                return $this->replacePlaceholders($item, $placeholders, $replaceWithEmptySpaceIfNotAvailable);
+            return array_map(function ($item) use ($placeholders, $replaceWithEmptySpaceIfNotAvailable, $resolveNested) {
+                return $this->replacePlaceholders($item, $placeholders, $replaceWithEmptySpaceIfNotAvailable, $resolveNested);
             }, $input);
         }
 
-        return preg_replace_callback('/{{\s*(.*?)\s*}}/', function ($matches) use ($placeholders, $replaceWithEmptySpaceIfNotAvailable) {
+        return preg_replace_callback('/{{\s*(.*?)\s*}}/', function ($matches) use ($placeholders, $replaceWithEmptySpaceIfNotAvailable, $resolveNested) {
             $placeholder = $matches[1];
-
             $defaultValue = $replaceWithEmptySpaceIfNotAvailable ? '' : '{{'.$placeholder.'}}';
+
+            if ($resolveNested && is_array($placeholders)) {
+                $value = $this->resolveNestedValue($placeholders, $placeholder);
+
+                return $value !== null ? $value : $defaultValue;
+            }
 
             return isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : $defaultValue;
         }, $input);
     }
 
+    private function resolveNestedValue(array $data, string $key): mixed
+    {
+        if (array_key_exists($key, $data)) {
+            return $data[$key];
+        }
+
+        $keys = explode('.', $key);
+        $value = $data;
+        foreach ($keys as $k) {
+            if (! is_array($value) || ! array_key_exists($k, $value)) {
+                return null;
+            }
+            $value = $value[$k];
+        }
+
+        return $value;
+    }
+
     private function updateHeadersWithAuthResponse($webhookRequestHeaders)
     {
-        // GET UPDATED PAYLOAD WITH AUTH RESPONSE
         $payload = $this->getPayload();
+        $authResponse = $payload['authResponse'] ?? [];
 
-        // TODO: add support for multilevel auth token extraction.
-        return $this->replacePlaceholders($webhookRequestHeaders, $payload['authResponse'] ?? []);
+        return $this->replacePlaceholders($webhookRequestHeaders, $authResponse, false, true);
     }
 }
