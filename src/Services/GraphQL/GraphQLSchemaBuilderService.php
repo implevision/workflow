@@ -101,19 +101,6 @@ class GraphQLSchemaBuilderService
     {
         $fields = $this->arrayToGraphQLFields($data, 0);
 
-        // Some queries (e.g. user) take direct arguments instead of a where-clause.
-        // TbUserService signals this by wrapping args in a DIRECT_ARGS key.
-        if (isset($variable['DIRECT_ARGS']) && is_array($variable['DIRECT_ARGS'])) {
-            $argParts = [];
-            foreach ($variable['DIRECT_ARGS'] as $key => $value) {
-                $argParts[] = "{$key}: \"{$value}\"";
-            }
-            $argsStr = implode(', ', $argParts);
-
-            return "query {\n  $queryName($argsStr){\n".
-                preg_replace('/^/m', '    ', $fields)."\n  }\n}";
-        }
-
         $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
 
         return "query {\n  $queryName(where: ".$variablesStr."){\n".

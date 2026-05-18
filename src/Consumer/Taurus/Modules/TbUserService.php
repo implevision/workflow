@@ -2,8 +2,6 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\Modules;
 
-use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
-
 class TbUserService extends ModuleService
 {
     /**
