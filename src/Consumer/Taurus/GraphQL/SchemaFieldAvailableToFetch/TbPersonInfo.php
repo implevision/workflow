@@ -336,37 +336,37 @@ class TbPersonInfo extends AbstractSchema
 
         $fieldMapping['MailingAddress'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseFullMailingAddress',
         ];
 
         $fieldMapping['LocationAddress'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Location")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "LOCATION")',
             'parseResultCallback' => 'parseFullLocationAddress',
         ];
 
         $fieldMapping['MailingAddressLine'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseMailingAddressLine',
         ];
 
         $fieldMapping['MailingCityStateZip'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseMailingCityStateZip',
         ];
 
         $fieldMapping['W9FormAddress'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseW9FormAddress',
         ];
 
         $fieldMapping['W9FormCityStateZip'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseW9FormCityStateZip',
         ];
 
