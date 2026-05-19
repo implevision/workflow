@@ -164,7 +164,7 @@ class WebhookAction extends AbstractWorkflowAction
         if ($data) {
             foreach ($data as $placeHolderData) {
                 $requestHeaders = $this->replacePlaceholders($webhookRequestHeaders, $placeHolderData, true);
-                $requestUrl     = $this->replacePlaceholders($webhookRequestUrl, $placeHolderData, true);
+                $requestUrl = $this->replacePlaceholders($webhookRequestUrl, $placeHolderData, true);
                 $requestPayload = $this->replacePlaceholders($webhookRequestPayload, $placeHolderData, true);
                 try {
                     Http::makeRequest($webhookRequestMethod, $requestUrl, $requestHeaders, $requestPayload);

@@ -71,7 +71,7 @@ class PdfStamper
 
                     if ($type === 'checkbox') {
                         $resolvedValue = $resolvedValues[$placeholder['placeholderText']] ?? '';
-                        $matchValue    = $placeholder['matchValue'] ?? '';
+                        $matchValue = $placeholder['matchValue'] ?? '';
 
                         if ($resolvedValue !== $matchValue) {
                             continue; // no match — leave the checkbox blank

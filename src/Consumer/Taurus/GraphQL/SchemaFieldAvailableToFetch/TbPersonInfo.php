@@ -112,10 +112,10 @@ class TbPersonInfo extends AbstractSchema
 
             'FullLegalName' => [
                 'GraphQLschemaToReplace' => [
-                    'fullLegalName' => null,
+                    'fullName' => null,
                 ],
-                'jqFilter' => '.producerQuery.fullLegalName',
-            ]
+                'jqFilter' => '.producerQuery.fullName',
+            ],
         ];
 
         $fieldMapping['BrandedCompany'] = [
@@ -137,7 +137,6 @@ class TbPersonInfo extends AbstractSchema
             ],
             'jqFilter' => '.producerQuery.personContacts[0].contactName',
         ];
-
 
         $fieldMapping['ContactEmail'] = [
             'GraphQLschemaToReplace' => [
@@ -371,8 +370,8 @@ class TbPersonInfo extends AbstractSchema
 
         $fieldMapping['W9FormFeinSsnNo'] = [
             'GraphQLschemaToReplace' => [
-                    'feinSsnNo' => null,
-                ],
+                'feinSsnNo' => null,
+            ],
             'jqFilter' => '.producerQuery.feinSsnNo',
             'parseResultCallback' => 'parseW9FormFeinSsnNo',
         ];
@@ -496,7 +495,7 @@ class TbPersonInfo extends AbstractSchema
             $part2 = implode(' ', str_split(substr($digits, 3, 2)));
             $part3 = implode(' ', str_split(substr($digits, 5, 4)));
 
-            return $part1 . '    ' . $part2 . '   ' . $part3;
+            return $part1.'    '.$part2.'   '.$part3;
         }
 
         return implode(' ', str_split($digits));
