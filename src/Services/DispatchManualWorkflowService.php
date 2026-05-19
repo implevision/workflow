@@ -81,6 +81,15 @@ class DispatchManualWorkflowService
         foreach ($this->selectedActions as $actionType) {
             $actionPayload = $this->actionsConfig[$actionType] ?? null;
 
+            WorkflowLog::create([
+                'job_workflow_id' => $jobWorkflowId ?: null,
+                'workflow_id' => 0,
+                'record_identifier' => $this->recordIdentifier ?? null,
+                'module' => $this->module,
+                'status' => WorkflowLog::STATUS_IN_PROGRESS,
+                'action_type' => $actionType,
+            ]);
+
             if (! $actionPayload) {
                 $this->workflowService->addWorkflowLog(
                     0,
@@ -95,15 +104,6 @@ class DispatchManualWorkflowService
 
             // Instantiate and initialise the action class
             $actionToExecute = null;
-
-            WorkflowLog::create([
-                'job_workflow_id' => $jobWorkflowId ?: null,
-                'workflow_id' => 0,
-                'record_identifier' => $this->recordIdentifier ?? null,
-                'module' => $this->module,
-                'status' => WorkflowLog::STATUS_IN_PROGRESS,
-                'action_type' => $actionType,
-            ]);
 
             switch ($actionType) {
                 case 'EMAIL':
@@ -416,12 +416,6 @@ class DispatchManualWorkflowService
 
             return $jobWorkflowId;
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog(
-                0,
-                0,
-                'ERROR_CREATING_JOB_WORKFLOW',
-                $e->getMessage()
-            );
             \Log::error('MANUAL WORKFLOW - Error creating JobWorkflow entry: '.$e->getMessage());
 
             return 0;
