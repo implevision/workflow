@@ -899,6 +899,15 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
+        $fieldMapping['CancelReason'] = [
+            'GraphQLschemaToReplace' => [
+                ...$fieldMapping['TransactionSubType']['GraphQLschemaToReplace'],
+                'transactionReasonCode' => null,
+            ],
+            'jqFilter' => '.policyQuery',
+            'parseResultCallback' => 'parseCancelReason',
+        ];
+
         return $fieldMapping;
     }
 
@@ -1342,5 +1351,20 @@ class TbPotransaction extends AbstractSchema
         $transactionDate = $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['transaction_date'] ?? null;
 
         return $transactionDate ? $this->formatDate($transactionDate) : null;
+    }
+
+    public function parseCancelReason($policyData)
+    {
+        $productCode = $policyData['policy']['product']['productCode'] ?? null;
+        $isNfipProduct = Helper::isNfipProduct($productCode);
+
+        if ($isNfipProduct) {
+            return $this->transactionSubTypeScreenNameResolver($policyData);
+        } else {
+            $reasonCode = $policyData['transactionReasonCode'] ?? '';
+            $ddGroup = 'TRANREASONCODE';
+
+            return Helper::parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $reasonCode);
+        }
     }
 }
