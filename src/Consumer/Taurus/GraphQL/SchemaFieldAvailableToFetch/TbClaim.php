@@ -497,7 +497,8 @@ class TbClaim extends AbstractSchema
 
     public function generatePresignedUrl(array $documents): array
     {
-        return array_values(array_map(
+        \Log::info('Generating presigned URLs for claim documents', ['documents' => $documents]);
+        $data = array_values(array_map(
             function ($doc) {
                 return [
                     'name' => $this->formatFileName($doc['name']),
@@ -506,5 +507,7 @@ class TbClaim extends AbstractSchema
             },
             $documents
         ));
+        \Log::info('Generated presigned URLs for claim documents', ['docData' => $data]);
+        return $data;
     }
 }
