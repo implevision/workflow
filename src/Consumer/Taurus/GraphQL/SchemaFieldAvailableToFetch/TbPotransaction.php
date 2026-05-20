@@ -703,6 +703,9 @@ class TbPotransaction extends AbstractSchema
                             'docUploadDocInfoRel' => [
                                 'docUploadReference' => [
                                     'tableRefId' => null,
+                                    'tableMasters' => [
+                                        'tableName' => null,
+                                    ],
                                 ],
                                 'docInfo' => [
                                     'docPath' => null,
@@ -715,7 +718,11 @@ class TbPotransaction extends AbstractSchema
                 'jqFilter' => '
                 [
                       .policyQuery?.policy?.docuploadinfo[]?
-                      | select(.doctypes?.docTypeCode? == "RENEWALNOTICE")
+                      | select(
+                      .doctypes?.docTypeCode? == "RENEWALNOTICE"
+                      and
+                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
+                      )
                       | .docUploadDocInfoRel[]?
                       | .docUploadReference?.tableRefId? as $tableRefId
                       | .docInfo[]?
