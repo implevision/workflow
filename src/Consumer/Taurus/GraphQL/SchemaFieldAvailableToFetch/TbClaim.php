@@ -497,7 +497,7 @@ class TbClaim extends AbstractSchema
 
     public function generatePresignedUrl(array $documents): array
     {
-        return array_values(array_map(
+        $data = array_values(array_map(
             function ($doc) {
                 return [
                     'name' => $this->formatFileName($doc['name']),
@@ -506,5 +506,7 @@ class TbClaim extends AbstractSchema
             },
             $documents
         ));
+
+        return $data;
     }
 }
