@@ -12,6 +12,7 @@ class WorkflowWhenData extends Data
         public WorkflowDateTimeInfoData $dateTimeInfoToExecuteWorkflow,
         public WorkflowCustomDateTimeInfoData $customDateTimeInfoToExecuteWorkflow,
         public string $odysseyActionToExecuteWorkflow,
+        public ?string $fieldUpdateToTrackDownForRecordAction,
     ) {}
 
     public static function fromArray(array $data): self
@@ -22,6 +23,7 @@ class WorkflowWhenData extends Data
             dateTimeInfoToExecuteWorkflow: WorkflowDateTimeInfoData::from($data['dateTimeInfoToExecuteWorkflow']),
             customDateTimeInfoToExecuteWorkflow: WorkflowCustomDateTimeInfoData::fromArray($data['customDateTimeInfoToExecuteWorkflow'] ?? []),
             odysseyActionToExecuteWorkflow: $data['odysseyActionToExecuteWorkflow'] ?? '',
+            fieldUpdateToTrackDownForRecordAction: $data['fieldUpdateToTrackDownForRecordAction'] ?? '',
         );
     }
 }
