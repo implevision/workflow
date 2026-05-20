@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Services;
 
+use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
@@ -80,7 +81,22 @@ class DispatchManualWorkflowService
         foreach ($this->selectedActions as $actionType) {
             $actionPayload = $this->actionsConfig[$actionType] ?? null;
 
+            WorkflowLog::create([
+                'job_workflow_id' => $jobWorkflowId ?: null,
+                'workflow_id' => 0,
+                'record_identifier' => $this->recordIdentifier ?? null,
+                'module' => $this->module,
+                'status' => WorkflowLog::STATUS_IN_PROGRESS,
+                'action_type' => $actionType,
+            ]);
+
             if (! $actionPayload) {
+                $this->workflowService->addWorkflowLog(
+                    0,
+                    $jobWorkflowId,
+                    'EMPTY_ACTION_CONFIG',
+                    'No config found for action: '.$actionType
+                );
                 \Log::error("MANUAL WORKFLOW - No config found for action: {$actionType}");
 
                 continue;
@@ -88,12 +104,19 @@ class DispatchManualWorkflowService
 
             // Instantiate and initialise the action class
             $actionToExecute = null;
+
             switch ($actionType) {
                 case 'EMAIL':
                     try {
                         $actionToExecute = new EmailAction($actionType, $actionPayload);
                         $actionToExecute->handle();
                     } catch (\Exception $e) {
+                        $this->workflowService->addWorkflowLog(
+                            0,
+                            $jobWorkflowId,
+                            'ERROR_INITIATING_ACTION',
+                            $e->getMessage()
+                        );
                         \Log::error('MANUAL WORKFLOW - Error initiating email action: '.$e->getMessage());
 
                         continue 2;
@@ -105,6 +128,12 @@ class DispatchManualWorkflowService
                         $actionToExecute = new WorkflowOutputAction($actionType, $actionPayload);
                         $actionToExecute->handle();
                     } catch (\Exception $e) {
+                        $this->workflowService->addWorkflowLog(
+                            0,
+                            $jobWorkflowId,
+                            'ERROR_INITIATING_ACTION',
+                            $e->getMessage()
+                        );
                         \Log::error('MANUAL WORKFLOW - Error initiating workflow output action: '.$e->getMessage());
 
                         continue 2;
@@ -127,6 +156,12 @@ class DispatchManualWorkflowService
                     $listOfRequiredData[] = $listOfMandateData[] = ucfirst($actionPayload['emailRecipient']);
                 }
             } catch (\Exception $e) {
+                $this->workflowService->addWorkflowLog(
+                    0,
+                    $jobWorkflowId,
+                    'ERROR_GETTING_REQUIRED_DATA',
+                    $e->getMessage()
+                );
                 \Log::error('MANUAL WORKFLOW - Error getting required data for '.$actionType.': '.$e->getMessage());
 
                 continue;
@@ -159,6 +194,12 @@ class DispatchManualWorkflowService
                 $graphQLClient = new GraphQLClient;
                 $response = $graphQLClient->query($graphQLRequestPayload);
             } catch (\Exception $e) {
+                $this->workflowService->addWorkflowLog(
+                    0,
+                    $jobWorkflowId,
+                    'GRAPHQL_ERROR',
+                    $e->getMessage()
+                );
                 \Log::error('MANUAL WORKFLOW - Error executing GraphQL query: '.$e->getMessage());
 
                 continue;
@@ -169,6 +210,12 @@ class DispatchManualWorkflowService
                 $parsedData = [];
                 foreach ($listOfRequiredData as $placeHolder) {
                     if (! array_key_exists($placeHolder, $fieldMapping)) {
+                        $this->workflowService->addWorkflowLog(
+                            0,
+                            $jobWorkflowId,
+                            'FIELD_MAPPING_ISSUE',
+                            'Field mapping not found for placeholder: '.$placeHolder
+                        );
                         \Log::error('MANUAL WORKFLOW - Field mapping not found for placeholder: '.$placeHolder);
                         $parsedData[$placeHolder] = '';
 
@@ -205,6 +252,12 @@ class DispatchManualWorkflowService
 
                 $data[] = $parsedData;
             } catch (\Exception $e) {
+                $this->workflowService->addWorkflowLog(
+                    0,
+                    $jobWorkflowId,
+                    'GRAPHQL_ERROR',
+                    $e->getMessage()
+                );
                 \Log::error('MANUAL WORKFLOW - Error parsing GraphQL response: '.$e->getMessage());
 
                 continue;
@@ -230,6 +283,12 @@ class DispatchManualWorkflowService
                     if ($data[$index]['hasPriorDataForWorkflow']) {
                         $hasPriorDataForWorkflow = true;
                     } else {
+                        $this->workflowService->addWorkflowLog(
+                            0,
+                            $jobWorkflowId,
+                            'MISSING_MANDATE_DATA',
+                            ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]
+                        );
                         \Log::warning('MANUAL WORKFLOW - Missing mandate data', [
                             'data' => $data[$index],
                             'listOfMandateData' => $listOfMandateData,
@@ -248,6 +307,15 @@ class DispatchManualWorkflowService
                         }
 
                         \Log::info('MANUAL WORKFLOW - Actual email address: '.$emailPlaceHolderValue);
+
+                        if (! $emailPlaceHolderValue) {
+                            $this->workflowService->addWorkflowLog(
+                                0,
+                                $jobWorkflowId,
+                                'MISSING_EMAIL_ADDRESS',
+                                'System was not able to find email address for the record'
+                            );
+                        }
 
                         if (config('app.env') != 'production') {
                             $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
@@ -284,7 +352,14 @@ class DispatchManualWorkflowService
                             if ($executeEmailAction && count($finalList) > 0) {
                                 $data[$index]['email'] = $emailPlaceHolderValue;
                             } else {
-                                \Log::error('MANUAL WORKFLOW - Email address not allowed in non-production env: '.$emailPlaceHolderValue);
+                                $implodedEmailList = implode(',', $emailPlaceHolderValue);
+                                $this->workflowService->addWorkflowLog(
+                                    0,
+                                    $jobWorkflowId,
+                                    'UNAUTHORIZED_EMAIL_ADDRESS',
+                                    'Email address not allowed in non-production env: '.$implodedEmailList
+                                );
+                                \Log::error('MANUAL WORKFLOW - Email address not allowed in non-production env: '.$implodedEmailList);
                                 $hasPriorDataForWorkflow = false;
                                 unset($data[$index]);
 
@@ -304,11 +379,19 @@ class DispatchManualWorkflowService
                 $actionToExecute->setDataForAction('', $data);
                 $actionToExecute->execute();
             } catch (\Exception $e) {
+                $this->workflowService->addWorkflowLog(
+                    0,
+                    $jobWorkflowId,
+                    'ERROR_EXECUTING_ACTION',
+                    $e->getMessage()
+                );
                 \Log::error('MANUAL WORKFLOW - Error while executing action '.$actionType.': '.$e->getMessage());
 
                 continue;
             }
         }
+
+        WorkflowLog::markWorkflowCompleted(0, $jobWorkflowId);
 
         return true;
     }

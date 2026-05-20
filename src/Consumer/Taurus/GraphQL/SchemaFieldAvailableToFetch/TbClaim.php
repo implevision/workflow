@@ -339,7 +339,7 @@ class TbClaim extends AbstractSchema
                       }
                 ] | sort_by(.uploadDate) | reverse | .[0:1]
             ',
-            'parseResultCallback' => 'parseAssignmentDocument',
+            'parseResultCallback' => 'generatePresignedUrl',
         ];
 
         return $fieldMapping;
@@ -504,10 +504,7 @@ class TbClaim extends AbstractSchema
                     'path' => Helper::generatePresignedUrl($doc['path']),
                 ];
             },
-            array_filter($documents, function ($doc) {
-                return isset($doc['tableRefId'], $doc['name'])
-                    && str_contains($doc['name'], (string) $doc['tableRefId']);
-            })
+            $documents
         ));
     }
 }
