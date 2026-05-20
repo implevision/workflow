@@ -23,7 +23,7 @@ class TbUser extends AbstractSchema
     public function __construct()
     {
         $this->fieldMapping = $this->initializeFieldMapping();
-        $this->queryName = 'user';
+        $this->queryName = 'userQuery';
     }
 
     /**
@@ -61,56 +61,46 @@ class TbUser extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'id' => null,
                 ],
-                'jqFilter' => '.user.id',
+                'jqFilter' => '.userQuery.id',
             ],
 
             'UserScreenName' => [
                 'GraphQLschemaToReplace' => [
                     'screenName' => null,
                 ],
-                'jqFilter' => '.user.screenName',
+                'jqFilter' => '.userQuery.screenName',
             ],
 
             'Username' => [
                 'GraphQLschemaToReplace' => [
                     'username' => null,
                 ],
-                'jqFilter' => '.user.username',
+                'jqFilter' => '.userQuery.username',
             ],
 
             'UserFirstName' => [
                 'GraphQLschemaToReplace' => [
                     'firstName' => null,
                 ],
-                'jqFilter' => '.user.firstName',
+                'jqFilter' => '.userQuery.firstName',
             ],
 
             'UserLastName' => [
                 'GraphQLschemaToReplace' => [
                     'lastName' => null,
                 ],
-                'jqFilter' => '.user.lastName',
+                'jqFilter' => '.userQuery.lastName',
             ],
 
             'Email' => [
                 'GraphQLschemaToReplace' => [
                     'email' => null,
                 ],
-                'jqFilter' => '.user.email',
+                'jqFilter' => '.userQuery.email',
             ],
-
-            'UserContactNumber' => [
-                'GraphQLschemaToReplace' => [
-                    'phoneInfo' => [
-                        ['phoneNumber' => null, 'isDefault' => null],
-                    ],
-                ],
-                'jqFilter' => '.user.phoneInfo[] | select(.isDefault == "Y" and .phoneNumber != "") | .phoneNumber',
-            ],
-
         ];
 
-        $fieldMapping['Password'] = [
+        $fieldMapping['getTemporaryPassword'] = [
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
             'parseResultCallback' => 'getTemporaryPassword',
@@ -126,15 +116,6 @@ class TbUser extends AbstractSchema
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
             'parseResultCallback' => 'getDashboard',
-        ];
-
-        $fieldMapping['ContactUs'] = [
-            'GraphQLschemaToReplace' => [
-                'phoneInfo' => [
-                    ['phoneNumber' => null, 'isDefault' => null],
-                ],
-            ],
-            'jqFilter' => '.user.phoneInfo[] | select(.isDefault == "Y" and .phoneNumber != "") | .phoneNumber',
         ];
 
         $fieldMapping['OutsideDocumentList'] = [
