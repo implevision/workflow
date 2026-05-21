@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
+use Avatar\Infrastructure\Models\Api\v1\TbProduct;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbClaim extends AbstractSchema
@@ -319,8 +321,9 @@ class TbClaim extends AbstractSchema
                         ],
                     ],
                 ],
+                'policyId' => null,
             ],
-            'jqFilter' => '.claimQuery.agency.brandedCompany[]',
+            'jqFilter' => '.claim',
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
@@ -333,8 +336,9 @@ class TbClaim extends AbstractSchema
                         ],
                     ],
                 ],
+                'policyId' => null,
             ],
-            'jqFilter' => '.claimQuery.agency.brandedCompany[]',
+            'jqFilter' => '.claim',
             'parseResultCallback' => 'parseCompanyName',
         ];
 
@@ -568,6 +572,58 @@ class TbClaim extends AbstractSchema
             'jqFilter' => '.claimQuery.agency.fullName',
         ];
 
+        $fieldMapping['AdjusterEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'adjuster' => [
+                    'TbPersonInfo' => [
+                        'emailInfo' => [
+                            'email' => null,
+                            'isDefault' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '[.claim.adjuster.TbPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
+            'parseResultCallback' => 'parseAdjustingFirmEmail',
+        ];
+    
+        $fieldMapping['AttachClaimAssignmentForm'] = [
+            'GraphQLschemaToReplace' => [
+                'docuploadinfo' => [
+                    'uploadDate' => null,
+                    'doctypes' => [
+                        'docTypeCode' => null,
+                    ],
+                    'docUploadDocInfoRel' => [
+                        'docUploadReference' => [
+                            'tableRefId' => null,
+                        ],
+                        'docInfo' => [
+                            'docPath' => null,
+                            'docName' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '
+                [
+                    .claim.docuploadinfo[]
+                    | select(.doctypes.docTypeCode == "ASSIGNMENTS")
+                    | .uploadDate as $uploadDate
+                    | .docUploadDocInfoRel[]
+                    | .docUploadReference.tableRefId as $tableRefId
+                    | .docInfo[]
+                    | {
+                        name: .docName,
+                        path: .docPath,
+                        tableRefId: $tableRefId,
+                        uploadDate: $uploadDate
+                      }
+                ] | sort_by(.uploadDate) | reverse | .[0:1]
+            ',
+            'parseResultCallback' => 'generatePresignedUrl',
+        ];
+
         return $fieldMapping;
     }
 
@@ -688,25 +744,48 @@ class TbClaim extends AbstractSchema
         return is_array($emailArr) && count($emailArr) ? ($emailArr[0]['email'] ?? null) : null;
     }
 
-    public function resolveCompanyLogoUrl($brandedCompanyArr)
+    public function resolveCompanyLogoUrl($response)
     {
-        return Helper::parseCompanyLogo($brandedCompanyArr);
+        [$brandedCompanyArr, $policyId] = $this->extractClaimContext($response);
+
+        return Helper::parseCompanyLogo($brandedCompanyArr, $policyId);
     }
 
-    public function parseCompanyName($brandedCompanyArr)
+    public function parseCompanyName($response)
     {
-        // Ensure we are working with an array and 'company' key exists and is an array
-        if (is_array($brandedCompanyArr) && isset($brandedCompanyArr['company']) && is_array($brandedCompanyArr['company'])) {
-            $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
-            if (! empty($companyName)) {
-                return $companyName;
-            }
+        [$brandedCompanyArr, $policyId] = $this->extractClaimContext($response);
+
+        $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
+        if (! empty($companyName)) {
+            return $companyName;
         }
 
-        // Fallback to holding company name if not found
-        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+        $policyData = TbPolicy::find($policyId);
+        $holdingCompanyId = TbProduct::find($policyData?->n_ProductId_FK)?->holding_company_id;
 
-        return $holdingCompanyDetail['wyo'] ?? '';
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
+        if (! empty($holdingCompanyDetail['wyo'])) {
+            return $holdingCompanyDetail['wyo'];
+        }
+
+        return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+    }
+
+    private function extractClaimContext($response): array
+    {
+        $response = is_array($response) ? $response : [];
+        $brandedCompany = $response['agency']['brandedCompany'] ?? [];
+
+        if (is_array($brandedCompany) && array_key_exists('company', $brandedCompany)) {
+            $normalizedBrandedCompany = $brandedCompany;
+        } else {
+            $normalizedBrandedCompany = is_array($brandedCompany) ? ($brandedCompany[0] ?? []) : [];
+        }
+
+        return [
+            $normalizedBrandedCompany,
+            $response['policyId'] ?? null,
+        ];
     }
 
     public function getInsuredPortalUrl()
@@ -764,5 +843,28 @@ class TbClaim extends AbstractSchema
         }
 
         return implode(', ', $parts);
+    }
+    public static function formatFileName(?string $fileName): string
+    {
+        if (empty($fileName)) {
+            return '';
+        }
+
+        return pathinfo($fileName, PATHINFO_FILENAME);
+    }
+
+    public function generatePresignedUrl(array $documents): array
+    {
+        $data = array_values(array_map(
+            function ($doc) {
+                return [
+                    'name' => $this->formatFileName($doc['name']),
+                    'path' => Helper::generatePresignedUrl($doc['path']),
+                ];
+            },
+            $documents
+        ));
+
+        return $data;
     }
 }

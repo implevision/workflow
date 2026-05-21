@@ -46,8 +46,14 @@ class PrepareEmailData
             'payload' => [],
             'from' => $from,
             'replyTo' => ! empty($this->emailInformation['replyTo']) ? explode(',', $this->emailInformation['replyTo']) : [],
+            'cc' => ! empty($this->payload['actionPayload']['cc']) ? array_values(array_filter(array_map('trim', explode(',', $this->payload['actionPayload']['cc'])))) : [],
+            'bcc' => ! empty($this->payload['actionPayload']['bcc']) ? array_values(array_filter(array_map('trim', explode(',', $this->payload['actionPayload']['bcc'])))) : [],
             'postAction' => $this->payload['postAction'] ?? '',
             'actionPayload' => $this->payload['actionPayload'] ?? [],
+            // PDF letter template fields
+            'letterEditorMode' => $this->emailInformation['letterEditorMode'] ?? null,
+            'pdfS3Key' => $this->emailInformation['pdfS3Key'] ?? null,
+            'pdfPlaceholders' => $this->emailInformation['pdfPlaceholders'] ?? null,
         ];
 
         try {

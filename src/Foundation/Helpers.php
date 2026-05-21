@@ -27,7 +27,10 @@ function setWorkflowDBConnection()
     $connectionToSet = getWorkflowDBConnection();
     if ($connectionToSet) {
         \Log::info('WORKFLOW - Setting workflow database connection to: '.$connectionToSet);
+        $previous = config('database.default');
         config(['database.default' => $connectionToSet]);
+        \DB::purge($previous);
+        \DB::reconnect($connectionToSet);
     }
 }
 
@@ -117,30 +120,40 @@ function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
     return sprintf('%s %s %s', 'php artisan ', $command['command'], implode(', ', $command['options']));
 }
 
-function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [])
+function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [], ?string $referenceId = null)
 {
     $data = json_encode((array) $data);
     $entityPlaceHoldersToAppend = json_encode((array) $entityPlaceHoldersToAppend);
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
 
+        $options = ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier", "data=$data", "appendPlaceHolders=$entityPlaceHoldersToAppend"];
+        if ($referenceId !== null) {
+            $options[] = "referenceId=$referenceId";
+        }
+
         return [
             'command' => 'tenants:run',
             'options' => [
                 'commandname' => 'taurus:dispatch-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier", "data=$data", "appendPlaceHolders=$entityPlaceHoldersToAppend"],
+                '--option' => $options,
             ],
         ];
     } else {
+        $options = [
+            '--workflowId' => $workflowId,
+            '--recordIdentifier' => $recordIdentifier,
+            '--data' => $data,
+            '--appendPlaceHolders' => $entityPlaceHoldersToAppend,
+        ];
+        if ($referenceId !== null) {
+            $options['--referenceId'] = $referenceId;
+        }
+
         return [
             'command' => 'taurus:dispatch-workflow',
-            'options' => [
-                '--workflowId' => $workflowId,
-                '--recordIdentifier' => $recordIdentifier,
-                '--data' => $data,
-                '--appendPlaceHolders' => $entityPlaceHoldersToAppend,
-            ],
+            'options' => $options,
         ];
     }
 }
@@ -183,31 +196,43 @@ function gitCommandToDispatchManualWorkflow(
     ];
 }
 
-function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [])
+function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [], $updatedFields = [], ?string $referenceId = null)
 {
     $entityData = json_encode((array) $entityData);
     $appendPlaceHolders = json_encode((array) $appendPlaceHolders);
+    $updatedFields = json_encode((array) $updatedFields);
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
+
+        $options = ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders", "EntityUpdatedFields=$updatedFields"];
+        if ($referenceId !== null) {
+            $options[] = "EntityReferenceId=$referenceId";
+        }
 
         return [
             'command' => 'tenants:run',
             'options' => [
                 'commandname' => 'taurus:invoke-matching-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders"],
+                '--option' => $options,
             ],
         ];
     } else {
+        $options = [
+            '--EntityAction' => $entityAction,
+            '--Entity' => $entity,
+            '--EntityType' => $entityType,
+            '--EntityData' => $entityData,
+            '--EntityPlaceHoldersToAppend' => $appendPlaceHolders,
+            '--EntityUpdatedFields' => $updatedFields,
+        ];
+        if ($referenceId !== null) {
+            $options['--EntityReferenceId'] = $referenceId;
+        }
+
         return [
             'command' => 'taurus:invoke-matching-workflow',
-            'options' => [
-                '--EntityAction' => $entityAction,
-                '--Entity' => $entity,
-                '--EntityType' => $entityType,
-                '--EntityData' => $entityData,
-                '--EntityPlaceHoldersToAppend' => $appendPlaceHolders,
-            ],
+            'options' => $options,
         ];
     }
 }

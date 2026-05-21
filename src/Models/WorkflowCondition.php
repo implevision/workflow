@@ -11,7 +11,12 @@ class WorkflowCondition extends Model
 
     protected $table;
 
-    protected $fillable = ['workflow_id', 'conditions'];
+    // tenant_id is for Nova, it is ignored for odyssey
+    protected $fillable = [
+        'tenant_id',
+        'workflow_id',
+        'conditions',
+    ];
 
     protected $casts = [
         'conditions' => 'json',
