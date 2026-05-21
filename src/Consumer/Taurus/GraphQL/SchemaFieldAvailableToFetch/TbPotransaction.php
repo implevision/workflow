@@ -908,6 +908,14 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parseCancelReason',
         ];
 
+        $fieldMapping['CancelRefundAmount'] = [
+            'GraphQLschemaToReplace' => [
+                ...$fieldMapping['PremiumDue']['GraphQLschemaToReplace'],
+            ],
+            'jqFilter' => '.policyQuery',
+            'parseResultCallback' => 'parseCancelRefundAmount',
+        ];
+
         return $fieldMapping;
     }
 
@@ -1366,5 +1374,12 @@ class TbPotransaction extends AbstractSchema
 
             return Helper::parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $reasonCode);
         }
+    }
+
+    public function parseCancelRefundAmount($policyData)
+    {
+        $cancelRefundAmount = $this->parsePremiumDue($policyData);
+
+        return abs($cancelRefundAmount);
     }
 }
