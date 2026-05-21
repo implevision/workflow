@@ -113,9 +113,9 @@ class TbClaim extends AbstractSchema
 
             'PolicyId' => [
                 'GraphQLschemaToReplace' => [
-                    'policyID' => null,
+                    'policyId' => null,
                 ],
-                'jqFilter' => '.claimQuery.policyID',
+                'jqFilter' => '.claimQuery.policyId',
             ],
 
         ];
