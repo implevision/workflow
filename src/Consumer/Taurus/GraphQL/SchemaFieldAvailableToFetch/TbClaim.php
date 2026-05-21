@@ -23,7 +23,7 @@ class TbClaim extends AbstractSchema
     public function __construct()
     {
         $this->fieldMapping = $this->initializeFieldMapping();
-        $this->queryName = 'claim';
+        $this->queryName = 'claimQuery';
     }
 
     /**
@@ -71,19 +71,19 @@ class TbClaim extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'claimId' => null,
                 ],
-                'jqFilter' => '.claim.ClaimId',
+                'jqFilter' => '.claimQuery.ClaimId',
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
                     'policyNumber' => null,
                 ],
-                'jqFilter' => '.claim.policyNumber',
+                'jqFilter' => '.claimQuery.policyNumber',
             ],
             'ReferenceNo' => [
                 'GraphQLschemaToReplace' => [
                     'referenceNo' => null,
                 ],
-                'jqFilter' => '.claim.referenceNo',
+                'jqFilter' => '.claimQuery.referenceNo',
                 'parseResultCallback' => 'parseReferenceNo',
             ],
 
@@ -91,21 +91,21 @@ class TbClaim extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'dateOfLoss' => null,
                 ],
-                'jqFilter' => '.claim.dateOfLoss',
+                'jqFilter' => '.claimQuery.dateOfLoss',
                 'parseResultCallback' => 'formatDate',
             ],
             'InsuredName' => [
                 'GraphQLschemaToReplace' => [
                     'insuredName' => null,
                 ],
-                'jqFilter' => '.claim.insuredName',
+                'jqFilter' => '.claimQuery.insuredName',
             ],
 
             'UpdatedByDate' => [
                 'GraphQLschemaToReplace' => [
-                    'updatedDate' => null,
+                    'updatedAt' => null,
                 ],
-                'jqFilter' => '.claim.updatedDate',
+                'jqFilter' => '.claim.updatedAt',
                 'parseResultCallback' => 'formatDate',
             ],
 
@@ -113,7 +113,7 @@ class TbClaim extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'policyId' => null,
                 ],
-                'jqFilter' => '.claim.policyId',
+                'jqFilter' => '.claimQuery.policyId',
             ],
 
         ];
@@ -124,7 +124,7 @@ class TbClaim extends AbstractSchema
                     'screenName' => null,
                 ],
             ],
-            'jqFilter' => '.claim.updatedBy.screenName',
+            'jqFilter' => '.claimQuery.updatedBy.screenName',
         ];
 
         $fieldMapping['ClaimEnteredByName'] = [
@@ -133,14 +133,14 @@ class TbClaim extends AbstractSchema
                     'screenName' => null,
                 ],
             ],
-            'jqFilter' => '.claim.claimEnteredBy.screenName',
+            'jqFilter' => '.claimQuery.claimEnteredBy.screenName',
         ];
 
         $fieldMapping['DateAllocated'] = [
             'GraphQLschemaToReplace' => [
                 'dateAllocated' => null,
             ],
-            'jqFilter' => '.claim.dateAllocated',
+            'jqFilter' => '.claimQuery.dateAllocated',
             'parseResultCallback' => 'parseDateAllocated',
         ];
 
@@ -150,11 +150,21 @@ class TbClaim extends AbstractSchema
                     'createdDate' => null,
                 ],
             ],
-            'jqFilter' => '.claim.claimCommunication.createdDate',
+            'jqFilter' => '.claimQuery.claimCommunication.createdDate',
             'parseResultCallback' => 'formatDate',
         ];
 
-
+        $fieldMapping['InsuredPhone'] = [
+            'GraphQLschemaToReplace' => [
+                'insuredPerson' => [
+                    'phoneInfo' => [
+                        'phoneNumber' => null,
+                        'isDefault'   => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.claimQuery.insuredPerson.phoneInfo[0].phoneNumber',
+        ];
 
         $fieldMapping['InsuredPropertyAddress'] = [
             'GraphQLschemaToReplace' => [
@@ -182,36 +192,23 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.claim.insuredPerson.TbPersonaddress[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Location")',
+            'jqFilter' => '.claimQuery.insuredPerson.TbPersonaddress[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Location")',
             'parseResultCallback' => 'parsePropertyAddress',
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
             'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
-            'jqFilter' => '.claim.insuredPerson.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => '.claimQuery.insuredPerson.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
             'parseResultCallback' => 'parseMailingAddress',
         ];
 
         $fieldMapping['TemporaryAddress'] = [
             'GraphQLschemaToReplace' => [
                 'addInfo' => [
-                    'claim_detail_json' => [
-                        'newScreenData' => [
-                            'temporaryAddress' => [
-                                'addressLine1' => null,
-                                'cityName' => null,
-                                'stateCode' => null,
-                                'stateName' => null,
-                                'zipCode' => null,
-                                'zipCodeSuffix' => null,
-                                'countyName' => null,
-                                'isForeignAddress' => null,
-                            ],
-                        ],
-                    ],
+                    'claim_detail_json' => null,
                 ],
             ],
-            'jqFilter' => '.claim.addInfo.claim_detail_json.newScreenData.temporaryAddress',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.newScreenData.temporaryAddress',
             'parseResultCallback' => 'parseTemporaryAddress',
         ];
 
@@ -223,7 +220,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '[.claim.adjustingFirm[].personInfo.fullName]',
+            'jqFilter' => '[.claimQuery.adjustingFirm[].personInfo.fullName]',
             'parseResultCallback' => 'parseAdjustingFirmName',
         ];
 
@@ -255,7 +252,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '[.claim.adjustingFirm[].personInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")]',
+            'jqFilter' => '[.claimQuery.adjustingFirm[].personInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")]',
             'parseResultCallback' => 'parseAdjustingFirmAddress',
         ];
 
@@ -270,7 +267,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '[.claim.adjustingFirm[].personInfo.emailInfo[0] | select(.isDefault == "Y")]',
+            'jqFilter' => '[.claimQuery.adjustingFirm[].personInfo.emailInfo[0] | select(.isDefault == "Y")]',
             'parseResultCallback' => 'parseAdjustingFirmEmail',
         ];
 
@@ -285,7 +282,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '[.claim.adjustingFirm[].personInfo.phoneInfo[0] | select(.isDefault == "Y")]',
+            'jqFilter' => '[.claimQuery.adjustingFirm[].personInfo.phoneInfo[0] | select(.isDefault == "Y")]',
             'parseResultCallback' => 'parseAdjustingFirmPhone',
         ];
 
@@ -295,7 +292,7 @@ class TbClaim extends AbstractSchema
                     'screenName' => null,
                 ],
             ],
-            'jqFilter' => '.claim.serviceRepresentative.screenName',
+            'jqFilter' => '.claimQuery.serviceRepresentative.screenName',
         ];
 
         $fieldMapping['ExaminerEmail'] = [
@@ -308,7 +305,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '[.claim.serviceRepresentative.TbPersonInfo.emailInfo[]]',
+            'jqFilter' => '[.claimQuery.serviceRepresentative.TbPersonInfo.emailInfo[]]',
             'parseResultCallback' => 'parseExaminerEmail',
         ];
 
@@ -323,7 +320,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.claim.agency.brandedCompany[]',
+            'jqFilter' => '.claimQuery.agency.brandedCompany[]',
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
@@ -337,7 +334,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.claim.agency.brandedCompany[]',
+            'jqFilter' => '.claimQuery.agency.brandedCompany[]',
             'parseResultCallback' => 'parseCompanyName',
         ];
 
@@ -354,7 +351,7 @@ class TbClaim extends AbstractSchema
                     'country' => ['name' => null],
                 ],
             ],
-            'jqFilter' => '.claim.claimCommunication',
+            'jqFilter' => '.claimQuery.claimCommunication',
             'parseResultCallback' => 'parseClaimCommunication',
         ];
 
@@ -368,12 +365,10 @@ class TbClaim extends AbstractSchema
         $fieldMapping['WaiverReceiptDate'] = [
             'GraphQLschemaToReplace' => [
                 'addInfo' => [
-                    'claim_detail_json' => [
-                        'waiverRecieptDate' => null,
-                    ],
+                    'claim_detail_json' => null,
                 ],
             ],
-            'jqFilter' => '.claim.addInfo.claim_detail_json.waiverRecieptDate',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.waiverRecieptDate',
             'parseResultCallback' => 'formatDate',
         ];
 
@@ -381,34 +376,26 @@ class TbClaim extends AbstractSchema
             'GraphQLschemaToReplace' => [
                 'claimStatusCode' => null,
             ],
-            'jqFilter' => '.claim.claimStatusCode',
+            'jqFilter' => '.claimQuery.claimStatusCode',
         ];
 
         $fieldMapping['DateContacted'] = [
             'GraphQLschemaToReplace' => [
                 'addInfo' => [
-                    'claim_detail_json' => [
-                        'insuredContactDate' => null,
-                    ],
+                    'claim_detail_json' => null,
                 ],
             ],
-            'jqFilter' => '.claim.addInfo.claim_detail_json.insuredContactDate',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.insuredContactDate',
             'parseResultCallback' => 'formatDate',
         ];
 
         $fieldMapping['LossInspectedDate'] = [
             'GraphQLschemaToReplace' => [
                 'addInfo' => [
-                    'claim_detail_json' => [
-                        'claimLossCorrectionA' => [
-                            'claimReportingDTO' => [
-                                'lossInspectedDate' => null,
-                            ],
-                        ],
-                    ],
+                    'claim_detail_json' => null,
                 ],
             ],
-            'jqFilter' => '.claim.addInfo.claim_detail_json.claimLossCorrectionA.claimReportingDTO.lossInspectedDate',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.claimLossCorrectionA.claimReportingDTO.lossInspectedDate',
             'parseResultCallback' => 'formatDate',
         ];
 
@@ -421,54 +408,45 @@ class TbClaim extends AbstractSchema
 
         $fieldMapping['AllocatedToScreenName'] = [
             'GraphQLschemaToReplace' => $allocatedToSchema,
-            'jqFilter' => '.claim.allocatedTo.screenName',
+            'jqFilter' => '.claimQuery.allocatedTo.screenName',
         ];
 
         $fieldMapping['AllocatedToFCN'] = [
             'GraphQLschemaToReplace' => $allocatedToSchema,
-            'jqFilter' => '.claim.allocatedTo.fcn',
+            'jqFilter' => '.claimQuery.allocatedTo.fcn',
         ];
 
         $fieldMapping['RapLatestStatusText'] = [
             'GraphQLschemaToReplace' => [
                 'rapLatestStatusText' => null,
             ],
-            'jqFilter' => '.claim.rapLatestStatusText',
+            'jqFilter' => '.claimQuery.rapLatestStatusText',
         ];
 
         $claimAdditionalSchema = [
             'addInfo' => [
-                'claim_detail_json' => [
-                    'iccfee'            => null,
-                    'waiverRecieptDate' => null,
-                    'waiverRequired'    => null,
-                    'newScreenData' => [
-                        'gcof'                => null,
-                        'waterLineFlipExt'    => null,
-                        'waterLineFlipInt'    => null,
-                        'appWaterLineFlipExt' => null,
-                        'appWaterLineFlipInt' => null,
-                        'inspectionMethod'    => null,
-                        'delayReason'         => null,
-                        'hoursInFlood'        => null,
-                    ],
-                ],
+                'claim_detail_json' => null,
             ],
         ];
 
         $fieldMapping['ClaimGCOF'] = [
             'GraphQLschemaToReplace' => $claimAdditionalSchema,
-            'jqFilter' => '.claim.addInfo.claim_detail_json.newScreenData.gcof',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.newScreenData.gcof',
+        ];
+
+        $fieldMapping['ClaimNewGCOF'] = [
+            'GraphQLschemaToReplace' => $claimAdditionalSchema,
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.newScreenData.newGcof',
         ];
 
         $fieldMapping['ClaimWaterLineFlipExt'] = [
             'GraphQLschemaToReplace' => $claimAdditionalSchema,
-            'jqFilter' => '.claim.addInfo.claim_detail_json.newScreenData.waterLineFlipExt',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.newScreenData.waterLineFlipExt',
         ];
 
         $fieldMapping['ClaimWaterLineFlipInt'] = [
             'GraphQLschemaToReplace' => $claimAdditionalSchema,
-            'jqFilter' => '.claim.addInfo.claim_detail_json.newScreenData.waterLineFlipInt',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.newScreenData.waterLineFlipInt',
         ];
 
         $fieldMapping['ClaimAppWaterLineFlipExt'] = [
@@ -478,106 +456,93 @@ class TbClaim extends AbstractSchema
 
         $fieldMapping['ClaimAppWaterLineFlipInt'] = [
             'GraphQLschemaToReplace' => $claimAdditionalSchema,
-            'jqFilter' => '.claim.addInfo.claim_detail_json.newScreenData.appWaterLineFlipInt',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.newScreenData.appWaterLineFlipInt',
         ];
 
         $fieldMapping['ClaimInspectionMethod'] = [
             'GraphQLschemaToReplace' => $claimAdditionalSchema,
-            'jqFilter' => '.claim.addInfo.claim_detail_json.newScreenData.inspectionMethod',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.newScreenData.inspectionMethod',
         ];
 
         $fieldMapping['ClaimDelayReason'] = [
             'GraphQLschemaToReplace' => $claimAdditionalSchema,
-            'jqFilter' => '.claim.addInfo.claim_detail_json.newScreenData.delayReason',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.newScreenData.delayReason',
         ];
 
         $fieldMapping['ClaimHoursInFlood'] = [
             'GraphQLschemaToReplace' => $claimAdditionalSchema,
-            'jqFilter' => '.claim.addInfo.claim_detail_json.newScreenData.hoursInFlood',
+            'jqFilter' => '.claimQuery.addInfo.claim_detail_json.newScreenData.hoursInFlood',
         ];
 
         $paymentTotalsSchema = [
-            'paymentTotals' => [
-                'building_advanced_payment_amount' => null,
-                'building_final_payment_amount' => null,
-                'building_supplemental_payment_amount' => null,
-                'total_building_payments' => null,
-                'contents_advanced_payment_amount' => null,
-                'contents_final_payment_amount' => null,
-                'contents_supplemental_payment_amount' => null,
-                'total_contents_payments' => null,
-                'icc_advanced_payment_amount' => null,
-                'icc_final_payment_amount' => null,
-                'icc_supplemental_payment_amount' => null,
-                'total_icc_payments' => null,
-            ],
+            'paymentTotals' => null,
         ];
 
         $fieldMapping['BuildingAdvancedPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.building_advanced_payment_amount',
+            'jqFilter' => '.claimQuery.paymentTotals.building_advanced_payment_amount',
         ];
 
         $fieldMapping['BuildingFinalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.building_final_payment_amount',
+            'jqFilter' => '.claimQuery.paymentTotals.building_final_payment_amount',
         ];
 
         $fieldMapping['BuildingSupplementalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.building_supplemental_payment_amount',
+            'jqFilter' => '.claimQuery.paymentTotals.building_supplemental_payment_amount',
         ];
 
         $fieldMapping['BuildingTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.total_building_payments',
+            'jqFilter' => '.claimQuery.paymentTotals.total_building_payments',
         ];
 
         $fieldMapping['ContentsAdvancedPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.contents_advanced_payment_amount',
+            'jqFilter' => '.claimQuery.paymentTotals.contents_advanced_payment_amount',
         ];
 
         $fieldMapping['ContentsFinalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.contents_final_payment_amount',
+            'jqFilter' => '.claimQuery.paymentTotals.contents_final_payment_amount',
         ];
 
         $fieldMapping['ContentsSupplementalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.contents_supplemental_payment_amount',
+            'jqFilter' => '.claimQuery.paymentTotals.contents_supplemental_payment_amount',
         ];
 
         $fieldMapping['ContentsTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.total_contents_payments',
+            'jqFilter' => '.claimQuery.paymentTotals.total_contents_payments',
         ];
 
         $fieldMapping['ICCAdvancedPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.icc_advanced_payment_amount',
+            'jqFilter' => '.claimQuery.paymentTotals.icc_advanced_payment_amount',
         ];
 
         $fieldMapping['ICCFinalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.icc_final_payment_amount',
+            'jqFilter' => '.claimQuery.paymentTotals.icc_final_payment_amount',
         ];
 
         $fieldMapping['ICCSupplementalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.icc_supplemental_payment_amount',
+            'jqFilter' => '.claimQuery.paymentTotals.icc_supplemental_payment_amount',
         ];
 
         $fieldMapping['ICCTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
-            'jqFilter' => '.claim.paymentTotals.total_icc_payments',
+            'jqFilter' => '.claimQuery.paymentTotals.total_icc_payments',
         ];
 
         $fieldMapping['CauseOfLoss'] = [
             'GraphQLschemaToReplace' => [
                 'causeOfLoss' => null,
             ],
-            'jqFilter' => '.claim.causeOfLoss',
+            'jqFilter' => '.claimQuery.causeOfLoss',
         ];
 
         $agencySchema = [
@@ -590,17 +555,17 @@ class TbClaim extends AbstractSchema
 
         $fieldMapping['AgencyPersonUniqueId'] = [
             'GraphQLschemaToReplace' => $agencySchema,
-            'jqFilter' => '.claim.agency.personUniqueId',
+            'jqFilter' => '.claimQuery.agency.personUniqueId',
         ];
 
         $fieldMapping['AgencyInsuredPersonInfoId'] = [
             'GraphQLschemaToReplace' => $agencySchema,
-            'jqFilter' => '.claim.agency.insuredPersonInfoId',
+            'jqFilter' => '.claimQuery.agency.insuredPersonInfoId',
         ];
 
         $fieldMapping['AgencyFullName'] = [
             'GraphQLschemaToReplace' => $agencySchema,
-            'jqFilter' => '.claim.agency.fullName',
+            'jqFilter' => '.claimQuery.agency.fullName',
         ];
 
         return $fieldMapping;
@@ -621,7 +586,6 @@ class TbClaim extends AbstractSchema
         $address = [
             'addressLine1' => ($addressArr['houseNo'] ?? '') . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
             'city' => $addressArr['tbCity']['name'] ?? null,
-            // 'county' => $addressArr['tbCounty']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
             'postalCode' => $addressArr['postalCode'] ?? null,
         ];
