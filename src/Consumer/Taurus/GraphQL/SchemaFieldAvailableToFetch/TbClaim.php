@@ -676,6 +676,10 @@ class TbClaim extends AbstractSchema
             $parts[] = 'Address: ' . implode(', ', $addressParts);
         }
 
+        if (empty($parts)) {
+            return null;
+        }
+
         return implode(' | ', $parts);
     }
 
@@ -722,6 +726,7 @@ class TbClaim extends AbstractSchema
     {
         return Helper::formatDate($dateToFormat);
     }
+
     public function parseTemporaryAddress($address)
     {
         if (empty($address)) {
