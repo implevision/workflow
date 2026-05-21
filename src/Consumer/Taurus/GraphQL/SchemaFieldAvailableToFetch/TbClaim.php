@@ -342,6 +342,21 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'generatePresignedUrl',
         ];
 
+        $fieldMapping['AdjusterName'] = [
+            'GraphQLschemaToReplace' => [
+                'adjuster' => [
+                    'screenName' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.adjuster.screenName',
+        ];
+
+        $fieldMapping['CurrentYear'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'getCurrentYear',
+        ];
+
         return $fieldMapping;
     }
 
@@ -508,5 +523,10 @@ class TbClaim extends AbstractSchema
         ));
 
         return $data;
+    }
+
+    public function getCurrentYear()
+    {
+        return date('Y');
     }
 }
