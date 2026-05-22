@@ -360,9 +360,9 @@ class TbPersonInfo extends AbstractSchema
             'GraphQLschemaToReplace' => [
                 'userAgent' => [
                     'agency' => [
-                        ...$mailingAddressStructure
-                    ]
-                ]
+                        ...$mailingAddressStructure,
+                    ],
+                ],
             ],
             'jqFilter' => '.producerQuery.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseW9FormAddress',
@@ -372,9 +372,9 @@ class TbPersonInfo extends AbstractSchema
             'GraphQLschemaToReplace' => [
                 'userAgent' => [
                     'agency' => [
-                        ...$mailingAddressStructure
-                    ]
-                ]
+                        ...$mailingAddressStructure,
+                    ],
+                ],
             ],
             'jqFilter' => '.producerQuery.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseW9FormCityStateZip',
@@ -385,8 +385,8 @@ class TbPersonInfo extends AbstractSchema
                 'userAgent' => [
                     'agency' => [
                         'feinSsnNo' => null,
-                    ]
-                ]
+                    ],
+                ],
             ],
             'jqFilter' => '.producerQuery.userAgent.agency.feinSsnNo',
             'parseResultCallback' => 'parseW9FormFeinSsnNo',
