@@ -357,22 +357,38 @@ class TbPersonInfo extends AbstractSchema
         ];
 
         $fieldMapping['W9FormAddress'] = [
-            'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "MAILING")',
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        ...$mailingAddressStructure
+                    ]
+                ]
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseW9FormAddress',
         ];
 
         $fieldMapping['W9FormCityStateZip'] = [
-            'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.producerQuery.addresses[] | select(.addressTypeCode == "MAILING")',
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        ...$mailingAddressStructure
+                    ]
+                ]
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseW9FormCityStateZip',
         ];
 
         $fieldMapping['W9FormFeinSsnNo'] = [
             'GraphQLschemaToReplace' => [
-                'feinSsnNo' => null,
+                'userAgent' => [
+                    'agency' => [
+                        'feinSsnNo' => null,
+                    ]
+                ]
             ],
-            'jqFilter' => '.producerQuery.feinSsnNo',
+            'jqFilter' => '.producerQuery.userAgent.agency.feinSsnNo',
             'parseResultCallback' => 'parseW9FormFeinSsnNo',
         ];
 
