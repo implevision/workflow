@@ -187,10 +187,12 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             ],
             'AssignedAgentEmail' => [
                 'GraphQLschemaToReplace' => [
-                    'agent' => [
-                        'emailInfo' => [
-                            'email' => null,
-                            'isDefault' => null,
+                    'agentTask' => [
+                        'agent' => [
+                            'emailInfo' => [
+                                'email' => null,
+                                'isDefault' => null,
+                            ],
                         ],
                     ],
                 ],
@@ -199,10 +201,12 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             ],
             'AssAgentEmail' => [
                 'GraphQLschemaToReplace' => [
-                    'agent' => [
-                        'emailInfo' => [
-                            'email' => null,
-                            'isDefault' => null,
+                    'agentTask' => [
+                        'agent' => [
+                            'emailInfo' => [
+                                'email' => null,
+                                'isDefault' => null,
+                            ],
                         ],
                     ],
                 ],
