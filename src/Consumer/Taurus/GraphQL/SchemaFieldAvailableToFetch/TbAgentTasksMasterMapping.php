@@ -197,6 +197,18 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 'jqFilter' => '[.policyAgentTaskQuery.agentTask.agent.emailInfo[0] | select(.isDefault == "Y")]',
                 'parseResultCallback' => 'parseAssignedAgentEmail',
             ],
+            'AssAgentEmail' => [
+                'GraphQLschemaToReplace' => [
+                    'agent' => [
+                        'emailInfo' => [
+                            'email' => null,
+                            'isDefault' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.policyAgentTaskQuery.agentTask.agent.emailInfo[0] | select(.isDefault == "Y")]',
+                'parseResultCallback' => 'parseAssignedAgentEmail',
+            ],
 
             'Title' => [
                 'GraphQLschemaToReplace' => [
