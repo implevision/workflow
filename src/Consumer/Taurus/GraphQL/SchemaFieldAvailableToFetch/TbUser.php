@@ -128,12 +128,12 @@ class TbUser extends AbstractSchema
 
     public function getLoginUrl(): string
     {
-        return Helper::createPortalURL('CorePortal') . '/login';
+        return Helper::createPortalURL('CorePortal').'/login';
     }
 
     public function getDashboard(): string
     {
-        return Helper::createPortalURL('CorePortal') . '/dashboard';
+        return Helper::createPortalURL('CorePortal').'/dashboard';
     }
 
     public function getOutsideDocumentList(): string
