@@ -73,7 +73,7 @@ class TbClaim extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'claimId' => null,
                 ],
-                'jqFilter' => '.claimQuery.ClaimId',
+                'jqFilter' => '.claimQuery.claimId',
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
@@ -107,7 +107,7 @@ class TbClaim extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'updatedAt' => null,
                 ],
-                'jqFilter' => '.claim.updatedAt',
+                'jqFilter' => '.claimQuery.updatedAt',
                 'parseResultCallback' => 'formatDate',
             ],
 
@@ -323,7 +323,7 @@ class TbClaim extends AbstractSchema
                 ],
                 'policyId' => null,
             ],
-            'jqFilter' => '.claim',
+            'jqFilter' => '.claimQuery',
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
@@ -338,7 +338,7 @@ class TbClaim extends AbstractSchema
                 ],
                 'policyId' => null,
             ],
-            'jqFilter' => '.claim',
+            'jqFilter' => '.claimQuery',
             'parseResultCallback' => 'parseCompanyName',
         ];
 
@@ -455,7 +455,7 @@ class TbClaim extends AbstractSchema
 
         $fieldMapping['ClaimAppWaterLineFlipExt'] = [
             'GraphQLschemaToReplace' => $claimAdditionalSchema,
-            'jqFilter' => '.claim.addInfo.claimDetailJson.newScreenData.appWaterLineFlipExt',
+            'jqFilter' => '.claimQuery.addInfo.claimDetailJson.newScreenData.appWaterLineFlipExt',
         ];
 
         $fieldMapping['ClaimAppWaterLineFlipInt'] = [
@@ -583,7 +583,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '[.claim.adjuster.TbPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
+            'jqFilter' => '[.claimQuery.adjuster.TbPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
             'parseResultCallback' => 'parseAdjustingFirmEmail',
         ];
     
@@ -607,7 +607,7 @@ class TbClaim extends AbstractSchema
             ],
             'jqFilter' => '
                 [
-                    .claim.docuploadinfo[]
+                    .claimQuery.docuploadinfo[]
                     | select(.doctypes.docTypeCode == "ASSIGNMENTS")
                     | .uploadDate as $uploadDate
                     | .docUploadDocInfoRel[]
