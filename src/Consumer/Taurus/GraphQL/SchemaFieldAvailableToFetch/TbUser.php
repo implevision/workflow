@@ -64,13 +64,6 @@ class TbUser extends AbstractSchema
                 'jqFilter' => '.userQuery.id',
             ],
 
-            'UserScreenName' => [
-                'GraphQLschemaToReplace' => [
-                    'screenName' => null,
-                ],
-                'jqFilter' => '.userQuery.screenName',
-            ],
-
             'Username' => [
                 'GraphQLschemaToReplace' => [
                     'username' => null,
@@ -100,7 +93,7 @@ class TbUser extends AbstractSchema
             ],
         ];
 
-        $fieldMapping['getTemporaryPassword'] = [
+        $fieldMapping['TemporaryPassword'] = [
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
             'parseResultCallback' => 'getTemporaryPassword',
@@ -112,13 +105,13 @@ class TbUser extends AbstractSchema
             'parseResultCallback' => 'getLoginUrl',
         ];
 
-        $fieldMapping['Dashboard'] = [
+        $fieldMapping['DashboardURL'] = [
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
             'parseResultCallback' => 'getDashboard',
         ];
 
-        $fieldMapping['OutsideDocumentList'] = [
+        $fieldMapping['OutsideDocumentListURL'] = [
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
             'parseResultCallback' => 'getOutsideDocumentList',
