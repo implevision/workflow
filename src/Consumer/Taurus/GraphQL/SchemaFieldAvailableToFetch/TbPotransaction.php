@@ -99,6 +99,12 @@ class TbPotransaction extends AbstractSchema
                 'jqFilter' => '.policyQuery',
                 'parseResultCallback' => 'parsePremiumDue',
             ],
+            'PolicyFees' => [
+                'GraphQLschemaToReplace' => [
+                    'policyFees' => null,
+                ],
+                'jqFilter' => '.policyQuery.policyFees',
+            ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
                     'policy' => [
@@ -649,6 +655,54 @@ class TbPotransaction extends AbstractSchema
                 'jqFilter' => '.policyQuery',
                 'parseResultCallback' => 'parseCompanyName',
             ],
+            'CompanyEmail' => [
+                'GraphQLschemaToReplace' => [
+                    'tbAccountMaster' => [
+                        'TbPersoninfo' => [
+                            'brandedCompany' => [
+                                'company' => [
+                                    'companyEmail' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                    'policyId' => null,
+                ],
+                'jqFilter' => '.policyQuery',
+                'parseResultCallback' => 'parseCompanyEmail',
+            ],
+            'CompanyPhone' => [
+                'GraphQLschemaToReplace' => [
+                    'tbAccountMaster' => [
+                        'TbPersoninfo' => [
+                            'brandedCompany' => [
+                                'company' => [
+                                    'companyPhone' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                    'policyId' => null,
+                ],
+                'jqFilter' => '.policyQuery',
+                'parseResultCallback' => 'parseCompanyPhone',
+            ],
+            'CompanyAddress' => [
+                'GraphQLschemaToReplace' => [
+                    'tbAccountMaster' => [
+                        'TbPersoninfo' => [
+                            'brandedCompany' => [
+                                'company' => [
+                                    'companyAddress' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                    'policyId' => null,
+                ],
+                'jqFilter' => '.policyQuery',
+                'parseResultCallback' => 'parseCompanyAddress',
+            ],
             'AttachPaymentReceipt' => [
                 'GraphQLschemaToReplace' => [
                     'policy' => [
@@ -678,6 +732,48 @@ class TbPotransaction extends AbstractSchema
                       .policyQuery?.policy?.docuploadinfo[]?
                       | select(
                       .doctypes?.docTypeCode? == "PAYMENTRECEIPT"
+                      and
+                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
+                      )
+                      | .docUploadDocInfoRel[]?
+                      | .docUploadReference?.tableRefId? as $tableRefId
+                      | .docInfo[]?
+                      | {
+                          name: .docName?,
+                          path: .docPath?,
+                          tableRefId: $tableRefId
+                        }
+                    ]
+                ',
+                'parseResultCallback' => 'generatePresignedUrl',
+            ],
+            'AttachRenewalNotice' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'docuploadinfo' => [
+                            'doctypes' => [
+                                'docTypeCode' => null,
+                            ],
+                            'docUploadDocInfoRel' => [
+                                'docUploadReference' => [
+                                    'tableRefId' => null,
+                                    'tableMasters' => [
+                                        'tableName' => null,
+                                    ],
+                                ],
+                                'docInfo' => [
+                                    'docPath' => null,
+                                    'docName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '
+                [
+                      .policyQuery?.policy?.docuploadinfo[]?
+                      | select(
+                      .doctypes?.docTypeCode? == "RENEWALNOTICE"
                       and
                       (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
                       )
@@ -999,29 +1095,49 @@ class TbPotransaction extends AbstractSchema
 
     public function parseCompanyName($response)
     {
+        return $this->resolveCompanyDetail($response, 'companyName', 'wyo');
+    }
+
+    public function parseCompanyEmail($response)
+    {
+        return $this->resolveCompanyDetail($response, 'companyEmail', 'company_email');
+    }
+
+    public function parseCompanyPhone($response)
+    {
+        return $this->resolveCompanyDetail($response, 'companyPhone', 'company_phone');
+    }
+
+    public function parseCompanyAddress($response)
+    {
+        return $this->resolveCompanyDetail($response, 'companyAddress', 'company_address');
+    }
+
+    private function resolveCompanyDetail($response, string $companyKey, string $holdingKey): string
+    {
         [$brandedCompanyArr, $policyId] = $this->extractPolicyContext($response);
 
-        $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
-        if (! empty($companyName)) {
-            return $companyName;
+        $value = $brandedCompanyArr['company'][$companyKey] ?? null;
+        if (! empty($value)) {
+            return $value;
         }
 
-        $policyData = TbPolicy::find($policyId);
-        $productId = $policyData?->n_ProductId_FK;
+        $productId = TbPolicy::find($policyId)?->n_ProductId_FK;
         if (empty($productId)) {
-            return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+            return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
         }
 
         $holdingCompanyId = TbProduct::find($productId)?->holding_company_id ?? null;
         if (empty($holdingCompanyId)) {
-            return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
-        }
-        $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
-        if (! empty($holdingCompanyDetail['wyo'])) {
-            return $holdingCompanyDetail['wyo'];
+            return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
         }
 
-        return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
+        if (! empty($holdingCompanyDetail[$holdingKey])) {
+            return $holdingCompanyDetail[$holdingKey];
+        }
+
+        return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
     }
 
     public function transactionSubTypeScreenNameResolver($policyData)

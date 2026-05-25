@@ -290,6 +290,73 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'getInsuredPortalUrl',
         ];
 
+        $fieldMapping['AdjusterEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'adjuster' => [
+                    'TbPersonInfo' => [
+                        'emailInfo' => [
+                            'email' => null,
+                            'isDefault' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '[.claim.adjuster.TbPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
+            'parseResultCallback' => 'parseAdjustingFirmEmail',
+        ];
+
+        $fieldMapping['AttachClaimAssignmentForm'] = [
+            'GraphQLschemaToReplace' => [
+                'docuploadinfo' => [
+                    'uploadDate' => null,
+                    'doctypes' => [
+                        'docTypeCode' => null,
+                    ],
+                    'docUploadDocInfoRel' => [
+                        'docUploadReference' => [
+                            'tableRefId' => null,
+                        ],
+                        'docInfo' => [
+                            'docPath' => null,
+                            'docName' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '
+                [
+                    .claim.docuploadinfo[]
+                    | select(.doctypes.docTypeCode == "ASSIGNMENTS")
+                    | .uploadDate as $uploadDate
+                    | .docUploadDocInfoRel[]
+                    | .docUploadReference.tableRefId as $tableRefId
+                    | .docInfo[]
+                    | {
+                        name: .docName,
+                        path: .docPath,
+                        tableRefId: $tableRefId,
+                        uploadDate: $uploadDate
+                      }
+                ] | sort_by(.uploadDate) | reverse | .[0:1]
+            ',
+            'parseResultCallback' => 'generatePresignedUrl',
+        ];
+
+        $fieldMapping['AdjusterName'] = [
+            'GraphQLschemaToReplace' => [
+                'adjuster' => [
+                    'screenName' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.adjuster.screenName',
+        ];
+
+        $fieldMapping['CurrentYear'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'getCurrentYear',
+        ];
+
         return $fieldMapping;
     }
 
@@ -432,5 +499,34 @@ class TbClaim extends AbstractSchema
         $tenant = getTenant();
 
         return sprintf('%s%s%s', ucfirst(substr($tenant, 0, 1)), $holdingCompanyDetail['naic_number'], $referenceNo);
+    }
+
+    public static function formatFileName(?string $fileName): string
+    {
+        if (empty($fileName)) {
+            return '';
+        }
+
+        return pathinfo($fileName, PATHINFO_FILENAME);
+    }
+
+    public function generatePresignedUrl(array $documents): array
+    {
+        $data = array_values(array_map(
+            function ($doc) {
+                return [
+                    'name' => $this->formatFileName($doc['name']),
+                    'path' => Helper::generatePresignedUrl($doc['path']),
+                ];
+            },
+            $documents
+        ));
+
+        return $data;
+    }
+
+    public function getCurrentYear()
+    {
+        return date('Y');
     }
 }

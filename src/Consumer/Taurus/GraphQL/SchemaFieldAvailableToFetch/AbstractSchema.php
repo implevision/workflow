@@ -54,14 +54,13 @@ class AbstractSchema
         return [];
     }
 
-
     /**
      * Override in paginated module schema classes to return the query args for the next page.
      * Return null when there are no more pages (default — no pagination).
      *
-     * @param  array  $response     Raw GraphQL response from the current page
+     * @param  array  $response  Raw GraphQL response from the current page
      * @param  array  $currentArgs  Query args used for the current page
-     * @return array|null  Args for next page, or null if this is the last page
+     * @return array|null Args for next page, or null if this is the last page
      */
     public function getNextPageArgs(array $response, array $currentArgs): ?array
     {
@@ -76,7 +75,7 @@ class AbstractSchema
      * Return [] to fall back to the default jqFilter-based extraction.
      *
      * @param  array  $response  Raw GraphQL response array
-     * @return array  e.g. [['AgentEmail'=>'...','renewalListData'=>[...]], ...]
+     * @return array e.g. [['AgentEmail'=>'...','renewalListData'=>[...]], ...]
      */
     public function hasCustomRecordExtraction(): bool
     {
@@ -94,11 +93,11 @@ class AbstractSchema
      *
      * Return [] to fall back to the default jqFilter-based extraction.
      *
-     * @param  mixed  $client        GraphQLClient instance
-     * @param  mixed  $builder       GraphQLSchemaBuilderService instance
-     * @param  array  $schemaData    Schema built from addField() calls
+     * @param  mixed  $client  GraphQLClient instance
+     * @param  mixed  $builder  GraphQLSchemaBuilderService instance
+     * @param  array  $schemaData  Schema built from addField() calls
      * @param  array  $graphQLQuery  Where-condition query array
-     * @return array  Flat list of records, each becoming one action payload
+     * @return array Flat list of records, each becoming one action payload
      */
     public function fetchAllData($client, $builder, array $schemaData, array $graphQLQuery): array
     {

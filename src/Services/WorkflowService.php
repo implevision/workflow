@@ -76,6 +76,7 @@ class WorkflowService
                 'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? '',
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
                 'is_active' => $data['detail']['isActive'] ?? false,
+                'field_to_observe' => $data['when']['fieldUpdateToTrackDownForRecordAction'] ?? '',
             ]);
 
             if (! empty($data['workFlowConditions'])) {
@@ -174,6 +175,7 @@ class WorkflowService
                 'dateTimeInfoToExecuteWorkflow' => $workflow->date_time_info_to_execute_workflow,
                 'customDateTimeInfoToExecuteWorkflow' => $workflow?->custom_date_time_info_to_execute_workflow ?? [],
                 'odysseyActionToExecuteWorkflow' => $workflow?->odyssey_action_to_execute_workflow ?? '',
+                'fieldUpdateToTrackDownForRecordAction' => $workflow?->field_to_observe ?? '',
             ],
             'workFlowConditions' => $workflowConditions,
         ]);
@@ -202,6 +204,7 @@ class WorkflowService
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
                 'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? '',
+                'field_to_observe' => $data['when']['fieldUpdateToTrackDownForRecordAction'] ?? '',
             ]);
 
             // get existing condition IDs

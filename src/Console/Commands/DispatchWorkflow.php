@@ -12,7 +12,7 @@ class DispatchWorkflow extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:dispatch-workflow {--workflowId=} {--recordIdentifier=} {--data=} {--appendPlaceHolders=} {--page=1}';
+    protected $signature = 'taurus:dispatch-workflow {--workflowId=} {--recordIdentifier=} {--data=} {--appendPlaceHolders=} {--referenceId=} {--page=1}';
 
     /**
      * The console command description.
@@ -33,10 +33,12 @@ class DispatchWorkflow extends Command
         $data = $data ? json_decode($data, true) : [];
         $appendPlaceHolders = $this->option('appendPlaceHolders');
         $appendPlaceHolders = $appendPlaceHolders ? json_decode($appendPlaceHolders, true) : [];
+        $referenceId = $this->option('referenceId');
         $page = (int) ($this->option('page') ?? 1);
 
         if (config('app.env') != 'production' && $page > 3) {
             $this->info("Page $page exceeds the allowed limit of 3 pages. Dispatch aborted.");
+
             return 0;
         }
 
@@ -56,7 +58,7 @@ class DispatchWorkflow extends Command
             \Log::info("WORKFLOW - Page: $page");
             $recordIdentifier ? \Log::info('WORKFLOW - Dispatching workflow with record identifier '.$recordIdentifier) : null;
 
-            $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier, $data, $appendPlaceHolders, $page);
+            $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier, $data, $appendPlaceHolders, $referenceId, $page);
             $workflow->dispatch();
         } catch (\Exception $e) {
             $errorMessage = "WORKFLOW - Error dispatching workflow with ID $workflowId: ".$e->getMessage();

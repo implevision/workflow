@@ -16,10 +16,11 @@ class SES
         $placeholders = $matches[1] ?? [];
 
         return array_filter($placeholders, function ($placeholder) {
-            return !str_starts_with($placeholder, '#')
-                && !str_starts_with($placeholder, '/');
+            return ! str_starts_with($placeholder, '#')
+                && ! str_starts_with($placeholder, '/');
         });
     }
+
     public static function getSesClient()
     {
         $awsProfile = config('workflow.aws_profile');
@@ -164,8 +165,8 @@ class SES
             '/\{\{#if\s+(\w+)\s*\}\}(.*?)\{\{\/if\}\}/s',
             function ($matches) use ($data) {
                 $varName = $matches[1];
-                $inner   = $matches[2];
-                $value   = $data[$varName] ?? null;
+                $inner = $matches[2];
+                $value = $data[$varName] ?? null;
 
                 return ! empty($value) ? $inner : '';
             },

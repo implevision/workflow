@@ -17,7 +17,7 @@ class ValidInstanceActions implements ValidationRule
         // Check if it's an array and at least one value is not null
         if (! (is_array($value) && collect($value)->filter()->isNotEmpty())) {
             \Log::info($value);
-            $fail('At least one instance action (EMAIL, CREATE_TASK, CREATE_RECORD, or WEB_HOOK) must be defined.');
+            $fail('At least one instance action (EMAIL, CREATE_TASK, CREATE_RECORD, WEB_HOOK, or WORKFLOW_OUTPUT) must be defined.');
         }
     }
 }

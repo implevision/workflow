@@ -40,6 +40,9 @@ class Helper
             'naic_number' => $holdingCompanyDetail->naic_number,
             'insured_portal' => $holdingCompanyDetail->payment_wesite_url ?? self::createPortalURL('InsuredPortal'),
             'agent_portal' => $metadata['agent_url'] ?? $holdingCompanyDetail->payment_wesite_url,
+            'company_email' => $holdingCompanyDetail->email,
+            'company_phone' => $holdingCompanyDetail->phone_no,
+            'company_address' => $holdingCompanyDetail->company_address,
         ];
     }
 
