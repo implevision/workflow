@@ -17,7 +17,9 @@
   ],
   "require": {
     "spatie/laravel-data": "^3.0 || ^4.14",
-    "aws/aws-sdk-php": "^3.0"
+    "aws/aws-sdk-php": "^3.0",
+    "setasign/fpdf": "^1.8",
+    "setasign/fpdi": "^2.6"
   },
   "extra": {
     "laravel": {

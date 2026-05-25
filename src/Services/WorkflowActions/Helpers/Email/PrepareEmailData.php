@@ -52,6 +52,10 @@ class PrepareEmailData
             'actionPayload' => $this->payload['actionPayload'] ?? [],
             'tenant' => getTenant(),
             'configurationSetName' => config('workflow.ses_configuration_set', ''),
+            // PDF letter template fields
+            'letterEditorMode' => $this->emailInformation['letterEditorMode'] ?? null,
+            'pdfS3Key' => $this->emailInformation['pdfS3Key'] ?? null,
+            'pdfPlaceholders' => $this->emailInformation['pdfPlaceholders'] ?? null,
         ];
 
         try {

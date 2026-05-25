@@ -5,6 +5,8 @@ namespace Taurus\Workflow\Consumer\Taurus\PostAction;
 use Dompdf\Dompdf;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 use Taurus\Workflow\Services\AWS\S3;
+use Taurus\Workflow\Services\WorkflowActions\Helpers\WorkflowOutput\PdfStamper;
+use Taurus\Workflow\Services\WorkflowEmailService;
 
 class PrepareEmailData
 /**
@@ -31,15 +33,20 @@ class PrepareEmailData
             $placeholders['CompanyLogo'] = Helper::generateDataImage($placeholders['CompanyLogo']);
         }
 
-        // CREATE S3 PATH
+        $isPdf = ($payload['letterEditorMode'] ?? '') === 'PDF';
+
         try {
-            $html = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
-                $key = trim($matches[1]);
+            if ($isPdf) {
+                $pdfBuffer = self::generateFromPdfTemplate($payload, $placeholders);
+            } else {
+                $html = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
+                    $key = trim($matches[1]);
 
-                return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
-            }, $payload['emailTemplate']);
+                    return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
+                }, $payload['emailTemplate']);
 
-            $pdfBuffer = self::htmlToPdf($html, $pageSize, $pageOrientation);
+                $pdfBuffer = self::htmlToPdf($html, $pageSize, $pageOrientation);
+            }
         } catch (\Exception $e) {
             throw $e;
         }
@@ -47,7 +54,7 @@ class PrepareEmailData
         $documentName = $payload['actionPayload']['documentName'] ?? '';
         $documentId = $payload['actionPayload']['documentId'] ?? '';
 
-        $subject = $html = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
+        $subject = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
             $key = trim($matches[1]);
 
             return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
@@ -74,6 +81,25 @@ class PrepareEmailData
             'insertedByFlag' => 'System',
             'activityLogText' => "Email letter for '".$documentName."' generated and uploaded. Message ID - ".$messageId,
         ];
+    }
+
+    /**
+     * Generate PDF by stamping placeholder values onto an existing PDF template
+     * using FPDI. The source PDF is fetched from the email-builder-backend
+     * (already normalized to v1.4 at upload time so FPDI can read it).
+     */
+    protected static function generateFromPdfTemplate(array $payload, array $placeholders): string
+    {
+        $pdfS3Key = $payload['pdfS3Key'] ?? '';
+        $pdfPlaceholders = $payload['pdfPlaceholders'] ?? [];
+
+        if (empty($pdfS3Key)) {
+            throw new \Exception('PDF template S3 key is missing.');
+        }
+
+        $pdfContent = WorkflowEmailService::fetchPdfFile($pdfS3Key);
+
+        return PdfStamper::stamp($pdfContent, $pdfPlaceholders, $placeholders);
     }
 
     /**
