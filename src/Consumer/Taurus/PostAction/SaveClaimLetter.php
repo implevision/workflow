@@ -1,0 +1,25 @@
+<?php
+
+namespace Taurus\Workflow\Consumer\Taurus\PostAction;
+
+class SaveClaimLetter
+{
+    public static function execute($module, $payload, $preparedData)
+    {
+        $data = [
+            'claimid' => $payload['recordIdentifier'] ?? null,
+            'docFor' => $payload['actionPayload']['saveClaimLetter']['createDocumentCopyFor'],
+            'isPreview' => 'N',
+            'otherInfo' => [
+                'recipientName' => $payload['actionPayload']['saveClaimLetter']['recipientName'] ?? '',
+                'address' => $payload['actionPayload']['saveClaimLetter']['address'] ?? '',
+                'city' => $payload['actionPayload']['saveClaimLetter']['city'] ?? '',
+                'state' => $payload['actionPayload']['saveClaimLetter']['state'] ?? '',
+                'postalCode' => $payload['actionPayload']['saveClaimLetter']['postalCode'] ?? '',
+            ],
+            'template' => 'CAT_CLOSE_BUILD_CONT', // hardcoded template for testing
+            'text' => $preparedData['htmlContent'] ?? '',
+        ];
+        \App\Services\Claim\Claim::getClaimLetterGenerate($data);
+    }
+}

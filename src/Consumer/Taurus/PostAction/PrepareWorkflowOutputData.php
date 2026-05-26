@@ -1,0 +1,48 @@
+<?php
+
+namespace Taurus\Workflow\Consumer\Taurus\PostAction;
+
+use Taurus\Workflow\Consumer\Taurus\Helper;
+
+class PrepareWorkflowOutputData
+/**
+ * Class PrepareWorkflowOutputData
+ *
+ * This class is responsible for preparing workflow output data for processing.
+ * It handles the necessary transformations and validations required
+ * before the workflow output is processed.
+ */
+{
+    /**
+     * Prepares the workflow output data based on the provided payload and placeholders.
+     *
+     * @param  mixed  $payload  The data to be processed for the workflow output.
+     * @param  array  $placeholders  An associative array of placeholders to be replaced in the workflow output content.
+     * @return mixed The processed workflow output data.
+     */
+    public static function prepare($payload, $placeholders, $messageId)
+    {
+        if (array_key_exists('CompanyLogo', $placeholders)) {
+            $placeholders['CompanyLogo'] = Helper::generateDataImage($placeholders['CompanyLogo']);
+        }
+
+        $isPdf = ($payload['letterEditorMode'] ?? '') === 'PDF';
+        $html = "";
+
+        try {
+            if (!$isPdf) {
+                $html = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
+                    $key = trim($matches[1]);
+
+                    return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
+                }, $payload['emailTemplate']);
+            }
+        } catch (\Exception $e) {
+            throw $e;
+        }
+
+        return [
+            "htmlContent" => $html,
+        ];
+    }
+}
