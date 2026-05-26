@@ -11,7 +11,7 @@ class WorkflowCondition extends Model
 
     protected $table;
 
-    protected $fillable = ['workflow_id', 'conditions', 'notes', 'status'];
+    protected $fillable = ['tenant_id','workflow_id', 'conditions', 'notes', 'status'];
 
     protected $casts = [
         'conditions' => 'json',
