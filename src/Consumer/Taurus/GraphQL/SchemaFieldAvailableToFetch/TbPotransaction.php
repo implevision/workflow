@@ -979,6 +979,23 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
+        $fieldMapping['CancelReason'] = [
+            'GraphQLschemaToReplace' => [
+                ...$fieldMapping['TransactionSubType']['GraphQLschemaToReplace'],
+                'transactionReasonCode' => null,
+            ],
+            'jqFilter' => '.policyQuery',
+            'parseResultCallback' => 'parseCancelReason',
+        ];
+
+        $fieldMapping['CancelRefundAmount'] = [
+            'GraphQLschemaToReplace' => [
+                ...$fieldMapping['PremiumDue']['GraphQLschemaToReplace'],
+            ],
+            'jqFilter' => '.policyQuery',
+            'parseResultCallback' => 'parseCancelRefundAmount',
+        ];
+
         return $fieldMapping;
     }
 
@@ -1440,5 +1457,26 @@ class TbPotransaction extends AbstractSchema
         ];
 
         return $labelMap[$type] ?? $type;
+    }
+    public function parseCancelReason($policyData)
+    {
+        $productCode = $policyData['policy']['product']['productCode'] ?? null;
+        $isNfipProduct = Helper::isNfipProduct($productCode);
+
+        if ($isNfipProduct) {
+            return $this->transactionSubTypeScreenNameResolver($policyData);
+        } else {
+            $reasonCode = $policyData['transactionReasonCode'] ?? '';
+            $ddGroup = 'TRANREASONCODE';
+
+            return Helper::parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $reasonCode);
+        }
+    }
+
+    public function parseCancelRefundAmount($policyData)
+    {
+        $cancelRefundAmount = $this->parsePremiumDue($policyData);
+
+        return abs($cancelRefundAmount);
     }
 }
