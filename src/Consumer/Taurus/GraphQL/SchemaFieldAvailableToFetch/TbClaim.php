@@ -357,6 +357,40 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'getCurrentYear',
         ];
 
+        $fieldMapping['HoldingCompanyName'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'getHoldingCompanyName',
+        ];
+
+        $deductibles = [
+            'transaction' => [
+                'coverageDetails' => [
+                    'coverageSchedules' => [
+                        'policyCoverageMaster' => [
+                            'policyCoverageCoverages' => [
+                                'coverageCode' => null,
+                            ],
+                        ],
+                    ],
+                    'insuredCoverageValue' => null,
+                    'prDiscountCode' => null,
+                ],
+            ],
+        ];
+
+        $fieldMapping['BuildingCoverageDeductibleAmount'] = [
+            'GraphQLschemaToReplace' => $deductibles,
+            'jqFilter' => '.claim.transaction.coverageDetails',
+            'parseResultCallback' => 'parseBuildingDeductibles',
+        ];
+
+        $fieldMapping['ContentsCoverageDeductibleAmount'] = [
+            'GraphQLschemaToReplace' => $deductibles,
+            'jqFilter' => '.claim.transaction.coverageDetails',
+            'parseResultCallback' => 'parseContentsDeductibles',
+        ];
+
         return $fieldMapping;
     }
 
@@ -528,5 +562,44 @@ class TbClaim extends AbstractSchema
     public function getCurrentYear()
     {
         return date('Y');
+    }
+
+    public function getHoldingCompanyName()
+    {
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+        return $holdingCompanyDetail['wyo'] ?? '';
+    }
+
+    public function parseBuildingDeductibles($coverageDetails)
+    {
+        $buildingDeductibles = array_filter($coverageDetails, function ($coverageDetail) {
+            return data_get($coverageDetail, 'coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageCode') === 'FLDBLDCVGAMT';
+        });
+
+        $buildingDeductibleValue = ! empty($buildingDeductibles) ? (reset($buildingDeductibles)['prDiscountCode'] ?? null) : null;
+
+        if ($buildingDeductibleValue) {
+            preg_match('/(\d+(?:\.\d+)?)$/', $buildingDeductibleValue, $matches);
+            $buildingDeductibleValue = $matches[1] ?? $buildingDeductibleValue;
+        }
+
+        return $buildingDeductibleValue ? Helper::formatCurrency($buildingDeductibleValue) : Helper::formatCurrency(0);
+    }
+
+    public function parseContentsDeductibles($coverageDetails)
+    {
+        $contentsDeductibles = array_filter($coverageDetails, function ($coverageDetail) {
+            return data_get($coverageDetail, 'coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageCode') === 'FLDCONTCVGAMT';
+        });
+
+        $contentsDeductibleValue = ! empty($contentsDeductibles) ? (reset($contentsDeductibles)['prDiscountCode'] ?? null) : null;
+
+        if ($contentsDeductibleValue) {
+            preg_match('/(\d+(?:\.\d+)?)$/', $contentsDeductibleValue, $matches);
+            $contentsDeductibleValue = $matches[1] ?? $contentsDeductibleValue;
+        }
+
+        return $contentsDeductibleValue ? Helper::formatCurrency($contentsDeductibleValue) : Helper::formatCurrency(0);
     }
 }
