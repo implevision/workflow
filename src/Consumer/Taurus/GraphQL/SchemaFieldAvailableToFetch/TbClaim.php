@@ -359,6 +359,42 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'parseClaimCommunication',
         ];
 
+        $fieldMapping['ClaimantTemporaryPhone'] = [
+            'GraphQLschemaToReplace' => [
+                'claimCommunication' => [
+                    'temporaryPhone' => null,
+                ],
+            ],
+            'jqFilter' => '.claimQuery.claimCommunication.temporaryPhone',
+        ];
+
+        $fieldMapping['ClaimantSecondaryPhone'] = [
+            'GraphQLschemaToReplace' => [
+                'claimCommunication' => [
+                    'secondaryPhone' => null,
+                ],
+            ],
+            'jqFilter' => '.claimQuery.claimCommunication.secondaryPhone',
+        ];
+
+        $fieldMapping['ClaimantTemporaryEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'claimCommunication' => [
+                    'temporaryEmail' => null,
+                ],
+            ],
+            'jqFilter' => '.claimQuery.claimCommunication.temporaryEmail',
+        ];
+
+        $fieldMapping['ClaimantSecondaryEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'claimCommunication' => [
+                    'secondaryEmail' => null,
+                ],
+            ],
+            'jqFilter' => '.claimQuery.claimCommunication.secondaryEmail',
+        ];
+
         $fieldMapping['InsuredPortal'] = [
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
