@@ -1089,11 +1089,7 @@ class TbPotransaction extends AbstractSchema
 
     public function formatDateTime($dateToFormat): ?string
     {
-        if (empty($dateToFormat)) {
-            return null;
-        }
-
-        return \Carbon\Carbon::parse($dateToFormat)->format('F j, Y, g:i A');
+        return Helper::formatDateTime($dateToFormat);
     }
 
     public function parseAppCodeNameToDisplayName($appCodeName)
