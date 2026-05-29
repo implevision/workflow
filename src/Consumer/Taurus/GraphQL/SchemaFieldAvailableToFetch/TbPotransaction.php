@@ -104,6 +104,7 @@ class TbPotransaction extends AbstractSchema
                     'policyFees' => null,
                 ],
                 'jqFilter' => '.policyQuery.policyFees',
+                'parseResultCallback' => 'formatCurrency',
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
@@ -819,6 +820,43 @@ class TbPotransaction extends AbstractSchema
                 'jqFilter' => '{metadata: .policyQuery?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyQuery?.id?, productCode: .policyQuery?.policy?.product?.productCode?}',
                 'parseResultCallback' => 'parsePaymentReceivedDate',
             ],
+
+             'ReceiptNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'receiptNumber' => null,
+                ],
+                'jqFilter' => '.policyQuery.receiptNumber',
+            ],
+
+            'PremiumChange' => [
+                'GraphQLschemaToReplace' => [
+                    'premiumChange' => null,
+                ],
+                'jqFilter' => '.policyQuery.premiumChange',
+                'parseResultCallback' => 'formatCurrency',
+            ],
+            
+            'PaymentCreatedDate' => [
+                'GraphQLschemaToReplace' => [
+                    'paymentLogs' => [
+                        'status' => null,
+                        'createdDate' => null,
+                    ],
+                ],
+                'jqFilter' => '([.policyQuery?.paymentLogs?[] | select(.status? == "Success")] | last)?.createdDate?',
+                'parseResultCallback' => 'formatDateTime',
+            ],
+
+            'PaymentType' => [
+                'GraphQLschemaToReplace' => [
+                    'paymentLogs' => [
+                        'status' => null,
+                        'metadata' => null,
+                    ],
+                ],
+                'jqFilter' => '([.policyQuery?.paymentLogs?[] | select(.status? == "Success")] | last)?.metadata?.startOnlineCollection?.request?.startOnlineCollectionRequest?.payment_type?',
+                'parseResultCallback' => 'formatPaymentTypeLabel',
+            ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
@@ -1064,6 +1102,11 @@ class TbPotransaction extends AbstractSchema
     public function formatDate($dateToFormat)
     {
         return Helper::formatDate($dateToFormat);
+    }
+
+    public function formatDateTime($dateToFormat): ?string
+    {
+        return Helper::formatDateTime($dateToFormat);
     }
 
     public function parseAppCodeNameToDisplayName($appCodeName)
@@ -1403,6 +1446,21 @@ class TbPotransaction extends AbstractSchema
         return $transactionDate ? $this->formatDate($transactionDate) : null;
     }
 
+    public function formatPaymentTypeLabel(?string $type): ?string
+    {
+        if (empty($type)) {
+            return null;
+        }
+
+        $labelMap = [
+            'PLASTIC_CARD' => 'Credit Card',
+            'CREDIT_CARD' => 'Credit Card',
+            'CC' => 'Credit Card',
+            'ACH' => 'ACH',
+        ];
+
+        return $labelMap[$type] ?? $type;
+    }
     public function parseCancelReason($policyData)
     {
         $productCode = $policyData['policy']['product']['productCode'] ?? null;
