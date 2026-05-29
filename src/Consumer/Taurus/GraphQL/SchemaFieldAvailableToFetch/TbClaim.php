@@ -431,13 +431,13 @@ class TbClaim extends AbstractSchema
         $fieldMapping['BuildingPayment'] = [
             'GraphQLschemaToReplace' => $payment,
             'jqFilter' => '.claim.claimReserve',
-            'parseResultCallback' => 'parseBuildingPaymentAmount',
+            'parseResultCallback' => 'parseBuildingPayment',
         ];
 
         $fieldMapping['ContentPayment'] = [
             'GraphQLschemaToReplace' => $payment,
             'jqFilter' => '.claim.claimReserve',
-            'parseResultCallback' => 'parseContentPaymentAmount',
+            'parseResultCallback' => 'parseContentPayment',
         ];
 
         return $fieldMapping;
@@ -699,12 +699,7 @@ class TbClaim extends AbstractSchema
             $amount += data_get($payment, 'claimCoverageTrans.amount', 0);
         }
 
-        return Helper::formatCurrency($amount ?? 0);
-    }
-
-    public function parseBuildingPaymentAmount($coverageDetails)
-    {
-        return abs($this->parseBuildingPayment($coverageDetails));
+        return Helper::formatCurrency(abs($amount) ?? 0);
     }
 
     public function parseContentPayment($coverageDetails)
@@ -720,11 +715,6 @@ class TbClaim extends AbstractSchema
             $amount += data_get($payment, 'claimCoverageTrans.amount', 0);
         }
 
-        return Helper::formatCurrency($amount ?? 0);
-    }
-
-    public function parseContentPaymentAmount($coverageDetails)
-    {
-        return abs($this->parseContentPayment($coverageDetails));
+        return Helper::formatCurrency(abs($amount) ?? 0);
     }
 }
