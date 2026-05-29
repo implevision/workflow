@@ -17,7 +17,7 @@ class SaveClaimLetter
                 'state' => $payload['actionPayload']['saveClaimLetter']['state'] ?? '',
                 'postalCode' => $payload['actionPayload']['saveClaimLetter']['postalCode'] ?? '',
             ],
-            'template' => 'CAT_CLOSE_BUILD_CONT', // hardcoded template for testing
+            'template' => $preparedData['templateId'],
             'text' => $preparedData['htmlContent'] ?? '',
         ];
         \App\Services\Claim\Claim::getClaimLetterGenerate($data);
