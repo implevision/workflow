@@ -414,6 +414,32 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'parseContentAdvancePayment',
         ];
 
+        $payment = [
+            'claimReserve' => [
+                'tranTypeCode' => null,
+                'tranSubTypeCode' => null,
+                'claimCoverageTrans' => [
+                    'coverageCode' => null,
+                    'amount' => null,
+                    'tbCvgpccoverage' => [
+                        'coverageCode' => null,
+                    ],
+                ],
+            ],
+        ];
+
+        $fieldMapping['BuildingPayment'] = [
+            'GraphQLschemaToReplace' => $payment,
+            'jqFilter' => '.claim.claimReserve',
+            'parseResultCallback' => 'parseBuildingPaymentAmount',
+        ];
+
+        $fieldMapping['ContentPayment'] = [
+            'GraphQLschemaToReplace' => $payment,
+            'jqFilter' => '.claim.claimReserve',
+            'parseResultCallback' => 'parseContentPaymentAmount',
+        ];
+
         return $fieldMapping;
     }
 
@@ -658,5 +684,47 @@ class TbClaim extends AbstractSchema
         }
 
         return Helper::formatCurrency(abs($amount ?? 0));
+    }
+
+    public function parseBuildingPayment($coverageDetails)
+    {
+        $buildingPayments = array_filter($coverageDetails, function ($coverageDetail) {
+            return data_get($coverageDetail, 'tranTypeCode') === 'Loss Payment' &&
+                data_get($coverageDetail, 'claimCoverageTrans.tbCvgpccoverage.coverageCode') === 'FLDBLDCVGAMT';
+        });
+
+        $amount = 0;
+
+        foreach ($buildingPayments as $payment) {
+            $amount += data_get($payment, 'claimCoverageTrans.amount', 0);
+        }
+
+        return Helper::formatCurrency($amount ?? 0);
+    }
+
+    public function parseBuildingPaymentAmount($coverageDetails)
+    {
+        return abs($this->parseBuildingPayment($coverageDetails));
+    }
+
+    public function parseContentPayment($coverageDetails)
+    {
+        $contentsPayments = array_filter($coverageDetails, function ($coverageDetail) {
+            return data_get($coverageDetail, 'tranTypeCode') === 'Loss Payment' &&
+                data_get($coverageDetail, 'claimCoverageTrans.tbCvgpccoverage.coverageCode') === 'FLDCONTCVGAMT';
+        });
+
+        $amount = 0;
+
+        foreach ($contentsPayments as $payment) {
+            $amount += data_get($payment, 'claimCoverageTrans.amount', 0);
+        }
+
+        return Helper::formatCurrency($amount ?? 0);
+    }
+
+    public function parseContentPaymentAmount($coverageDetails)
+    {
+        return abs($this->parseContentPayment($coverageDetails));
     }
 }
