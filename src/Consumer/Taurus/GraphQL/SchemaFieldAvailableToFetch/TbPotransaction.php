@@ -1454,6 +1454,9 @@ class TbPotransaction extends AbstractSchema
 
         $labelMap = [
             'PLASTIC_CARD' => 'Credit Card',
+            'CREDIT_CARD' => 'Credit Card',
+            'CC' => 'Credit Card',
+            'ACH' => 'ACH',
         ];
 
         return $labelMap[$type] ?? $type;
