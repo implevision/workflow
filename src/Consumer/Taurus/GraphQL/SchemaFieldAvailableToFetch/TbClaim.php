@@ -391,6 +391,29 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'parseContentsDeductibles',
         ];
 
+        $advancePayment = [
+            'claimReserve' => [
+                'tranTypeCode' => null,
+                'tranSubTypeCode' => null,
+                'amount' => null,
+                'claimReserveDetail' => [
+                    'reserveType' => null,
+                ],
+            ],
+        ];
+
+        $fieldMapping['BuildingAdvancePayment'] = [
+            'GraphQLschemaToReplace' => $advancePayment,
+            'jqFilter' => '.claim.claimReserve',
+            'parseResultCallback' => 'parseBuildingAdvancePayment',
+        ];
+
+        $fieldMapping['ContentAdvancePayment'] = [
+            'GraphQLschemaToReplace' => $advancePayment,
+            'jqFilter' => '.claim.claimReserve',
+            'parseResultCallback' => 'parseContentAdvancePayment',
+        ];
+
         return $fieldMapping;
     }
 
@@ -601,5 +624,39 @@ class TbClaim extends AbstractSchema
         }
 
         return $contentsDeductibleValue ? Helper::formatCurrency($contentsDeductibleValue) : Helper::formatCurrency(0);
+    }
+
+    public function parseBuildingAdvancePayment($claimReserves)
+    {
+        $buildingAdvancePayments = array_filter($claimReserves, function ($reserve) {
+            return data_get($reserve, 'tranTypeCode') === 'Loss Payment' && data_get($reserve, 'claimReserveDetail.reserveType') === 'A';
+        });
+
+        $amount = 0;
+
+        foreach ($buildingAdvancePayments as $payment) {
+            if (data_get($payment, 'tranSubTypeCode') === 'BUILDCLAIMPAYMENT') {
+                $amount += data_get($payment, 'amount', 0);
+            }
+        }
+
+        return Helper::formatCurrency(abs($amount ?? 0));
+    }
+
+    public function parseContentAdvancePayment($claimReserves)
+    {
+        $contentsAdvancePayments = array_filter($claimReserves, function ($reserve) {
+            return data_get($reserve, 'tranTypeCode') === 'Loss Payment' && data_get($reserve, 'claimReserveDetail.reserveType') === 'A';
+        });
+
+        $amount = 0;
+
+        foreach ($contentsAdvancePayments as $payment) {
+            if (data_get($payment, 'tranSubTypeCode') === 'CONTCLAIMPAYMENT') {
+                $amount += data_get($payment, 'amount', 0);
+            }
+        }
+
+        return Helper::formatCurrency(abs($amount ?? 0));
     }
 }
