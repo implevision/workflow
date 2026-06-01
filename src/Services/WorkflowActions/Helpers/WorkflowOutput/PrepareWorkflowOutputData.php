@@ -3,6 +3,7 @@
 namespace Taurus\Workflow\Services\WorkflowActions\Helpers\WorkflowOutput;
 
 use Taurus\Workflow\Events\PostActionEvent;
+use Taurus\Workflow\Services\WorkflowService;
 
 class PrepareWorkflowOutputData
 {
@@ -58,7 +59,9 @@ class PrepareWorkflowOutputData
             ];
 
             \Log::info('WORKFLOW - Executing post action for workflow output');
-            event(new PostActionEvent($actionPayload['module'], $actionPayload, (string) $this->jobWorkflowId));
+            $workflowService = app(WorkflowService::class);
+            $workflowService->getPostActionService()->execute($actionPayload["module"], $actionPayload, (string) $this->jobWorkflowId);
+            // event(new PostActionEvent($actionPayload['module'], $actionPayload, (string) $this->jobWorkflowId));
         }
     }
 
