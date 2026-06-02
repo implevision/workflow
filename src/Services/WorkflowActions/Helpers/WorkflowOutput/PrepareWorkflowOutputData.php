@@ -59,9 +59,9 @@ class PrepareWorkflowOutputData
             ];
 
             \Log::info('WORKFLOW - Executing post action for workflow output');
-            $workflowService = app(WorkflowService::class);
-            $workflowService->getPostActionService()->execute($actionPayload["module"], $actionPayload, (string) $this->jobWorkflowId);
-            // event(new PostActionEvent($actionPayload['module'], $actionPayload, (string) $this->jobWorkflowId));
+            // $workflowService = app(WorkflowService::class);
+            // $workflowService->getPostActionService()->execute($actionPayload["module"], $actionPayload, (string) $this->jobWorkflowId);
+            event(new PostActionEvent($actionPayload['module'], $actionPayload, (string) $this->jobWorkflowId));
         }
     }
 

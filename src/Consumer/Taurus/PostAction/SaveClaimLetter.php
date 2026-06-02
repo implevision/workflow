@@ -6,6 +6,11 @@ class SaveClaimLetter
 {
     public static function execute($module, $payload, $preparedData)
     {
+        \Log::info('WORKFLOW: Executing SaveClaimLetter post action', [
+            'module' => $module,
+            'payload' => $payload,
+            'preparedData' => $preparedData,
+        ]);
         $data = [
             'claimid' => $payload['recordIdentifier'] ?? null,
             'docFor' => $payload['actionPayload']['saveClaimLetter']['createDocumentCopyFor'],
