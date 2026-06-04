@@ -585,6 +585,10 @@ class WorkflowService
     {
         $moduleService = $this->getModuleService($module);
 
+        if ($moduleService instanceof \stdClass) {
+            return [];
+        }
+
         return $moduleService->getQueryForRecordIdentifier($module, $recordIdentifier);
     }
 
