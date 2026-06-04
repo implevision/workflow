@@ -172,8 +172,6 @@ class WorkflowSeeder extends Command
                 'replyTo' => $data['replyTo'] ?? '',
                 'senderName' => $data['senderName'] ?? '',
                 'module' => $data['module'] ?? '',
-                'cc' => $data['cc'] ?? '',
-                'bcc' => $data['bcc'] ?? '',
                 'attachments' => $data['attachments'] ?? [],
                 'templateType' => $data['templateType'] ?? '',
             ];
