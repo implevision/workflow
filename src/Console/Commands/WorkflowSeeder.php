@@ -128,7 +128,8 @@ class WorkflowSeeder extends Command
             foreach ($externalServices as $key => $service) {
                 switch ($key) {
                     case 'email':
-                        $this->insertEmailData($service);
+                    case 'template':
+                        $this->insertTemplate($service);
                         break;
                     default:
                         \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path} for workflow.");
@@ -153,7 +154,7 @@ class WorkflowSeeder extends Command
         return 0;
     }
 
-    private function insertEmailData($data)
+    private function insertTemplate($data)
     {
         $emailTemplateFilePath = database_path("{$this->initialFilePath}/{$data['filePath']}");
         $emailTemplateContentAsString = file_get_contents($emailTemplateFilePath);
