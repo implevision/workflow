@@ -790,6 +790,48 @@ class TbPotransaction extends AbstractSchema
                 ',
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
+            'AttachFinalRenewalNotice' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'docuploadinfo' => [
+                            'doctypes' => [
+                                'docTypeCode' => null,
+                            ],
+                            'docUploadDocInfoRel' => [
+                                'docUploadReference' => [
+                                    'tableRefId' => null,
+                                    'tableMasters' => [
+                                        'tableName' => null,
+                                    ],
+                                ],
+                                'docInfo' => [
+                                    'docPath' => null,
+                                    'docName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '
+                [
+                      .policyQuery?.policy?.docuploadinfo[]?
+                      | select(
+                      .doctypes?.docTypeCode? == "FINALNOTICE"
+                      and
+                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
+                      )
+                      | .docUploadDocInfoRel[]?
+                      | .docUploadReference?.tableRefId? as $tableRefId
+                      | .docInfo[]?
+                      | {
+                          name: .docName?,
+                          path: .docPath?,
+                          tableRefId: $tableRefId
+                        }
+                    ]
+                ',
+                'parseResultCallback' => 'generatePresignedUrl',
+            ],
             'PaymentTransactionNumber' => [
                 'GraphQLschemaToReplace' => [
                     'id' => null,
@@ -821,7 +863,7 @@ class TbPotransaction extends AbstractSchema
                 'parseResultCallback' => 'parsePaymentReceivedDate',
             ],
 
-             'ReceiptNumber' => [
+            'ReceiptNumber' => [
                 'GraphQLschemaToReplace' => [
                     'receiptNumber' => null,
                 ],
@@ -835,7 +877,7 @@ class TbPotransaction extends AbstractSchema
                 'jqFilter' => '.policyQuery.premiumChange',
                 'parseResultCallback' => 'formatCurrency',
             ],
-            
+
             'PaymentCreatedDate' => [
                 'GraphQLschemaToReplace' => [
                     'paymentLogs' => [
@@ -1461,6 +1503,7 @@ class TbPotransaction extends AbstractSchema
 
         return $labelMap[$type] ?? $type;
     }
+
     public function parseCancelReason($policyData)
     {
         $productCode = $policyData['policy']['product']['productCode'] ?? null;

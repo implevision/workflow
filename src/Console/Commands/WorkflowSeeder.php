@@ -152,20 +152,20 @@ class WorkflowSeeder extends Command
                 'replyTo' => $data['replyTo'] ?? '',
                 'senderName' => $data['senderName'] ?? '',
                 'module' => $data['module'] ?? '',
-                'cc' => $data['cc'] ?? "",
-                'bcc' => $data['bcc'] ?? "",
+                'cc' => $data['cc'] ?? '',
+                'bcc' => $data['bcc'] ?? '',
                 'attachments' => $data['attachments'] ?? [],
-                'templateType' => $data['templateType'] ?? "",
+                'templateType' => $data['templateType'] ?? '',
             ];
 
             if (isset($data['letterEditorMode']) && $data['letterEditorMode']) {
-                $requestBody['letterEditorMode'] = $data['letterEditorMode'] ?? "";
+                $requestBody['letterEditorMode'] = $data['letterEditorMode'] ?? '';
             }
-            if (!empty($data['pdfPlaceholders'])) {
+            if (! empty($data['pdfPlaceholders'])) {
                 $requestBody['pdfPlaceholders'] = $data['pdfPlaceholders'] ?? [];
             }
             if (isset($data['pdfS3Key']) && $data['pdfS3Key']) {
-                $requestBody['pdfS3Key'] = $data['pdfS3Key'] ?? "";
+                $requestBody['pdfS3Key'] = $data['pdfS3Key'] ?? '';
             }
 
             // create email template in email template service
