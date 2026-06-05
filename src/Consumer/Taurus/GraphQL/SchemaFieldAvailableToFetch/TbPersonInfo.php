@@ -542,6 +542,8 @@ class TbPersonInfo extends AbstractSchema
 
     public function generatePresignedUrlForStatementSheet(array $agentStatementMasterData): array
     {
+        \Log::info('WORKFLOW: agent statement master data', ['agentStatementMasterData' => $agentStatementMasterData]);
+
         return [
             [
                 'name' => 'Commission Statement Sheet',
