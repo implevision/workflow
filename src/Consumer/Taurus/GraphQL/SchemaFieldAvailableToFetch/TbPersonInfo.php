@@ -20,10 +20,13 @@ class TbPersonInfo extends AbstractSchema
      */
     protected $queryName;
 
-    public function __construct()
+    protected $appendedPlaceHolders;
+
+    public function __construct($appendedPlaceHolders = [])
     {
         $this->fieldMapping = $this->initializeFieldMapping();
         $this->queryName = 'producerQuery';
+        $this->appendedPlaceHolders = $appendedPlaceHolders;
     }
 
     /**
@@ -392,6 +395,21 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'parseW9FormFeinSsnNo',
         ];
 
+        $targetAgentStatementMasterPK = isset($this->appendedPlaceHolders['AgentStatementMasterPK']) ? $this->appendedPlaceHolders['AgentStatementMasterPK'] : null;
+
+        $fieldMapping['AttachStatementSheet'] = [
+            'GraphQLschemaToReplace' => [
+                'accounts' => [
+                    'agentStatementMaster' => [
+                        'agentStatementMasterPK' => null,
+                        'path' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => ".producerQuery.accounts[].agentStatementMaster[] | select(.agentStatementMasterPK == {$targetAgentStatementMasterPK})",
+            'parseResultCallback' => 'generatePresignedUrlForStatementSheet',
+        ];
+
         return $fieldMapping;
     }
 
@@ -520,5 +538,15 @@ class TbPersonInfo extends AbstractSchema
     public function getTodaysDate(): string
     {
         return Helper::getTodaysDate();
+    }
+
+    public function generatePresignedUrlForStatementSheet(array $agentStatementMasterData): array
+    {
+        return [
+            [
+                'name' => 'Commission Statement Sheet',
+                'path' => Helper::generatePresignedUrl($agentStatementMasterData['path'] ?? ''),
+            ],
+        ];
     }
 }

@@ -320,7 +320,7 @@ class DispatchWorkflowService
                 } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
                     // Build GraphQL query
                     try {
-                        $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->workflowInfo['detail']['module']);
+                        $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->workflowInfo['detail']['module'], $this->appendPlaceHolders);
                         $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
                         $queryName = $moduleClassForGraphQL->getQueryName();
                         $graphQLHeaders = $moduleClassForGraphQL->getHeaders();
