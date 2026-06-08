@@ -621,6 +621,7 @@ class TbPersonInfo extends AbstractSchema
     {
         [$brandedCompanyArr] = $this->extractProducerContext($response);
 
+        \Log::info('WORKFLOW: Branded company data for logo resolution', ['brandedCompanyArr' => $brandedCompanyArr]);
         return Helper::parseCompanyLogo($brandedCompanyArr);
     }
 }
