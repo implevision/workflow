@@ -20,6 +20,11 @@ class TbPersonInfo extends AbstractSchema
      */
     protected $queryName;
 
+    /**
+     * @var array 
+     * 
+     * This property contains additional data provided while executing workflow
+     */
     protected $appendedPlaceHolders;
 
     public function __construct($appendedPlaceHolders = [])
