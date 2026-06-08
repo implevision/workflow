@@ -41,7 +41,12 @@ class InitInstance
         $graphQLQueryMappingClass = "Taurus\\Workflow\\Consumer\\Taurus\\GraphQL\\SchemaFieldAvailableToFetch\\{$module}";
 
         if (class_exists($graphQLQueryMappingClass)) {
-            return new $graphQLQueryMappingClass($appendPlaceHolders);
+            $instance = new $graphQLQueryMappingClass;
+            if (!empty($appendPlaceHolders)) {
+                $instance->setAppendedPlaceHolders($appendPlaceHolders);
+            }
+
+            return $instance;
         } else {
             throw new \Exception("Graph QL query mapping class '$graphQLQueryMappingClass' does not exist.");
         }
