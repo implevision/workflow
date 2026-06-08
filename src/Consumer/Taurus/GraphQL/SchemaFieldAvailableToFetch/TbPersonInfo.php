@@ -20,17 +20,8 @@ class TbPersonInfo extends AbstractSchema
      */
     protected $queryName;
 
-    /**
-     * @var array
-     *
-     * This property contains additional data provided while executing workflow
-     */
-    protected $appendedPlaceHolders;
-
-    public function __construct($appendedPlaceHolders = [])
+    public function __construct()
     {
-        $this->appendedPlaceHolders = $appendedPlaceHolders;
-        $this->fieldMapping = $this->initializeFieldMapping();
         $this->queryName = 'producerQuery';
     }
 
@@ -44,6 +35,10 @@ class TbPersonInfo extends AbstractSchema
      */
     public function getFieldMapping()
     {
+        if (empty($this->fieldMapping)) {
+            $this->fieldMapping = $this->initializeFieldMapping();
+        }
+
         return $this->fieldMapping;
     }
 
@@ -74,6 +69,8 @@ class TbPersonInfo extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $appendedPlaceHolders = $this->getAppendedPlaceHolders();
+
         $fieldMapping = [
 
             'AgencyFloodCode' => [
@@ -400,7 +397,7 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'parseW9FormFeinSsnNo',
         ];
 
-        $targetAgentStatementMasterPK = isset($this->appendedPlaceHolders['AgentStatementMasterPK']) ? $this->appendedPlaceHolders['AgentStatementMasterPK'] : null;
+        $targetAgentStatementMasterPK = isset($appendedPlaceHolders['AgentStatementMasterPK']) ? $appendedPlaceHolders['AgentStatementMasterPK'] : null;
 
         \Log::info('WORKFLOW: Appended placeholders for TbPersonInfo', ['appendedPlaceHolders' => $this->appendedPlaceHolders, 'targetAgentStatementMasterPK' => $targetAgentStatementMasterPK]);
 
@@ -413,7 +410,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => ".producerQuery.accounts[].agentStatementMaster[] | select(.agentStatementMasterPK == {$targetAgentStatementMasterPK})",
+            'jqFilter' => '.producerQuery.accounts[].agentStatementMaster[] | select(.agentStatementMasterPK == '.json_encode($targetAgentStatementMasterPK).')',
             'parseResultCallback' => 'generatePresignedUrlForStatementSheet',
         ];
 
