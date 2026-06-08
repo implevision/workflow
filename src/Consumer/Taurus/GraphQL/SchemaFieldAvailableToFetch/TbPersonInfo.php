@@ -21,8 +21,8 @@ class TbPersonInfo extends AbstractSchema
     protected $queryName;
 
     /**
-     * @var array 
-     * 
+     * @var array
+     *
      * This property contains additional data provided while executing workflow
      */
     protected $appendedPlaceHolders;
@@ -415,6 +415,31 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'generatePresignedUrlForStatementSheet',
         ];
 
+        $fieldMapping['WYOCompanyName'] = [
+            'GraphQLschemaToReplace' => [
+                'brandedCompany' => [
+                    'company' => [
+                        'companyName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery',
+            'parseResultCallback' => 'parseCompanyName',
+        ];
+
+        $fieldMapping['CompanyLogo'] = [
+            'GraphQLschemaToReplace' => [
+                'brandedCompany' => [
+                    'company' => [
+                        'logo' => null,
+                        'publicLogo' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.policyQuery',
+            'parseResultCallback' => 'resolveCompanyLogoUrl',
+        ];
+
         return $fieldMapping;
     }
 
@@ -553,5 +578,45 @@ class TbPersonInfo extends AbstractSchema
                 'path' => Helper::generatePresignedUrl($agentStatementMasterData['path'] ?? ''),
             ],
         ];
+    }
+
+    public function parseCompanyName($response)
+    {
+        return $this->resolveCompanyDetail($response, 'companyName', 'wyo');
+    }
+
+    private function resolveCompanyDetail($response, string $companyKey, string $holdingKey): string
+    {
+        [$brandedCompanyArr] = $this->extractProducerContext($response);
+
+        $value = $brandedCompanyArr['company'][$companyKey] ?? null;
+        if (! empty($value)) {
+            return $value;
+        }
+
+        return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
+    }
+
+    private function extractProducerContext($response): array
+    {
+        $response = is_array($response) ? $response : [];
+        $brandedCompany = $response['brandedCompany'] ?? [];
+
+        if (is_array($brandedCompany) && array_key_exists('company', $brandedCompany)) {
+            $normalizedBrandedCompany = $brandedCompany;
+        } else {
+            $normalizedBrandedCompany = is_array($brandedCompany) ? ($brandedCompany[0] ?? []) : [];
+        }
+
+        return [
+            $normalizedBrandedCompany,
+        ];
+    }
+
+    public function resolveCompanyLogoUrl($response)
+    {
+        [$brandedCompanyArr] = $this->extractProducerContext($response);
+
+        return Helper::parseCompanyLogo($brandedCompanyArr);
     }
 }
