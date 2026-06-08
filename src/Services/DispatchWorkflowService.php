@@ -387,7 +387,9 @@ class DispatchWorkflowService
                                     $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback();
                                 }
                             } else {
+                                \Log::info('WORKFLOW - Extracting value for placeholder: '.$placeHolder.' using jq filter: '.$jqFilter);
                                 $placeHolderValue = $graphQLSchemaBuilder->extractValue($response, $jqFilter);
+                                \Log::info('WORKFLOW - Extracted value for placeholder: '.$placeHolder.' is: '.$placeHolderValue);
 
                                 if ($placeHolderValue) {
                                     $parsedValue = json_decode($placeHolderValue, true);
