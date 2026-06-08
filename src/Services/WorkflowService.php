@@ -604,7 +604,7 @@ class WorkflowService
         }
     }
 
-    public function getGraphQLQueryMappingService($module, $appendPlaceHolders=[])
+    public function getGraphQLQueryMappingService($module, $appendPlaceHolders = [])
     {
         try {
             $consumerService = $this->getConsumerService();
