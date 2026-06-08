@@ -2,4 +2,15 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\Modules;
 
-class AgentProducerService extends TbPersonInfoService {}
+use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
+
+class AgencyProducerService extends TbPersonInfoService
+{
+    public function getQueryForRecordIdentifier($module, $recordIdentifier)
+    {
+        $moduleClass = new \Avatar\Infrastructure\Models\Api\v1\TbPersonInfo;
+        $primaryKey = $moduleClass->getKeyName();
+
+        return GraphQLSchemaBuilderService::getQueryMapping($primaryKey, 'EQ', $recordIdentifier);
+    }
+}

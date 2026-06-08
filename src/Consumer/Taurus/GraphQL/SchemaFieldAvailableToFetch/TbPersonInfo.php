@@ -391,6 +391,287 @@ class TbPersonInfo extends AbstractSchema
             'jqFilter' => '.producerQuery.userAgent.agency.feinSsnNo',
             'parseResultCallback' => 'parseW9FormFeinSsnNo',
         ];
+        
+        // agent 
+        $fieldMapping['AgentFirstName'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'firstName' => null,
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.firstName',
+        ];
+
+        $fieldMapping['AgentLastName'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'lastName' => null,
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.lastName',
+        ];
+
+        
+        $fieldMapping['AgentFloodCode'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'agencyFloodCode' => null,
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.agencyFloodCode',
+        ];
+
+         $fieldMapping['AgentWYOUpn'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'wyoUpn' => null,
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.wyoUpn',
+        ];
+
+         $fieldMapping['AgentStatus'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'agencyStatus' => null,
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.agencyStatus',
+        ];
+
+        
+         $fieldMapping['AgentEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'emailInfo' => [
+                            'email' => null
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.emailInfo[0].email',
+        ];
+
+         $fieldMapping['WYOAgentCode'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'personAddInfos' => [
+                            'wyoAgencyAgentCode' => null
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.personAddInfos[0].wyoAgencyAgentCode',
+        ];
+
+        $fieldMapping['PreviousWYOAgentCode'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'personAddInfos' => [
+                            'previousWyoAgencyAgentCode' => null
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.personAddInfos[0].previousWyoAgencyAgentCode',
+        ];
+
+
+        
+        $fieldMapping['AgentNewBusinessSuspendDate'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agent' => [
+                        'personAddInfos' => [
+                            'metadata' => null
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.personAddInfos[0].metadata.newbusiness_suspend_date',
+        ];
+
+        $fieldMapping['AgentResidentStateName'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agent' => [
+                        'personAddInfos' => [
+                            'residentStateName' => null
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.personAddInfos[0].residentStateName',
+        ];
+
+        $fieldMapping['AgentResidentStateId'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'personAddInfos' => [
+                            'metadata' => null
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.personAddInfos[0].metadata.resident_state_id',
+        ];
+
+        $fieldMapping['UserLevel'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'user' => [
+                            'level' => [
+                                'userLevelName' => null
+                            ]
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.user.level.userLevelName',
+        ];
+
+   
+        $fieldMapping['AgentPhoneNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'user' => [
+                            'phoneNumber'  => null
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.user.phoneNumber',
+        ];
+
+        $fieldMapping['DebarmentApprovalDate'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'user' => [
+                            'userSuspension'  => [
+                                'debarmentApprovalDate' => null
+                            ]
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.user.userSuspension.debarmentApprovalDate',
+        ];
+
+     
+        $fieldMapping['DebarmentExpirationDate'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'user' => [
+                            'userSuspension'  => [
+                                'debarmentExpirationDate' => null
+                            ]
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.user.userSuspension.debarmentExpirationDate',
+        ];
+   
+        $fieldMapping['DebarredDate'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                  'agent' => [
+                        'user' => [
+                            'userSuspension'  => [
+                                'debarredDate' => null
+                            ]
+                        ],
+                    ]
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agent.user.userSuspension.DebarredDate',
+        ];
+
+        $fieldMapping['AgentAgencyName'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        'agencyName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agency.agencyName',
+        ];
+
+        $fieldMapping['AgentAgencyFloodCode'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        'agencyFloodCode' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agency.agencyFloodCode',
+        ];
+
+        $fieldMapping['AgentAgencyDbaName'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        'dbaName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agency.dbaName',
+        ];
+
+        $fieldMapping['AgentAgencyFeinSsnNo'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        'feinSsnNo' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agency.feinSsnNo',
+        ];
+
+        $fieldMapping['AgentAgencyWyoCode'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        'personAddInfos' => [
+                            'wyoAgencyAgentCode' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agency.personAddInfos[0].wyoAgencyAgentCode',
+        ];
+
+        $fieldMapping['AgentAgencyEftPayeesName'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        'eftPayeesName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agency.eftPayeesName',
+        ];
 
         return $fieldMapping;
     }
