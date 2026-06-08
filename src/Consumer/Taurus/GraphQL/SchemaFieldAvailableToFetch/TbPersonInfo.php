@@ -397,6 +397,8 @@ class TbPersonInfo extends AbstractSchema
 
         $targetAgentStatementMasterPK = isset($this->appendedPlaceHolders['AgentStatementMasterPK']) ? $this->appendedPlaceHolders['AgentStatementMasterPK'] : null;
 
+        \Log::info('WORKFLOW: Appended placeholders for TbPersonInfo', ['appendedPlaceHolders' => $this->appendedPlaceHolders, 'targetAgentStatementMasterPK' => $targetAgentStatementMasterPK]);
+
         $fieldMapping['AttachStatementSheet'] = [
             'GraphQLschemaToReplace' => [
                 'accounts' => [
