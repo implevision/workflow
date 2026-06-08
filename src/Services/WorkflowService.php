@@ -566,10 +566,6 @@ class WorkflowService
     {
         $moduleService = $this->getModuleService($module);
 
-        if ($moduleService instanceof \stdClass) {
-            return [];
-        }
-
         // This method should implement the logic to get matching records based on the effective action
         // For now, it returns an empty array as a placeholder
         return $moduleService->getQueryForEffectiveAction(
