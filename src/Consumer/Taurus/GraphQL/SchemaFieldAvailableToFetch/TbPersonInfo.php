@@ -24,9 +24,9 @@ class TbPersonInfo extends AbstractSchema
 
     public function __construct($appendedPlaceHolders = [])
     {
+        $this->appendedPlaceHolders = $appendedPlaceHolders;
         $this->fieldMapping = $this->initializeFieldMapping();
         $this->queryName = 'producerQuery';
-        $this->appendedPlaceHolders = $appendedPlaceHolders;
     }
 
     /**
