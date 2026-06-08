@@ -438,7 +438,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.policyQuery',
+            'jqFilter' => '.producerQuery',
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
