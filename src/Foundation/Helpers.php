@@ -117,7 +117,38 @@ function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
 {
     $command = gitCommandToDispatchWorkflow($workflowId, $recordIdentifier);
 
-    return sprintf('%s %s %s', 'php artisan ', $command['command'], implode(', ', $command['options']));
+    foreach ($command['options'] as $optionKey => $optionValue) {
+        if (is_array($optionValue)) {
+            if ($optionKey === '--tenants') {
+                $command['options'][$optionKey] = implode(',', $optionValue);
+
+                continue;
+            }
+
+            if ($optionKey === '--option') {
+                foreach ($optionValue as $index => $option) {
+                    $command['options'][$optionKey][$index] = sprintf('%s=%s', '--option', $option);
+                }
+
+                $command['options'][$optionKey] = implode(' ', $command['options'][$optionKey]);
+
+                continue;
+            }
+        }
+    }
+
+    $parts = [];
+    foreach ($command['options'] as $key => $value) {
+        if (! str_starts_with($key, '--')) {
+            $parts[] = $value;
+        } elseif ($key === '--option') {
+            $parts[] = $value;
+        } else {
+            $parts[] = $key.'='.$value;
+        }
+    }
+
+    return sprintf('php artisan %s %s', $command['command'], implode(' ', $parts));
 }
 
 function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [], ?string $referenceId = null)
