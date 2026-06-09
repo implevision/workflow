@@ -153,13 +153,24 @@ function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
 
 function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [], ?string $referenceId = null)
 {
+    $hasData = ! empty($data);
+    $hasPlaceholders = ! empty($entityPlaceHoldersToAppend);
+    $hasReferenceId = $referenceId !== null;
+
     $data = json_encode((array) $data);
     $entityPlaceHoldersToAppend = json_encode((array) $entityPlaceHoldersToAppend);
+
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
 
-        $options = ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier", "data=$data", "appendPlaceHolders=$entityPlaceHoldersToAppend"];
-        if ($referenceId !== null) {
+        $options = ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier"];
+        if ($hasData) {
+            $options[] = "data=$data";
+        }
+        if ($hasPlaceholders) {
+            $options[] = "appendPlaceHolders=$entityPlaceHoldersToAppend";
+        }
+        if ($hasReferenceId) {
             $options[] = "referenceId=$referenceId";
         }
 
@@ -175,10 +186,14 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data 
         $options = [
             '--workflowId' => $workflowId,
             '--recordIdentifier' => $recordIdentifier,
-            '--data' => $data,
-            '--appendPlaceHolders' => $entityPlaceHoldersToAppend,
         ];
-        if ($referenceId !== null) {
+        if ($hasData) {
+            $options['--data'] = $data;
+        }
+        if ($hasPlaceholders) {
+            $options['--appendPlaceHolders'] = $entityPlaceHoldersToAppend;
+        }
+        if ($hasReferenceId) {
             $options['--referenceId'] = $referenceId;
         }
 
