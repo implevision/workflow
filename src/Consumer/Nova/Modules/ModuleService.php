@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\OdysseyNova\Modules;
+namespace Taurus\Workflow\Consumer\Nova\Modules;
 
 use Carbon\Carbon;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
@@ -33,7 +33,7 @@ class ModuleService
             'Now %s%s %s',
             $executionEventIncident == 'AFTER' ? '+' : '-',
             $executionFrequency,
-            strtolower($executionFrequencyType).'s',
+            strtolower($executionFrequencyType) . 's',
         );
         $timeToParse = Carbon::parse($timeStrToParse);
 

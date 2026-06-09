@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\OdysseyNova;
+namespace Taurus\Workflow\Consumer\Nova;
 
 use Illuminate\Support\Facades\Config;
 
@@ -15,7 +15,7 @@ class InitInstance
     public function getModuleService($module)
     {
         $module = $this->getModuleName($module);
-        $moduleServiceClass = "Taurus\\Workflow\\Consumer\\OdysseyNova\\Modules\\{$module}Service";
+        $moduleServiceClass = "Taurus\\Workflow\\Consumer\\Nova\\Modules\\{$module}Service";
 
         if (class_exists($moduleServiceClass)) {
             return new $moduleServiceClass;
@@ -33,7 +33,7 @@ class InitInstance
     public function getGraphQLQueryMappingService($module)
     {
         $module = $this->getModuleName($module);
-        $graphQLQueryMappingClass = "Taurus\\Workflow\\Consumer\\OdysseyNova\\GraphQL\\SchemaFieldAvailableToFetch\\{$module}";
+        $graphQLQueryMappingClass = "Taurus\\Workflow\\Consumer\\Nova\\GraphQL\\SchemaFieldAvailableToFetch\\{$module}";
 
         if (class_exists($graphQLQueryMappingClass)) {
             return new $graphQLQueryMappingClass;
@@ -56,7 +56,7 @@ class InitInstance
 
     public function getPostActionService()
     {
-        $postActionServiceClass = 'Taurus\\Workflow\\Consumer\\OdysseyNova\\PostAction\\PostActionService';
+        $postActionServiceClass = 'Taurus\\Workflow\\Consumer\\Nova\\PostAction\\PostActionService';
 
         if (class_exists($postActionServiceClass)) {
             return new $postActionServiceClass;

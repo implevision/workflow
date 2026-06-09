@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\OdysseyNova\GraphQL\SchemaFieldAvailableToFetch;
+namespace Taurus\Workflow\Consumer\Nova\GraphQL\SchemaFieldAvailableToFetch;
 
 class AbstractSchema
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\Taurus\PostAction;
+namespace Taurus\Workflow\Consumer\Nova\PostAction;
 
 class PostActionService
 {
