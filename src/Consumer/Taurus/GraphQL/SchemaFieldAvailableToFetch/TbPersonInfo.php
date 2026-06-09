@@ -22,7 +22,6 @@ class TbPersonInfo extends AbstractSchema
 
     public function __construct()
     {
-        $this->fieldMapping = $this->initializeFieldMapping();
         $this->queryName = 'producerQuery';
     }
 
@@ -36,6 +35,10 @@ class TbPersonInfo extends AbstractSchema
      */
     public function getFieldMapping()
     {
+        if (empty($this->fieldMapping)) {
+            $this->fieldMapping = $this->initializeFieldMapping();
+        }
+
         return $this->fieldMapping;
     }
 
@@ -66,6 +69,8 @@ class TbPersonInfo extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $appendedPlaceHolders = $this->getAppendedPlaceHolders();
+
         $fieldMapping = [
 
             'AgencyFloodCode' => [
@@ -392,6 +397,46 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'parseW9FormFeinSsnNo',
         ];
 
+        $targetAgentStatementMasterPK = isset($appendedPlaceHolders['AgentStatementMasterPK']) ? $appendedPlaceHolders['AgentStatementMasterPK'] : null;
+
+        $fieldMapping['AttachStatementSheet'] = [
+            'GraphQLschemaToReplace' => [
+                'accounts' => [
+                    'agentStatementMaster' => [
+                        'agentStatementMasterPK' => null,
+                        'path' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.accounts[].agentStatementMaster[] | select(.agentStatementMasterPK == '.json_encode($targetAgentStatementMasterPK).')',
+            'parseResultCallback' => 'generatePresignedUrlForStatementSheet',
+        ];
+
+        $fieldMapping['WYOCompanyName'] = [
+            'GraphQLschemaToReplace' => [
+                'brandedCompany' => [
+                    'company' => [
+                        'companyName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery',
+            'parseResultCallback' => 'parseCompanyName',
+        ];
+
+        $fieldMapping['CompanyLogo'] = [
+            'GraphQLschemaToReplace' => [
+                'brandedCompany' => [
+                    'company' => [
+                        'logo' => null,
+                        'publicLogo' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery',
+            'parseResultCallback' => 'resolveCompanyLogoUrl',
+        ];
+
         return $fieldMapping;
     }
 
@@ -520,5 +565,55 @@ class TbPersonInfo extends AbstractSchema
     public function getTodaysDate(): string
     {
         return Helper::getTodaysDate();
+    }
+
+    public function generatePresignedUrlForStatementSheet(array $agentStatementMasterData): array
+    {
+        return [
+            [
+                'name' => 'Commission Statement Sheet',
+                'path' => Helper::generatePresignedUrl($agentStatementMasterData['path'] ?? ''),
+            ],
+        ];
+    }
+
+    public function parseCompanyName($response)
+    {
+        return $this->resolveCompanyDetail($response, 'companyName', 'wyo');
+    }
+
+    private function resolveCompanyDetail($response, string $companyKey, string $holdingKey): string
+    {
+        [$brandedCompanyArr] = $this->extractProducerContext($response);
+
+        $value = $brandedCompanyArr['company'][$companyKey] ?? null;
+        if (! empty($value)) {
+            return $value;
+        }
+
+        return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
+    }
+
+    private function extractProducerContext($response): array
+    {
+        $response = is_array($response) ? $response : [];
+        $brandedCompany = $response['brandedCompany'] ?? [];
+
+        if (is_array($brandedCompany) && array_key_exists('company', $brandedCompany)) {
+            $normalizedBrandedCompany = $brandedCompany;
+        } else {
+            $normalizedBrandedCompany = is_array($brandedCompany) ? ($brandedCompany[0] ?? []) : [];
+        }
+
+        return [
+            $normalizedBrandedCompany,
+        ];
+    }
+
+    public function resolveCompanyLogoUrl($response)
+    {
+        [$brandedCompanyArr] = $this->extractProducerContext($response);
+
+        return Helper::parseCompanyLogo($brandedCompanyArr);
     }
 }

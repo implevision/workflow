@@ -604,7 +604,7 @@ class WorkflowService
         }
     }
 
-    public function getGraphQLQueryMappingService($module)
+    public function getGraphQLQueryMappingService($module, $appendPlaceHolders = [])
     {
         try {
             $consumerService = $this->getConsumerService();
@@ -612,7 +612,7 @@ class WorkflowService
                 return new stdClass;
             }
 
-            return $consumerService->getGraphQLQueryMappingService($module);
+            return $consumerService->getGraphQLQueryMappingService($module, $appendPlaceHolders);
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 
