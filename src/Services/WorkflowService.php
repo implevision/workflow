@@ -481,7 +481,7 @@ class WorkflowService
                     $scheduleGroupArnObject = $this->workflowConfigRepo->getByKey('schedule_group_arn');
                     $scheduleGroupsArn = $scheduleGroupArnObject->config_value ?? null;
                 } catch (\Exception $e) {
-                    \Log::error('Error fetching schedule group ARN: '.$e->getMessage());
+                    \Log::info('No schedule group ARN found: '.$e->getMessage());
                 }
 
                 $isAwsInfraAlreadySetup = $scheduleGroupsArn ? true : false;
