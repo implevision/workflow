@@ -31,6 +31,10 @@ class DocumentDetail extends AbstractSchema
     private function initializeFieldMapping(): array
     {
         return [
+            'DocumentId' => [
+                'GraphQLschemaToReplace' => ['id' => null],
+                'jqFilter' => '.documentDetail.id',
+            ],
             'DocName' => [
                 'GraphQLschemaToReplace' => ['docName' => null],
                 'jqFilter' => '.documentDetail.docName',
@@ -66,6 +70,10 @@ class DocumentDetail extends AbstractSchema
             'DateOfLoss' => [
                 'GraphQLschemaToReplace' => ['claim' => ['dateOfLoss' => null]],
                 'jqFilter' => '.documentDetail.claim.dateOfLoss',
+            ],
+            'PolicyNumberWithoutPrefix' => [
+                'GraphQLschemaToReplace' => ['claim' => ['policy' => ['policyNumber' => null]]],
+                'jqFilter' => '.documentDetail.claim.policy.policyNumber',
             ],
         ];
     }
