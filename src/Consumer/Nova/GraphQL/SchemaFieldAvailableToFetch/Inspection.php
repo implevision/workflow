@@ -11,11 +11,6 @@ class Inspection extends AbstractSchema
     public function __construct()
     {
         $this->fieldMapping = $this->initializeFieldMapping();
-
-        $token = config('workflow.graphql_bearer_token');
-        if ($token) {
-            $this->headers['Authorization'] = 'Bearer ' . $token;
-        }
     }
 
     public function getFieldMapping(): array
