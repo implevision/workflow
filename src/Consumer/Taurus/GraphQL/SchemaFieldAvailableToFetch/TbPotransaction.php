@@ -1043,18 +1043,20 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parseCancelRefundAmount',
         ];
 
-        $targetTransactionId = $appendedPlaceHolders['TransactionId'] ?? null;
+        $targetPolicyLogId = isset($appendedPlaceHolders['PolicyLogId']) ? (int) $appendedPlaceHolders['PolicyLogId'] : null;
 
         $policyLogsGraphQLSchema = [
             'policy' => [
                 'policyLogs' => [
-                    'transactionId' => null,
+                    'id' => null,
                     'metadata' => null,
                 ],
             ],
         ];
 
-        $policyLogsJqFilter = '.policyQuery.policy.policyLogs[] | select(.transactionId == '.json_encode($targetTransactionId).')';
+        $policyLogsJqFilter = $targetPolicyLogId !== null
+            ? '.policyQuery.policy.policyLogs[] | select(.id == '.$targetPolicyLogId.')'
+            : '.policyQuery.policy.policyLogs[0]';
 
         $fieldMapping['PolicyLogNote'] = [
             'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
