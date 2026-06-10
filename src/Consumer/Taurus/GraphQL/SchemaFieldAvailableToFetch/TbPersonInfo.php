@@ -453,10 +453,10 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'parseFullMailingAddress',
         ];
 
-        $fieldMapping['AgentCommissionPercentage'] = [
+        $fieldMapping['AgentCommissionPercentageForAgreement'] = [
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
-            'parseResultCallback' => 'parseAgentCommissionPercentage',
+            'parseResultCallback' => 'parseAgentCommissionPercentageForAgreement',
         ];
 
         return $fieldMapping;
@@ -646,7 +646,7 @@ class TbPersonInfo extends AbstractSchema
         return Helper::parseCompanyLogo($brandedCompanyArr);
     }
 
-    public function parseAgentCommissionPercentage()
+    public function parseAgentCommissionPercentageForAgreement()
     {
         return 'Twenty-two Percent (22%)';
     }
