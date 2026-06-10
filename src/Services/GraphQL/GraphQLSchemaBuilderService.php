@@ -146,6 +146,10 @@ class GraphQLSchemaBuilderService
         }
 
         if (($group['type'] ?? null) === 'rule') {
+            if (isset($group['isValid']) && $group['isValid'] === false) {
+                return [];
+            }
+
             $relation = $group['relation'] ?? '';
             $relationName = self::extractRelationName($relation);
             $column = self::extractRelationColumn($relation);
@@ -176,6 +180,10 @@ class GraphQLSchemaBuilderService
                 if (! empty($childCondition)) {
                     $children[] = $childCondition;
                 }
+            }
+
+            if (empty($children)) {
+                return [];
             }
 
             return [
