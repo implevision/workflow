@@ -200,10 +200,12 @@ class DispatchWorkflowService
             if ($condition['applyRuleTo'] == 'CERTAIN' && ! $this->isManuallyInvoked) {
                 $conditionsToApply = GraphQLSchemaBuilderService::buildWhereConditionFromGroup($condition['applyConditionRules']);
 
-                if (count($graphQLQuery)) {
-                    $graphQLQuery['JOIN'] = $conditionsToApply;
-                } else {
-                    $graphQLQuery = $conditionsToApply;
+                if (! empty($conditionsToApply)) {
+                    if (count($graphQLQuery)) {
+                        $graphQLQuery['JOIN'] = $conditionsToApply;
+                    } else {
+                        $graphQLQuery = $conditionsToApply;
+                    }
                 }
             }
 
