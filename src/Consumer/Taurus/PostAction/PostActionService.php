@@ -31,6 +31,10 @@ class PostActionService
             return \Taurus\Workflow\Consumer\Taurus\PostAction\PrepareEmailData::prepare($payload, $placeholders, $messageId);
         }
 
+        if ($actionType == 'workflow_output') {
+            return \Taurus\Workflow\Consumer\Taurus\PostAction\PrepareWorkflowOutputData::prepare($payload, $placeholders, $messageId);
+        }
+
         return [];
     }
 
@@ -44,6 +48,10 @@ class PostActionService
 
         if ($postAction == 'uploadAsDocument') {
             return \Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument::execute($module, $payload, $preparedData);
+        }
+
+        if ($postAction == 'saveClaimLetter') {
+            return \Taurus\Workflow\Consumer\Taurus\PostAction\SaveClaimLetter::execute($module, $payload, $preparedData);
         }
 
         return false;
