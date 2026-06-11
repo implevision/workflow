@@ -90,4 +90,9 @@ class ModuleService
 
         return $moduleClass->getPostFixForTaskDefinition();
     }
+
+    public function getPostFixForTaskDefinition()
+    {
+        return '';
+    }
 }

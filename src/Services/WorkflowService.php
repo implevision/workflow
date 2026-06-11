@@ -465,12 +465,6 @@ class WorkflowService
             ];
             $scheduleGroupName = getEventSchedulerNameToExecuteWorkflow($workflowId);
 
-            \Log::info('Creating schedule for workflow execution', [
-                'scheduleGroupName' => $scheduleGroupName,
-                'scheduleExpression' => $scheduleExpression,
-                'target' => $target,
-            ]);
-
             return EventBridgeScheduler::createSchedule($scheduleGroupName, $scheduleExpression, $target, $groupName);
         } catch (\Throwable $e) {
             \Log::error('Error creating schedule: '.$e->getMessage());
