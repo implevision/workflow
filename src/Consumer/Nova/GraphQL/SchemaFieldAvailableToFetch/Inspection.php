@@ -6,7 +6,7 @@ class Inspection extends AbstractSchema
 {
     protected $fieldMapping = [];
 
-    protected $queryName = 'inspection';
+    protected $queryName = 'queryInspection';
 
     public function __construct()
     {

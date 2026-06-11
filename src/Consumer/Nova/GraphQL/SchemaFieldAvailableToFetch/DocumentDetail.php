@@ -6,7 +6,7 @@ class DocumentDetail extends AbstractSchema
 {
     protected $fieldMapping = [];
 
-    protected $queryName = 'documentDetail';
+    protected $queryName = 'queryDocumentDetail';
 
     public function __construct()
     {

@@ -6,7 +6,7 @@ class User extends AbstractSchema
 {
     protected $fieldMapping = [];
 
-    protected $queryName = 'user';
+    protected $queryName = 'queryUser';
 
     public function __construct()
     {

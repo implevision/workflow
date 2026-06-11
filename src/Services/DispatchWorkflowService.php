@@ -293,8 +293,13 @@ class DispatchWorkflowService
                 $placeHolderToExtract = [];
                 if (count($this->appendPlaceHolders)) {
                     foreach ($this->appendPlaceHolders as $placeHolderKey => $placeHolderValue) {
-                        // Use the explicitly provided value (even null/empty) — never send to GraphQL extraction
-                        $placeHolderWithValues[$placeHolderKey] = $placeHolderValue;
+                        if ($placeHolderValue) { // NO NEED TO EXTRACT IF VALUE IS ALREADY AVAILABLE
+                            $placeHolderWithValues[$placeHolderKey] = $placeHolderValue;
+
+                            continue;
+                        }
+
+                        $placeHolderToExtract[] = $placeHolderKey;
                     }
                 }
 
