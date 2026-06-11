@@ -33,7 +33,7 @@ class ModuleService
             'Now %s%s %s',
             $executionEventIncident == 'AFTER' ? '+' : '-',
             $executionFrequency,
-            strtolower($executionFrequencyType) . 's',
+            strtolower($executionFrequencyType).'s',
         );
         $timeToParse = Carbon::parse($timeStrToParse);
 
