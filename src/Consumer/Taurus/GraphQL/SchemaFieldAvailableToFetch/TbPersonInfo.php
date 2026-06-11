@@ -324,10 +324,14 @@ class TbPersonInfo extends AbstractSchema
         $mailingAddressStructure = [
             'addresses' => [
                 'addressTypeCode' => null,
+                'houseNo' => null,
+                'streetName' => null,
                 'addressLine1' => null,
                 'addressLine2' => null,
                 'addressLine3' => null,
+                'addressLine4' => null,
                 'postalCode' => null,
+                'postalCodeSuffix' => null,
                 'tbCity' => [
                     'name' => null,
                 ],
@@ -437,6 +441,24 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
+        $fieldMapping['AgentMailingAddress'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        ...$mailingAddressStructure,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
+            'parseResultCallback' => 'parseFullMailingAddress',
+        ];
+
+        $fieldMapping['AgentCommissionPercentageForAgreement'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'parseAgentCommissionPercentageForAgreement',
+        ];
+
         return $fieldMapping;
     }
 
@@ -461,16 +483,23 @@ class TbPersonInfo extends AbstractSchema
             return null;
         }
 
-        $parts = array_filter(array_map('trim', [
-            $addressArr['addressLine1'] ?? '',
-            $addressArr['addressLine2'] ?? '',
-            $addressArr['addressLine3'] ?? '',
-            $addressArr['tbCity']['name'] ?? '',
-            $addressArr['tbState']['name'] ?? '',
-            $addressArr['postalCode'] ?? '',
-        ]));
+        $address = [
+            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'city' => $addressArr['tbCity']['name'] ?? null,
+            // 'county' => $addressArr['tbCounty']['name'] ?? null,
+            'state' => $addressArr['tbState']['name'] ?? null,
+            'postalCode' => $addressArr['postalCode'] ?? null,
+        ];
 
-        return implode(', ', $parts) ?: null;
+        if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
+            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
+        }
+
+        $address = array_filter(array_map('trim', $address), function ($item) {
+            return ! empty($item);
+        });
+
+        return implode(', ', $address);
     }
 
     public function parseFullMailingAddress($addressArr)
@@ -615,5 +644,10 @@ class TbPersonInfo extends AbstractSchema
         [$brandedCompanyArr] = $this->extractProducerContext($response);
 
         return Helper::parseCompanyLogo($brandedCompanyArr);
+    }
+
+    public function parseAgentCommissionPercentageForAgreement()
+    {
+        return 'Twenty-two Percent (22%)';
     }
 }
