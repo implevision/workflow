@@ -2,8 +2,6 @@
 
 namespace Taurus\Workflow\Consumer\Nova;
 
-use Illuminate\Support\Facades\Config;
-
 class InitInstance
 {
     /**

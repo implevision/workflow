@@ -115,6 +115,7 @@ class WorkflowService
             if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow']) && $data['when']['effectiveActionToExecuteWorkflow'] === 'CUSTOM_DATE_AND_TIME') {
                 $workflowId = $workflow->id;
                 $workflows = $this->workflowRepo->getById($workflowId)->toArray();
+                // TODO: This must be implemented consumer wise. Broadcast the WF id and let CONSUMER handle it.
                 $this->scheduleWorkflows([$workflows]);
             }
 
@@ -446,21 +447,29 @@ class WorkflowService
         }
     }
 
-    public function createScheduleToExecuteWorkflow($groupName, $workflowId, $scheduleExpression)
+    public function createScheduleToExecuteWorkflow($groupName, $workflowId, $module, $scheduleExpression)
     {
         // TODO: pass record identifier if any
         $commandToRunWorkflow = getCliCommandToDispatchWorkflow($workflowId);
+
+        $getServicePostFixForModule = $this->getServicePostFixForModule($module);
 
         try {
             $target = [
                 'arn' => config('workflow.aws_lambda_function_arn_to_invoke_workflow'),
                 'roleArn' => config('workflow.aws_iam_role_arn_to_invoke_lambda_from_event_bridge'),
                 'input' => json_encode([
-                    'task_definition' => config('workflow.task_definition'),
+                    'task_definition' => config('workflow.task_definition_prefix').$getServicePostFixForModule,
                     'command' => $commandToRunWorkflow,
                 ]),
             ];
             $scheduleGroupName = getEventSchedulerNameToExecuteWorkflow($workflowId);
+
+            \Log::info('Creating schedule for workflow execution', [
+                'scheduleGroupName' => $scheduleGroupName,
+                'scheduleExpression' => $scheduleExpression,
+                'target' => $target,
+            ]);
 
             return EventBridgeScheduler::createSchedule($scheduleGroupName, $scheduleExpression, $target, $groupName);
         } catch (\Throwable $e) {
@@ -539,7 +548,7 @@ class WorkflowService
                     }
 
                     // SCHEDULE IN EVENT BRIDGE ONLY ONCE
-                    $scheduleObj = $this->createScheduleToExecuteWorkflow($groupName, $workflow['id'], $configureTimeForEventSchedulerToAwakeWorkflowSystem);
+                    $scheduleObj = $this->createScheduleToExecuteWorkflow($groupName, $workflow['id'], $workflow['module'], $configureTimeForEventSchedulerToAwakeWorkflowSystem);
 
                     if ($scheduleObj) {
                         $this->workflowRepo->update($workflow['id'], [
@@ -586,6 +595,17 @@ class WorkflowService
         $moduleService = $this->getModuleService($module);
 
         return $moduleService->getQueryForRecordIdentifier($module, $recordIdentifier);
+    }
+
+    public function getServicePostFixForModule($module)
+    {
+        $moduleService = $this->getModuleService($module);
+
+        if ($moduleService instanceof \stdClass) {
+            return '';
+        }
+
+        return $moduleService->getServicePostFix($module);
     }
 
     private function getModuleService($module)
