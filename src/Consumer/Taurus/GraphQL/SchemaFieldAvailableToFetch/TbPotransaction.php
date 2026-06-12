@@ -24,7 +24,6 @@ class TbPotransaction extends AbstractSchema
 
     public function __construct()
     {
-        $this->fieldMapping = $this->initializeFieldMapping();
         $this->queryName = 'policyQuery';
     }
 
@@ -38,6 +37,10 @@ class TbPotransaction extends AbstractSchema
      */
     public function getFieldMapping()
     {
+        if (empty($this->fieldMapping)) {
+            $this->fieldMapping = $this->initializeFieldMapping();
+        }
+
         return $this->fieldMapping;
     }
 
@@ -68,6 +71,8 @@ class TbPotransaction extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $appendedPlaceHolders = $this->getAppendedPlaceHolders();
+
         $addressStructure = [
             'addressTypeCode' => null,
             'houseNo' => null,
@@ -1038,6 +1043,33 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parseCancelRefundAmount',
         ];
 
+        $targetPolicyLogId = isset($appendedPlaceHolders['PolicyLogId']) ? (int) $appendedPlaceHolders['PolicyLogId'] : null;
+
+        $policyLogsGraphQLSchema = [
+            'policy' => [
+                'policyLogs' => [
+                    'id' => null,
+                    'metadata' => null,
+                ],
+            ],
+        ];
+
+        $policyLogsJqFilter = $targetPolicyLogId !== null
+            ? '.policyQuery.policy.policyLogs[] | select(.id == '.$targetPolicyLogId.')'
+            : '.policyQuery.policy.policyLogs[0]';
+
+        $fieldMapping['PolicyLogNote'] = [
+            'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
+            'jqFilter' => $policyLogsJqFilter,
+            'parseResultCallback' => 'parsePolicyLogNote',
+        ];
+
+        $fieldMapping['PolicyLogDate'] = [
+            'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
+            'jqFilter' => $policyLogsJqFilter,
+            'parseResultCallback' => 'parsePolicyLogDate',
+        ];
+
         return $fieldMapping;
     }
 
@@ -1524,5 +1556,34 @@ class TbPotransaction extends AbstractSchema
         $cancelRefundAmount = $this->parsePremiumDue($policyData);
 
         return abs($cancelRefundAmount);
+    }
+
+    private function decodePolicyLogMetadata(array $policyLog): array
+    {
+        $metadata = $policyLog['metadata'] ?? [];
+        if (\is_string($metadata)) {
+            $metadata = json_decode($metadata, true) ?? [];
+        }
+
+        return \is_array($metadata) ? $metadata : [];
+    }
+
+    public function parsePolicyLogNote($policyLog): ?string
+    {
+        if (! \is_array($policyLog)) {
+            return null;
+        }
+
+        return $this->decodePolicyLogMetadata($policyLog)['note'] ?? null;
+    }
+
+    public function parsePolicyLogDate($policyLog): ?string
+    {
+        if (! \is_array($policyLog)) {
+            return null;
+        }
+        $date = $this->decodePolicyLogMetadata($policyLog)['date'] ?? null;
+
+        return $date ? $this->formatDate($date) : null;
     }
 }
