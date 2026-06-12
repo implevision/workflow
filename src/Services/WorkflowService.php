@@ -115,6 +115,7 @@ class WorkflowService
             if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow']) && $data['when']['effectiveActionToExecuteWorkflow'] === 'CUSTOM_DATE_AND_TIME') {
                 $workflowId = $workflow->id;
                 $workflows = $this->workflowRepo->getById($workflowId)->toArray();
+                // TODO: This must be implemented consumer wise. Broadcast the WF id and let CONSUMER handle it.
                 $this->scheduleWorkflows([$workflows]);
             }
 
@@ -446,17 +447,19 @@ class WorkflowService
         }
     }
 
-    public function createScheduleToExecuteWorkflow($groupName, $workflowId, $scheduleExpression)
+    public function createScheduleToExecuteWorkflow($groupName, $workflowId, $module, $scheduleExpression)
     {
         // TODO: pass record identifier if any
         $commandToRunWorkflow = getCliCommandToDispatchWorkflow($workflowId);
+
+        $getServicePostFixForModule = $this->getServicePostFixForModule($module);
 
         try {
             $target = [
                 'arn' => config('workflow.aws_lambda_function_arn_to_invoke_workflow'),
                 'roleArn' => config('workflow.aws_iam_role_arn_to_invoke_lambda_from_event_bridge'),
                 'input' => json_encode([
-                    'task_definition' => config('workflow.task_definition'),
+                    'task_definition' => config('workflow.task_definition_prefix').$getServicePostFixForModule,
                     'command' => $commandToRunWorkflow,
                 ]),
             ];
@@ -481,7 +484,7 @@ class WorkflowService
                     $scheduleGroupArnObject = $this->workflowConfigRepo->getByKey('schedule_group_arn');
                     $scheduleGroupsArn = $scheduleGroupArnObject->config_value ?? null;
                 } catch (\Exception $e) {
-                    \Log::error('Error fetching schedule group ARN: '.$e->getMessage());
+                    \Log::info('No schedule group ARN found: '.$e->getMessage());
                 }
 
                 $isAwsInfraAlreadySetup = $scheduleGroupsArn ? true : false;
@@ -539,7 +542,7 @@ class WorkflowService
                     }
 
                     // SCHEDULE IN EVENT BRIDGE ONLY ONCE
-                    $scheduleObj = $this->createScheduleToExecuteWorkflow($groupName, $workflow['id'], $configureTimeForEventSchedulerToAwakeWorkflowSystem);
+                    $scheduleObj = $this->createScheduleToExecuteWorkflow($groupName, $workflow['id'], $workflow['module'], $configureTimeForEventSchedulerToAwakeWorkflowSystem);
 
                     if ($scheduleObj) {
                         $this->workflowRepo->update($workflow['id'], [
@@ -588,6 +591,17 @@ class WorkflowService
         return $moduleService->getQueryForRecordIdentifier($module, $recordIdentifier);
     }
 
+    public function getServicePostFixForModule($module)
+    {
+        $moduleService = $this->getModuleService($module);
+
+        if ($moduleService instanceof \stdClass) {
+            return '';
+        }
+
+        return $moduleService->getServicePostFix($module);
+    }
+
     private function getModuleService($module)
     {
         try {
@@ -604,7 +618,7 @@ class WorkflowService
         }
     }
 
-    public function getGraphQLQueryMappingService($module)
+    public function getGraphQLQueryMappingService($module, $appendPlaceHolders = [])
     {
         try {
             $consumerService = $this->getConsumerService();
@@ -612,7 +626,7 @@ class WorkflowService
                 return new stdClass;
             }
 
-            return $consumerService->getGraphQLQueryMappingService($module);
+            return $consumerService->getGraphQLQueryMappingService($module, $appendPlaceHolders);
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 

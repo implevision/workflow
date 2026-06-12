@@ -178,6 +178,10 @@ class GraphQLSchemaBuilderService
                 }
             }
 
+            if (empty($children)) {
+                return [];
+            }
+
             return [
                 'operator' => $operator,
                 'condition' => $children,
