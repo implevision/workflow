@@ -2,50 +2,35 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\PostAction;
 
+use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\UploadAsDocumentHandler;
+
 class PostActionService
 {
-    public function execute($module, $payload, $messageId)
+    private array $handlers = [
+        'uploadAsDocument' => UploadAsDocumentHandler::class,
+    ];
+
+    public function execute($module, $payload, $messageId): void
     {
-        try {
-            $data = $payload['payload'];
-            unset($payload['payload']);
-            foreach ($data as $placeholders) {
-                $preparedData = $this->prepareData($payload, $placeholders, $messageId);
-                $this->executePostAction($module, $payload, $preparedData);
-            }
-        } catch (\Exception $e) {
-            throw $e;
-        }
-    }
+        $postAction = $payload['postAction'] ?? null;
 
-    private function prepareData($payload, $placeholders, $messageId)
-    {
-        $actionType = $payload['actionType'] ?? null;
-
-        if (! $actionType) {
-            throw new \InvalidArgumentException('Action type is required for post action execution.');
+        if (! $postAction) {
+            throw new \InvalidArgumentException('Post action is required.');
         }
 
-        $actionType = strtolower($actionType);
-        if ($actionType == 'email') {
-            return \Taurus\Workflow\Consumer\Taurus\PostAction\PrepareEmailData::prepare($payload, $placeholders, $messageId);
+        $handlerClass = $this->handlers[$postAction] ?? null;
+
+        if (! $handlerClass) {
+            throw new \InvalidArgumentException("Unknown post action: {$postAction}");
         }
 
-        return [];
-    }
+        $handler = new $handlerClass();
+        $data = $payload['payload'];
+        unset($payload['payload']);
 
-    private function executePostAction($module, $payload, $preparedData)
-    {
-        $postAction = $payload['postAction'] ?? '';
-
-        if (empty($postAction)) {
-            throw new \InvalidArgumentException('Post action is required for execution.');
+        foreach ($data as $placeholders) {
+            $preparedData = $handler->prepare($payload, $placeholders, $messageId);
+            $handler->execute($module, $payload, $preparedData);
         }
-
-        if ($postAction == 'uploadAsDocument') {
-            return \Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument::execute($module, $payload, $preparedData);
-        }
-
-        return false;
     }
 }
