@@ -1070,12 +1070,6 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parsePolicyLogDate',
         ];
 
-        $fieldMapping['PolicyLogIsHidden'] = [
-            'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
-            'jqFilter' => $policyLogsJqFilter,
-            'parseResultCallback' => 'parsePolicyLogIsHidden',
-        ];
-
         return $fieldMapping;
     }
 
@@ -1591,14 +1585,5 @@ class TbPotransaction extends AbstractSchema
         $date = $this->decodePolicyLogMetadata($policyLog)['date'] ?? null;
 
         return $date ? $this->formatDate($date) : null;
-    }
-
-    public function parsePolicyLogIsHidden($policyLog): ?string
-    {
-        if (! \is_array($policyLog)) {
-            return null;
-        }
-
-        return $this->decodePolicyLogMetadata($policyLog)['isHidden'] ?? null;
     }
 }
