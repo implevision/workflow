@@ -35,11 +35,15 @@ class PrepareUploadAsDocumentData
 
         $isPdf = ($payload['letterEditorMode'] ?? '') === 'PDF';
 
-        if ($isPdf) {
-            $pdfBuffer = self::generateFromPdfTemplate($payload, $placeholders);
-        } else {
-            $html = self::replacePlaceholders($payload['emailTemplate'], $placeholders);
-            $pdfBuffer = self::htmlToPdf($html, $pageSize, $pageOrientation);
+        try {
+            if ($isPdf) {
+                $pdfBuffer = self::generateFromPdfTemplate($payload, $placeholders);
+            } else {
+                $html = self::replacePlaceholders($payload['emailTemplate'], $placeholders);
+                $pdfBuffer = self::htmlToPdf($html, $pageSize, $pageOrientation);
+            }
+        } catch (\Exception $e) {
+            throw $e;
         }
 
         $documentName = $payload['actionPayload']['documentName'] ?? '';
@@ -52,7 +56,11 @@ class PrepareUploadAsDocumentData
         $docPath = sprintf('%s/%s/%s/%s/emailLetters/%s', getTenant(), date('Y'), date('m'), date('d'), $filename);
         $bucketName = config('workflow.bucket_to_save_email_letters', config('filesystems.disks.s3.bucket'));
 
-        $docUrl = S3::uploadFile($bucketName, $docPath, $pdfBuffer);
+        try {
+            $docUrl = S3::uploadFile($bucketName, $docPath, $pdfBuffer);
+        } catch (\Exception $e) {
+            throw $e;
+        }
 
         return [
             'docTypeValue' => $documentId,
@@ -102,11 +110,15 @@ class PrepareUploadAsDocumentData
      */
     public static function htmlToPdf($html, $pageSize, $pageOrientation)
     {
-        $domPdf = new Dompdf;
-        $domPdf->loadHtml($html);
-        $domPdf->setPaper($pageSize, $pageOrientation);
-        $domPdf->render();
+        try {
+            $domPdf = new Dompdf;
+            $domPdf->loadHtml($html);
+            $domPdf->setPaper($pageSize, $pageOrientation);
+            $domPdf->render();
 
-        return $domPdf->output();
+            return $domPdf->output();
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 }

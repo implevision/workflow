@@ -54,45 +54,63 @@ class UploadAsDocumentService
         $matchedModuleIdentifierData = self::moduleMatches(self::MODULES, $table);
         $attachmentModuleAndReferenceNo = [];
 
-        if ($matchedModuleIdentifierData !== null && $recordIdentifier !== null) {
+        if (isset($matchedModuleIdentifierData) && isset($recordIdentifier) && isset($table)) {
             $attachmentModuleAndReferenceNo = self::getAttachmentModuleAndReferenceNo($table, $matchedModuleIdentifierData, $recordIdentifier);
         }
 
-        if ($attachmentModuleAndReferenceNo !== null) {
+        if (isset($attachmentModuleAndReferenceNo)) {
             $module = $attachmentModuleAndReferenceNo['module'];
             $referenceNo = $attachmentModuleAndReferenceNo['referenceNo'];
         }
 
         \Log::info('WORKFLOW - Document Upload - Attachment Module and Reference No', ['module' => $module, 'referenceNo' => $referenceNo]);
 
+        $docTypeValue = $preparedData['docTypeValue'];
+        $docName = $preparedData['docName'];
+        $docUrl = $preparedData['docUrl'];
+        $originalFileName = $preparedData['originalFileName'];
+        $fileType = $preparedData['fileType'];
+        $docPath = $preparedData['docPath'];
+        $docUrl = $preparedData['docUrl'];
+
         $documentUploadBatchModel = new DocumentUploadBatchModel;
         $fileArray = [
             'module' => $module,
-            'docName' => $preparedData['docName'],
-            'docTypeValue' => $preparedData['docTypeValue'],
+            'docName' => $docName,
+            'docTypeValue' => $docTypeValue,
             'file' => [
                 'fileExt' => 'pdf',
-                'origintalFileName' => $preparedData['originalFileName'],
-                'fileType' => $preparedData['fileType'],
+                'origintalFileName' => $originalFileName,
+                'fileType' => $fileType,
                 'fileSize' => '',
-                'docUrl' => $preparedData['docUrl'],
-                'docPath' => $preparedData['docPath'],
+                'docUrl' => $docUrl,
+                'docPath' => $docPath,
             ],
             'referenceNo' => $referenceNo,
         ];
 
-        $isDocumentUploaded = $documentUploadBatchModel->uploadDocumentForAllModules([$fileArray], $throwException = true);
+        try {
+            $isDocumentUploaded = $documentUploadBatchModel->uploadDocumentForAllModules([$fileArray], $throwException = true);
+        } catch (\Exception $e) {
+            throw $e;
+        }
 
         if ($isDocumentUploaded && $module == 'Claim') {
+            $insertedByFlag = $preparedData['insertedByFlag'];
+            $activityLogText = $preparedData['activityLogText'];
             $claimLog = [
                 'Inserted_UserId_FK' => Auth::check() ? user()->Admin_ID : 0,
-                'InsertedBy_Flag' => $preparedData['insertedByFlag'],
+                'InsertedBy_Flag' => $insertedByFlag,
                 'ClaimtId_FK' => $recordIdentifier,
-                'Claim_Activity_Log' => $preparedData['activityLogText'],
+                'Claim_Activity_Log' => $activityLogText,
             ];
 
-            $tbClaimLog = new TbClaimLog;
-            $tbClaimLog->createAndSaveClaimLog($claimLog);
+            try {
+                $tbClaimLog = new TbClaimLog;
+                $tbClaimLog->createAndSaveClaimLog($claimLog);
+            } catch (\Exception $e) {
+                throw $e;
+            }
         }
 
         return [];
