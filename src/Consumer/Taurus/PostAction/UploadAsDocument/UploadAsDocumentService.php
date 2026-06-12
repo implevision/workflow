@@ -1,13 +1,13 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\Taurus\PostAction;
+namespace Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument;
 
 use Avatar\Infrastructure\Models\Api\v1\DocumentUploadBatchModel;
 use Avatar\Infrastructure\Models\Api\v1\TbClaimLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-class UploadAsDocument
+class UploadAsDocumentService
 {
     /**
      * Predefined module mappings used to resolve module identifiers
@@ -54,63 +54,45 @@ class UploadAsDocument
         $matchedModuleIdentifierData = self::moduleMatches(self::MODULES, $table);
         $attachmentModuleAndReferenceNo = [];
 
-        if (isset($matchedModuleIdentifierData) && isset($recordIdentifier) && isset($table)) {
+        if ($matchedModuleIdentifierData !== null && $recordIdentifier !== null) {
             $attachmentModuleAndReferenceNo = self::getAttachmentModuleAndReferenceNo($table, $matchedModuleIdentifierData, $recordIdentifier);
         }
 
-        if (isset($attachmentModuleAndReferenceNo)) {
+        if ($attachmentModuleAndReferenceNo !== null) {
             $module = $attachmentModuleAndReferenceNo['module'];
             $referenceNo = $attachmentModuleAndReferenceNo['referenceNo'];
         }
 
         \Log::info('WORKFLOW - Document Upload - Attachment Module and Reference No', ['module' => $module, 'referenceNo' => $referenceNo]);
 
-        $docTypeValue = $preparedData['docTypeValue'];
-        $docName = $preparedData['docName'];
-        $docUrl = $preparedData['docUrl'];
-        $originalFileName = $preparedData['originalFileName'];
-        $fileType = $preparedData['fileType'];
-        $docPath = $preparedData['docPath'];
-        $docUrl = $preparedData['docUrl'];
-
         $documentUploadBatchModel = new DocumentUploadBatchModel;
         $fileArray = [
             'module' => $module,
-            'docName' => $docName,
-            'docTypeValue' => $docTypeValue,
+            'docName' => $preparedData['docName'],
+            'docTypeValue' => $preparedData['docTypeValue'],
             'file' => [
                 'fileExt' => 'pdf',
-                'origintalFileName' => $originalFileName,
-                'fileType' => $fileType,
+                'origintalFileName' => $preparedData['originalFileName'],
+                'fileType' => $preparedData['fileType'],
                 'fileSize' => '',
-                'docUrl' => $docUrl,
-                'docPath' => $docPath,
+                'docUrl' => $preparedData['docUrl'],
+                'docPath' => $preparedData['docPath'],
             ],
             'referenceNo' => $referenceNo,
         ];
 
-        try {
-            $isDocumentUploaded = $documentUploadBatchModel->uploadDocumentForAllModules([$fileArray], $throwException = true);
-        } catch (\Exception $e) {
-            throw $e;
-        }
+        $isDocumentUploaded = $documentUploadBatchModel->uploadDocumentForAllModules([$fileArray], $throwException = true);
 
         if ($isDocumentUploaded && $module == 'Claim') {
-            $insertedByFlag = $preparedData['insertedByFlag'];
-            $activityLogText = $preparedData['activityLogText'];
             $claimLog = [
                 'Inserted_UserId_FK' => Auth::check() ? user()->Admin_ID : 0,
-                'InsertedBy_Flag' => $insertedByFlag,
+                'InsertedBy_Flag' => $preparedData['insertedByFlag'],
                 'ClaimtId_FK' => $recordIdentifier,
-                'Claim_Activity_Log' => $activityLogText,
+                'Claim_Activity_Log' => $preparedData['activityLogText'],
             ];
 
-            try {
-                $tbClaimLog = new TbClaimLog;
-                $tbClaimLog->createAndSaveClaimLog($claimLog);
-            } catch (\Exception $e) {
-                throw $e;
-            }
+            $tbClaimLog = new TbClaimLog;
+            $tbClaimLog->createAndSaveClaimLog($claimLog);
         }
 
         return [];
