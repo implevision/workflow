@@ -77,7 +77,7 @@ class PrepareUploadAsDocumentData
     private static function replacePlaceholders(string $template, array $placeholders): string
     {
         return preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
-            return $placeholders[trim($matches[1])] ?? '';
+            return $placeholders[trim($matches[1])] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
         }, $template);
     }
 
