@@ -118,6 +118,13 @@ class TbClaim extends AbstractSchema
                 'jqFilter' => '.claim.claimCommunication',
                 'parseResultCallback' => 'parseClaimCommunication',
             ],
+            'ClaimCreatedDate' => [
+                'GraphQLschemaToReplace' => [
+                    'createdAt' => null,
+                ],
+                'jqFilter' => '.claim.createdAt',
+                'parseResultCallback' => 'formatDate',
+            ],
         ];
 
         $fieldMapping['InsuredPropertyAddress'] = [
@@ -363,6 +370,12 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'getHoldingCompanyName',
         ];
 
+        $fieldMapping['HoldingCompanyPhoneNumber'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'getHoldingCompanyPhoneNumber',
+        ];
+
         $deductibles = [
             'transaction' => [
                 'coverageDetails' => [
@@ -456,6 +469,7 @@ class TbClaim extends AbstractSchema
 
         $address = [
             'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'addressLine2' => $addressArr['addressLine2'] ?? '',
             'city' => $addressArr['tbCity']['name'] ?? null,
             // 'county' => $addressArr['tbCounty']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
@@ -618,6 +632,15 @@ class TbClaim extends AbstractSchema
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
 
         return $holdingCompanyDetail['wyo'] ?? '';
+    }
+
+    public function getHoldingCompanyPhoneNumber()
+    {
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+        $phoneNumber = $holdingCompanyDetail['company_phone'] ?? '';
+
+        return Helper::formatPhone($phoneNumber);
     }
 
     public function parseBuildingDeductibles($coverageDetails)
