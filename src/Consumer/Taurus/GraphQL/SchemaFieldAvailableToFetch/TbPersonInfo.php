@@ -459,6 +459,20 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'parseAgentCommissionPercentageForAgreement',
         ];
 
+        $fieldMapping['AgencyManagerEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgents' => [
+                    'user' => [
+                        'email' => null,
+                        'level' => [
+                            'userLevelCode' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgents[] | select(.user.level.userLevelCode == "PRINCIPLE") | .user.email',
+        ];
+
         return $fieldMapping;
     }
 
