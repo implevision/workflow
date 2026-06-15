@@ -28,10 +28,10 @@ class TbPotransaction extends AbstractSchema
     }
 
     /**
-     * Retrieves the field mapping with GraphQL schema for the TbClaim.
+     * Retrieves the field mapping with GraphQL schema for the TbPotransaction.
      *
      * This method returns an associative array that maps the fields
-     * of the TbClaim to their corresponding values or attributes.
+     * of the TbPotransaction to their corresponding values or attributes.
      *
      * @return array An associative array representing the field mapping.
      */
@@ -45,12 +45,12 @@ class TbPotransaction extends AbstractSchema
     }
 
     /**
-     * Retrieves the query name for the TbClaim.
+     * Retrieves the query name for the TbPotransaction.
      *
      * This method returns the name of the GraphQL query that can be used
-     * to fetch data related to the TbClaim.
+     * to fetch data related to the TbPotransaction.
      *
-     * @return string The name of the GraphQL query for TbClaim.
+     * @return string The name of the GraphQL query for TbPotransaction.
      */
     public function getQueryName()
     {
@@ -58,7 +58,7 @@ class TbPotransaction extends AbstractSchema
     }
 
     /**
-     * Initializes the field mapping with GraphQL schema for the TbClaim class.
+     * Initializes the field mapping with GraphQL schema for the TbPotransaction class.
      *
      * This method sets up the mapping of fields that can be fetched
      * from the GraphQL schema. It is called during the initialization
@@ -1043,7 +1043,7 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parseCancelRefundAmount',
         ];
 
-        $targetPolicyLogId = isset($appendedPlaceHolders['PolicyLogId']) ? (int) $appendedPlaceHolders['PolicyLogId'] : null;
+        $targetPolicyLogId = isset($appendedPlaceHolders['id']) ? (int) $appendedPlaceHolders['id'] : null;
 
         $policyLogsGraphQLSchema = [
             'policy' => [
@@ -1055,8 +1055,8 @@ class TbPotransaction extends AbstractSchema
         ];
 
         $policyLogsJqFilter = $targetPolicyLogId !== null
-            ? '.policyQuery.policy.policyLogs[] | select(.id == '.$targetPolicyLogId.')'
-            : '.policyQuery.policy.policyLogs[0]';
+            ? "([.policyQuery.policy.policyLogs[]? | select(.id == {$targetPolicyLogId})][0])"
+            : '(.policyQuery.policy.policyLogs | .[0]?)';
 
         $fieldMapping['PolicyLogNote'] = [
             'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
