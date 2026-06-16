@@ -29,7 +29,7 @@ return [
 
     'aws_iam_role_arn_to_invoke_lambda_from_event_bridge' => env('AWS_IAM_ROLE_ARN_TO_INVOKE_LAMBDA_FROM_EVENT_BRIDGE'),
 
-    'task_definition' => env('WORKFLOW_TASK_DEFINITION'),
+    'task_definition_prefix' => env('WORKFLOW_TASK_DEFINITION_PREFIX'),
 
     'single_tenant' => env('WORKFLOW_SINGLE_TENANT'),
 
@@ -78,10 +78,5 @@ return [
         'ses:SendEmail' => 'Allows sending single emails.',
         'ses:SendBulkEmail' => 'Allows sending bulk emails (via SendBulkEmail API).',
         'ses:SendTemplatedEmail' => 'Allows sending templated emails.',
-    ],
-
-    'modules' => [
-        'claim' => Avatar\Infrastructure\Models\Api\v1\TbClaim::class,
-        'policy' => Avatar\Infrastructure\Models\Api\v1\TbPotransaction::class,
     ],
 ];

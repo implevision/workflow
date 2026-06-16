@@ -2,6 +2,4 @@
 
 namespace Taurus\Workflow\Consumer\Nova\Modules;
 
-class DocumentDetailService extends ModuleService
-{
-}
+class DocumentDetailService extends ModuleService {}
