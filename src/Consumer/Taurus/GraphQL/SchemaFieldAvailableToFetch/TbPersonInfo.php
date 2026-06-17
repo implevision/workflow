@@ -467,10 +467,11 @@ class TbPersonInfo extends AbstractSchema
                         'level' => [
                             'userLevelCode' => null,
                         ],
+                        'userStatus' => null,
                     ],
                 ],
             ],
-            'jqFilter' => '.producerQuery.userAgents[] | select(.user.level.userLevelCode == "PRINCIPLE") | .user.email',
+            'jqFilter' => '[.producerQuery.userAgents[] | select(.user.level.userLevelCode == "PRINCIPLE" and .user.userStatus == "111" and .user.email != null)] | first | .user.email',
         ];
 
         return $fieldMapping;
