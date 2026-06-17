@@ -233,6 +233,8 @@ class GraphQLSchemaBuilderService
             return $str;
         }
 
+        $str = str_replace('::', '', $str);
+
         // Split by underscores, then process each segment
         $segments = explode('_', $str);
         $convertedSegments = [];
