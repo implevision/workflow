@@ -51,6 +51,15 @@ class Helper
         return Carbon::parse($dateToFormat)->format('m/d/Y');
     }
 
+    public static function formatDateTime($dateToFormat): ?string
+    {
+        if (empty($dateToFormat)) {
+            return null;
+        }
+
+        return Carbon::parse($dateToFormat)->format('F j, Y, g:i A');
+    }
+
     public static function createPortalURL($portal)
     {
         $hostURL = Config::get('app.url');

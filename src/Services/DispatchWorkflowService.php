@@ -175,6 +175,12 @@ class DispatchWorkflowService
         }
 
         foreach ($allConditions as $condition) {
+            if (isset($condition['status']) && $condition['status'] === false) {
+                \Log::info('WORKFLOW - Condition skipped (inactive): '.($condition['id'] ?? ''));
+
+                continue;
+            }
+
             $feedFile = '';
             $data = [];
 
@@ -194,10 +200,12 @@ class DispatchWorkflowService
             if ($condition['applyRuleTo'] == 'CERTAIN' && ! $this->isManuallyInvoked) {
                 $conditionsToApply = GraphQLSchemaBuilderService::buildWhereConditionFromGroup($condition['applyConditionRules']);
 
-                if (count($graphQLQuery)) {
-                    $graphQLQuery['JOIN'] = $conditionsToApply;
-                } else {
-                    $graphQLQuery = $conditionsToApply;
+                if (! empty($conditionsToApply)) {
+                    if (count($graphQLQuery)) {
+                        $graphQLQuery['JOIN'] = $conditionsToApply;
+                    } else {
+                        $graphQLQuery = $conditionsToApply;
+                    }
                 }
             }
 
@@ -315,7 +323,7 @@ class DispatchWorkflowService
                 } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
                     // Build GraphQL query
                     try {
-                        $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->workflowInfo['detail']['module']);
+                        $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->workflowInfo['detail']['module'], $this->appendPlaceHolders);
                         $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
                         $queryName = $moduleClassForGraphQL->getQueryName();
                         $graphQLHeaders = $moduleClassForGraphQL->getHeaders();

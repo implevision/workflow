@@ -18,14 +18,14 @@ class WorkflowSeeder extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:seed-workflow {--workflow=} {--skip-tenant=}';
+    protected $signature = 'taurus:seed-workflow {--workflow=} {--skip-tenant=} {--template-only}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Seed all the required details for a workflow to work.';
+    protected $description = 'Seed all the required details for a workflow to work. Use --template-only to seed only the external service templates without creating the workflow.';
 
     protected $initialFilePath = 'seeders/Workflow';
 
@@ -43,6 +43,7 @@ class WorkflowSeeder extends Command
     public function handle()
     {
         $workflow = $this->option('workflow');
+        $templateOnly = $this->option('template-only');
 
         $skipTenants = $this->option('skip-tenant')
             ? array_map('trim', explode(',', $this->option('skip-tenant')))
@@ -54,7 +55,7 @@ class WorkflowSeeder extends Command
             return 0;
         }
 
-        \Log::info("WORKFLOW SEEDER - Starting seeding process for workflow: {$workflow}");
+        \Log::info("WORKFLOW SEEDER - Starting seeding process for workflow: {$workflow}".($templateOnly ? ' (template-only)' : ''));
 
         $path = database_path("{$this->initialFilePath}/{$workflow}.json");
         $json = file_get_contents($path);
@@ -68,8 +69,28 @@ class WorkflowSeeder extends Command
 
         if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
             \Log::error("WORKFLOW SEEDER - Invalid JSON in {$path} for workflow. Error: ".json_last_error_msg());
+
+            return 1;
         }
 
+        if (! $templateOnly) {
+            $result = $this->seedWorkflow($data, $workflow);
+            if ($result !== 0) {
+                return $result;
+            }
+        }
+
+        if (empty($data['externalServices'])) {
+            \Log::info("WORKFLOW SEEDER - Finishing seeding process for workflow (without any actions): {$workflow}");
+
+            return 0;
+        }
+
+        return $this->seedActions($data['externalServices'], $workflow, $path);
+    }
+
+    private function seedWorkflow(array $data, string $workflow): int
+    {
         try {
             $validator = Validator::make($data, (new WorkflowRequest)->rules());
             if ($validator->fails()) {
@@ -98,17 +119,17 @@ class WorkflowSeeder extends Command
             return 1;
         }
 
-        if (empty($data['externalServices'])) {
-            \Log::info("WORKFLOW SEEDER - Finishing seeding process for workflow: {$workflow}");
+        return 0;
+    }
 
-            return 1;
-        }
-
+    private function seedActions(array $externalServices, string $workflow, string $path): int
+    {
         try {
-            foreach ($data['externalServices'] as $key => $service) {
+            foreach ($externalServices as $key => $service) {
                 switch ($key) {
                     case 'email':
-                        $this->insertEmailData($service);
+                    case 'template':
+                        $this->insertTemplate($service);
                         break;
                     default:
                         \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path} for workflow.");
@@ -133,7 +154,7 @@ class WorkflowSeeder extends Command
         return 0;
     }
 
-    private function insertEmailData($data)
+    private function insertTemplate($data)
     {
         $emailTemplateFilePath = database_path("{$this->initialFilePath}/{$data['filePath']}");
         $emailTemplateContentAsString = file_get_contents($emailTemplateFilePath);
@@ -152,7 +173,19 @@ class WorkflowSeeder extends Command
                 'replyTo' => $data['replyTo'] ?? '',
                 'senderName' => $data['senderName'] ?? '',
                 'module' => $data['module'] ?? '',
+                'attachments' => $data['attachments'] ?? [],
+                'templateType' => $data['templateType'] ?? '',
             ];
+
+            if (isset($data['letterEditorMode']) && $data['letterEditorMode']) {
+                $requestBody['letterEditorMode'] = $data['letterEditorMode'] ?? '';
+            }
+            if (! empty($data['pdfPlaceholders'])) {
+                $requestBody['pdfPlaceholders'] = $data['pdfPlaceholders'] ?? [];
+            }
+            if (isset($data['pdfS3Key']) && $data['pdfS3Key']) {
+                $requestBody['pdfS3Key'] = $data['pdfS3Key'] ?? '';
+            }
 
             // create email template in email template service
             $response = $client->request(

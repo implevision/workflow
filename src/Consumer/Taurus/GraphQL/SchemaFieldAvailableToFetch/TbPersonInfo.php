@@ -22,7 +22,6 @@ class TbPersonInfo extends AbstractSchema
 
     public function __construct()
     {
-        $this->fieldMapping = $this->initializeFieldMapping();
         $this->queryName = 'producerQuery';
     }
 
@@ -36,6 +35,10 @@ class TbPersonInfo extends AbstractSchema
      */
     public function getFieldMapping()
     {
+        if (empty($this->fieldMapping)) {
+            $this->fieldMapping = $this->initializeFieldMapping();
+        }
+
         return $this->fieldMapping;
     }
 
@@ -66,6 +69,8 @@ class TbPersonInfo extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $appendedPlaceHolders = $this->getAppendedPlaceHolders();
+
         $fieldMapping = [
 
             'AgencyFloodCode' => [
@@ -319,10 +324,14 @@ class TbPersonInfo extends AbstractSchema
         $mailingAddressStructure = [
             'addresses' => [
                 'addressTypeCode' => null,
+                'houseNo' => null,
+                'streetName' => null,
                 'addressLine1' => null,
                 'addressLine2' => null,
                 'addressLine3' => null,
+                'addressLine4' => null,
                 'postalCode' => null,
+                'postalCodeSuffix' => null,
                 'tbCity' => [
                     'name' => null,
                 ],
@@ -360,9 +369,9 @@ class TbPersonInfo extends AbstractSchema
             'GraphQLschemaToReplace' => [
                 'userAgent' => [
                     'agency' => [
-                        ...$mailingAddressStructure
-                    ]
-                ]
+                        ...$mailingAddressStructure,
+                    ],
+                ],
             ],
             'jqFilter' => '.producerQuery.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseW9FormAddress',
@@ -372,9 +381,9 @@ class TbPersonInfo extends AbstractSchema
             'GraphQLschemaToReplace' => [
                 'userAgent' => [
                     'agency' => [
-                        ...$mailingAddressStructure
-                    ]
-                ]
+                        ...$mailingAddressStructure,
+                    ],
+                ],
             ],
             'jqFilter' => '.producerQuery.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
             'parseResultCallback' => 'parseW9FormCityStateZip',
@@ -385,11 +394,84 @@ class TbPersonInfo extends AbstractSchema
                 'userAgent' => [
                     'agency' => [
                         'feinSsnNo' => null,
-                    ]
-                ]
+                    ],
+                ],
             ],
             'jqFilter' => '.producerQuery.userAgent.agency.feinSsnNo',
             'parseResultCallback' => 'parseW9FormFeinSsnNo',
+        ];
+
+        $targetAgentStatementMasterPK = isset($appendedPlaceHolders['AgentStatementMasterPK']) ? $appendedPlaceHolders['AgentStatementMasterPK'] : null;
+
+        $fieldMapping['AttachStatementSheet'] = [
+            'GraphQLschemaToReplace' => [
+                'accounts' => [
+                    'agentStatementMaster' => [
+                        'agentStatementMasterPK' => null,
+                        'path' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.accounts[].agentStatementMaster[] | select(.agentStatementMasterPK == '.json_encode($targetAgentStatementMasterPK).')',
+            'parseResultCallback' => 'generatePresignedUrlForStatementSheet',
+        ];
+
+        $fieldMapping['WYOCompanyName'] = [
+            'GraphQLschemaToReplace' => [
+                'brandedCompany' => [
+                    'company' => [
+                        'companyName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery',
+            'parseResultCallback' => 'parseCompanyName',
+        ];
+
+        $fieldMapping['CompanyLogo'] = [
+            'GraphQLschemaToReplace' => [
+                'brandedCompany' => [
+                    'company' => [
+                        'logo' => null,
+                        'publicLogo' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery',
+            'parseResultCallback' => 'resolveCompanyLogoUrl',
+        ];
+
+        $fieldMapping['AgentMailingAddress'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        ...$mailingAddressStructure,
+                    ],
+                ],
+            ],
+            'jqFilter' => '.producerQuery.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
+            'parseResultCallback' => 'parseFullMailingAddress',
+        ];
+
+        $fieldMapping['AgentCommissionPercentageForAgreement'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'parseAgentCommissionPercentageForAgreement',
+        ];
+
+        $fieldMapping['AgencyManagerEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgents' => [
+                    'user' => [
+                        'email' => null,
+                        'level' => [
+                            'userLevelCode' => null,
+                        ],
+                        'userStatus' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => '[.producerQuery.userAgents[] | select(.user.level.userLevelCode == "PRINCIPLE" and .user.userStatus == "111" and .user.email != null)] | first | .user.email',
         ];
 
         return $fieldMapping;
@@ -416,16 +498,23 @@ class TbPersonInfo extends AbstractSchema
             return null;
         }
 
-        $parts = array_filter(array_map('trim', [
-            $addressArr['addressLine1'] ?? '',
-            $addressArr['addressLine2'] ?? '',
-            $addressArr['addressLine3'] ?? '',
-            $addressArr['tbCity']['name'] ?? '',
-            $addressArr['tbState']['name'] ?? '',
-            $addressArr['postalCode'] ?? '',
-        ]));
+        $address = [
+            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'city' => $addressArr['tbCity']['name'] ?? null,
+            // 'county' => $addressArr['tbCounty']['name'] ?? null,
+            'state' => $addressArr['tbState']['name'] ?? null,
+            'postalCode' => $addressArr['postalCode'] ?? null,
+        ];
 
-        return implode(', ', $parts) ?: null;
+        if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
+            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
+        }
+
+        $address = array_filter(array_map('trim', $address), function ($item) {
+            return ! empty($item);
+        });
+
+        return implode(', ', $address);
     }
 
     public function parseFullMailingAddress($addressArr)
@@ -520,5 +609,60 @@ class TbPersonInfo extends AbstractSchema
     public function getTodaysDate(): string
     {
         return Helper::getTodaysDate();
+    }
+
+    public function generatePresignedUrlForStatementSheet(array $agentStatementMasterData): array
+    {
+        return [
+            [
+                'name' => 'Commission Statement Sheet',
+                'path' => Helper::generatePresignedUrl($agentStatementMasterData['path'] ?? ''),
+            ],
+        ];
+    }
+
+    public function parseCompanyName($response)
+    {
+        return $this->resolveCompanyDetail($response, 'companyName', 'wyo');
+    }
+
+    private function resolveCompanyDetail($response, string $companyKey, string $holdingKey): string
+    {
+        [$brandedCompanyArr] = $this->extractProducerContext($response);
+
+        $value = $brandedCompanyArr['company'][$companyKey] ?? null;
+        if (! empty($value)) {
+            return $value;
+        }
+
+        return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
+    }
+
+    private function extractProducerContext($response): array
+    {
+        $response = is_array($response) ? $response : [];
+        $brandedCompany = $response['brandedCompany'] ?? [];
+
+        if (is_array($brandedCompany) && array_key_exists('company', $brandedCompany)) {
+            $normalizedBrandedCompany = $brandedCompany;
+        } else {
+            $normalizedBrandedCompany = is_array($brandedCompany) ? ($brandedCompany[0] ?? []) : [];
+        }
+
+        return [
+            $normalizedBrandedCompany,
+        ];
+    }
+
+    public function resolveCompanyLogoUrl($response)
+    {
+        [$brandedCompanyArr] = $this->extractProducerContext($response);
+
+        return Helper::parseCompanyLogo($brandedCompanyArr);
+    }
+
+    public function parseAgentCommissionPercentageForAgreement()
+    {
+        return 'Twenty-two Percent (22%)';
     }
 }

@@ -178,6 +178,10 @@ class GraphQLSchemaBuilderService
                 }
             }
 
+            if (empty($children)) {
+                return [];
+            }
+
             return [
                 'operator' => $operator,
                 'condition' => $children,
@@ -228,6 +232,8 @@ class GraphQLSchemaBuilderService
         if (empty($str)) {
             return $str;
         }
+
+        $str = str_replace('::', '', $str);
 
         // Split by underscores, then process each segment
         $segments = explode('_', $str);
