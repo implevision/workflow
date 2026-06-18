@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\Taurus\PostAction;
+namespace Taurus\Workflow\Consumer\Taurus\PostAction\SaveClaimLetter;
 
 use Avatar\Infrastructure\Models\Api\v1\TbClaim;
 use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
@@ -8,21 +8,22 @@ use Avatar\Infrastructure\Models\Api\v1\TbPotransaction;
 use Avatar\Infrastructure\Models\Api\v1\TbPrdoccodedoc;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
-class PrepareWorkflowOutputData
+
 /**
- * Class PrepareWorkflowOutputData
+ * Class PrepareSaveClaimLetterData
  *
- * This class is responsible for preparing workflow output data for processing.
+ * This class is responsible for preparing save claim letter data for processing.
  * It handles the necessary transformations and validations required
- * before the workflow output is processed.
+ * before the save claim letter data is processed.
  */
+class PrepareSaveClaimLetterData
 {
     /**
-     * Prepares the workflow output data based on the provided payload and placeholders.
+     * Prepares the save claim letter data based on the provided payload and placeholders.
      *
-     * @param  mixed  $payload  The data to be processed for the workflow output.
-     * @param  array  $placeholders  An associative array of placeholders to be replaced in the workflow output content.
-     * @return mixed The processed workflow output data.
+     * @param  mixed  $payload  The data to be processed for the save claim letter.
+     * @param  array  $placeholders  An associative array of placeholders to be replaced in the save claim letter content.
+     * @return mixed The processed save claim letter data.
      */
     public static function prepare($payload, $placeholders, $messageId)
     {

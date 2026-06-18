@@ -1,8 +1,10 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\Taurus\PostAction;
+namespace Taurus\Workflow\Consumer\Taurus\PostAction\SaveClaimLetter;
 
-class SaveClaimLetter
+use App\Services\Claim\Claim;
+
+class SaveClaimLetterService
 {
     public static function execute($module, $payload, $preparedData)
     {
@@ -20,6 +22,6 @@ class SaveClaimLetter
             'template' => $preparedData['templateId'],
             'text' => $preparedData['htmlContent'] ?? '',
         ];
-        \App\Services\Claim\Claim::getClaimLetterGenerate($data);
+        return Claim::getClaimLetterGenerate($data);
     }
 }
