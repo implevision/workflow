@@ -6,6 +6,7 @@ use Avatar\Infrastructure\Models\Api\v1\TbClaim;
 use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Avatar\Infrastructure\Models\Api\v1\TbPotransaction;
 use Avatar\Infrastructure\Models\Api\v1\TbPrdoccodedoc;
+use Avatar\Infrastructure\Models\Api\v1\TbPrdoclist;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 
@@ -53,7 +54,9 @@ class PrepareSaveClaimLetterData
 
         $policyDetails = TbPolicy::where('n_PolicyNoId_PK', $transactionDetails?->n_PolicyMaster_FK)->first();
 
-        $templateId = TbPrdoccodedoc::where('workflow_email_template_id', $payload['actionPayload']['id'])
+        $claimDocCode = TbPrdoclist::where('workflow_template_id', $payload['actionPayload']['id'])->first()?->s_PRFormID;
+
+        $claimLetterTemplateId = TbPrdoccodedoc::where('s_DocCode', $claimDocCode)
             ->where('n_ProductId_Fk', $policyDetails?->n_ProductId_FK)
             ->where('d_EffectiveFrom', '<=', $effectiveDate)
             ->where('d_Effectiveto', '>=', $effectiveDate)
@@ -61,7 +64,7 @@ class PrepareSaveClaimLetterData
 
         return [
             'htmlContent' => $html,
-            'templateId' => $templateId,
+            'claimLetterTemplateId' => $claimLetterTemplateId,
         ];
     }
 }

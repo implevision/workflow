@@ -19,7 +19,7 @@ class SaveClaimLetterService
                 'state' => $payload['actionPayload']['saveClaimLetter']['state'] ?? '',
                 'postalCode' => $payload['actionPayload']['saveClaimLetter']['postalCode'] ?? '',
             ],
-            'template' => $preparedData['templateId'],
+            'template' => $preparedData['claimLetterTemplateId'] ?? null,
             'text' => $preparedData['htmlContent'] ?? '',
         ];
         return Claim::getClaimLetterGenerate($data);
