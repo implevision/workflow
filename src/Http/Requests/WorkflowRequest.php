@@ -53,6 +53,8 @@ class WorkflowRequest extends FormRequest
             'workFlowConditions' => 'required|array',
             'workFlowConditions.*.id' => 'sometimes|nullable|exists:'.$workflowConditionTable.',id',
             'workFlowConditions.*.applyRuleTo' => 'required|string|in:ALL,CERTAIN,CUSTOM_FEED',
+            'workFlowConditions.*.notes' => 'sometimes|nullable|string',
+            'workFlowConditions.*.status' => 'sometimes|integer|in:0,1',
             'workFlowConditions.*.s3FilePath' => 'exclude_unless:workFlowConditions.*.applyRuleTo,CUSTOM_FEED|sometimes|string',
             // 'workFlowConditions.*.instanceActions' => 'required|array',
             // 'workFlowConditions.*.instanceActions.*.id' => 'sometimes|nullable|exists:' . $workflowActionTable . ',id',

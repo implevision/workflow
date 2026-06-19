@@ -24,30 +24,33 @@ class TbPotransaction extends AbstractSchema
 
     public function __construct()
     {
-        $this->fieldMapping = $this->initializeFieldMapping();
         $this->queryName = 'policyQuery';
     }
 
     /**
-     * Retrieves the field mapping with GraphQL schema for the TbClaim.
+     * Retrieves the field mapping with GraphQL schema for the TbPotransaction.
      *
      * This method returns an associative array that maps the fields
-     * of the TbClaim to their corresponding values or attributes.
+     * of the TbPotransaction to their corresponding values or attributes.
      *
      * @return array An associative array representing the field mapping.
      */
     public function getFieldMapping()
     {
+        if (empty($this->fieldMapping)) {
+            $this->fieldMapping = $this->initializeFieldMapping();
+        }
+
         return $this->fieldMapping;
     }
 
     /**
-     * Retrieves the query name for the TbClaim.
+     * Retrieves the query name for the TbPotransaction.
      *
      * This method returns the name of the GraphQL query that can be used
-     * to fetch data related to the TbClaim.
+     * to fetch data related to the TbPotransaction.
      *
-     * @return string The name of the GraphQL query for TbClaim.
+     * @return string The name of the GraphQL query for TbPotransaction.
      */
     public function getQueryName()
     {
@@ -55,7 +58,7 @@ class TbPotransaction extends AbstractSchema
     }
 
     /**
-     * Initializes the field mapping with GraphQL schema for the TbClaim class.
+     * Initializes the field mapping with GraphQL schema for the TbPotransaction class.
      *
      * This method sets up the mapping of fields that can be fetched
      * from the GraphQL schema. It is called during the initialization
@@ -68,6 +71,8 @@ class TbPotransaction extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $appendedPlaceHolders = $this->getAppendedPlaceHolders();
+
         $addressStructure = [
             'addressTypeCode' => null,
             'houseNo' => null,
@@ -104,6 +109,7 @@ class TbPotransaction extends AbstractSchema
                     'policyFees' => null,
                 ],
                 'jqFilter' => '.policyQuery.policyFees',
+                'parseResultCallback' => 'formatCurrency',
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
@@ -789,6 +795,48 @@ class TbPotransaction extends AbstractSchema
                 ',
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
+            'AttachFinalRenewalNotice' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'docuploadinfo' => [
+                            'doctypes' => [
+                                'docTypeCode' => null,
+                            ],
+                            'docUploadDocInfoRel' => [
+                                'docUploadReference' => [
+                                    'tableRefId' => null,
+                                    'tableMasters' => [
+                                        'tableName' => null,
+                                    ],
+                                ],
+                                'docInfo' => [
+                                    'docPath' => null,
+                                    'docName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '
+                [
+                      .policyQuery?.policy?.docuploadinfo[]?
+                      | select(
+                      .doctypes?.docTypeCode? == "FINALNOTICE"
+                      and
+                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
+                      )
+                      | .docUploadDocInfoRel[]?
+                      | .docUploadReference?.tableRefId? as $tableRefId
+                      | .docInfo[]?
+                      | {
+                          name: .docName?,
+                          path: .docPath?,
+                          tableRefId: $tableRefId
+                        }
+                    ]
+                ',
+                'parseResultCallback' => 'generatePresignedUrl',
+            ],
             'PaymentTransactionNumber' => [
                 'GraphQLschemaToReplace' => [
                     'id' => null,
@@ -818,6 +866,43 @@ class TbPotransaction extends AbstractSchema
                 ],
                 'jqFilter' => '{metadata: .policyQuery?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyQuery?.id?, productCode: .policyQuery?.policy?.product?.productCode?}',
                 'parseResultCallback' => 'parsePaymentReceivedDate',
+            ],
+
+            'ReceiptNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'receiptNumber' => null,
+                ],
+                'jqFilter' => '.policyQuery.receiptNumber',
+            ],
+
+            'PremiumChange' => [
+                'GraphQLschemaToReplace' => [
+                    'premiumChange' => null,
+                ],
+                'jqFilter' => '.policyQuery.premiumChange',
+                'parseResultCallback' => 'formatCurrency',
+            ],
+
+            'PaymentCreatedDate' => [
+                'GraphQLschemaToReplace' => [
+                    'paymentLogs' => [
+                        'status' => null,
+                        'createdDate' => null,
+                    ],
+                ],
+                'jqFilter' => '([.policyQuery?.paymentLogs?[] | select(.status? == "Success")] | last)?.createdDate?',
+                'parseResultCallback' => 'formatDateTime',
+            ],
+
+            'PaymentType' => [
+                'GraphQLschemaToReplace' => [
+                    'paymentLogs' => [
+                        'status' => null,
+                        'metadata' => null,
+                    ],
+                ],
+                'jqFilter' => '([.policyQuery?.paymentLogs?[] | select(.status? == "Success")] | last)?.metadata?.startOnlineCollection?.request?.startOnlineCollectionRequest?.payment_type?',
+                'parseResultCallback' => 'formatPaymentTypeLabel',
             ],
         ];
 
@@ -941,6 +1026,50 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
+        $fieldMapping['CancelReason'] = [
+            'GraphQLschemaToReplace' => [
+                ...$fieldMapping['TransactionSubType']['GraphQLschemaToReplace'],
+                'transactionReasonCode' => null,
+            ],
+            'jqFilter' => '.policyQuery',
+            'parseResultCallback' => 'parseCancelReason',
+        ];
+
+        $fieldMapping['CancelRefundAmount'] = [
+            'GraphQLschemaToReplace' => [
+                ...$fieldMapping['PremiumDue']['GraphQLschemaToReplace'],
+            ],
+            'jqFilter' => '.policyQuery',
+            'parseResultCallback' => 'parseCancelRefundAmount',
+        ];
+
+        $targetPolicyLogId = isset($appendedPlaceHolders['id']) ? (int) $appendedPlaceHolders['id'] : null;
+
+        $policyLogsGraphQLSchema = [
+            'policy' => [
+                'policyLogs' => [
+                    'id' => null,
+                    'metadata' => null,
+                ],
+            ],
+        ];
+
+        $policyLogsJqFilter = $targetPolicyLogId !== null
+            ? "([.policyQuery.policy.policyLogs[]? | select(.id == {$targetPolicyLogId})][0])"
+            : '(.policyQuery.policy.policyLogs | .[0]?)';
+
+        $fieldMapping['PolicyLogNote'] = [
+            'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
+            'jqFilter' => $policyLogsJqFilter,
+            'parseResultCallback' => 'parsePolicyLogNote',
+        ];
+
+        $fieldMapping['PolicyLogDate'] = [
+            'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
+            'jqFilter' => $policyLogsJqFilter,
+            'parseResultCallback' => 'parsePolicyLogDate',
+        ];
+
         return $fieldMapping;
     }
 
@@ -1047,6 +1176,11 @@ class TbPotransaction extends AbstractSchema
     public function formatDate($dateToFormat)
     {
         return Helper::formatDate($dateToFormat);
+    }
+
+    public function formatDateTime($dateToFormat): ?string
+    {
+        return Helper::formatDateTime($dateToFormat);
     }
 
     public function parseAppCodeNameToDisplayName($appCodeName)
@@ -1384,5 +1518,72 @@ class TbPotransaction extends AbstractSchema
         $transactionDate = $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['transaction_date'] ?? null;
 
         return $transactionDate ? $this->formatDate($transactionDate) : null;
+    }
+
+    public function formatPaymentTypeLabel(?string $type): ?string
+    {
+        if (empty($type)) {
+            return null;
+        }
+
+        $labelMap = [
+            'PLASTIC_CARD' => 'Credit Card',
+            'CREDIT_CARD' => 'Credit Card',
+            'CC' => 'Credit Card',
+            'ACH' => 'ACH',
+        ];
+
+        return $labelMap[$type] ?? $type;
+    }
+
+    public function parseCancelReason($policyData)
+    {
+        $productCode = $policyData['policy']['product']['productCode'] ?? null;
+        $isNfipProduct = Helper::isNfipProduct($productCode);
+
+        if ($isNfipProduct) {
+            return $this->transactionSubTypeScreenNameResolver($policyData);
+        } else {
+            $reasonCode = $policyData['transactionReasonCode'] ?? '';
+            $ddGroup = 'TRANREASONCODE';
+
+            return Helper::parseAppCodeNameToDisplayNameUsingDDGroup($ddGroup, $reasonCode);
+        }
+    }
+
+    public function parseCancelRefundAmount($policyData)
+    {
+        $cancelRefundAmount = $this->parsePremiumDue($policyData);
+
+        return abs($cancelRefundAmount);
+    }
+
+    private function decodePolicyLogMetadata(array $policyLog): array
+    {
+        $metadata = $policyLog['metadata'] ?? [];
+        if (\is_string($metadata)) {
+            $metadata = json_decode($metadata, true) ?? [];
+        }
+
+        return \is_array($metadata) ? $metadata : [];
+    }
+
+    public function parsePolicyLogNote($policyLog): ?string
+    {
+        if (! \is_array($policyLog)) {
+            return null;
+        }
+
+        return $this->decodePolicyLogMetadata($policyLog)['note'] ?? null;
+    }
+
+    public function parsePolicyLogDate($policyLog): ?string
+    {
+        if (! \is_array($policyLog)) {
+            return null;
+        }
+        $date = $this->decodePolicyLogMetadata($policyLog)['date'] ?? null;
+
+        return $date ? $this->formatDate($date) : null;
     }
 }

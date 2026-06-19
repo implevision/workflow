@@ -1,13 +1,13 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\Taurus\PostAction;
+namespace Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument;
 
 use Avatar\Infrastructure\Models\Api\v1\DocumentUploadBatchModel;
 use Avatar\Infrastructure\Models\Api\v1\TbClaimLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-class UploadAsDocument
+class UploadAsDocumentService
 {
     /**
      * Predefined module mappings used to resolve module identifiers

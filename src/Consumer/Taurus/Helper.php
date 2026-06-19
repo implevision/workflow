@@ -48,7 +48,20 @@ class Helper
 
     public static function formatDate($dateToFormat)
     {
+        if (empty($dateToFormat)) {
+            return null;
+        }
+
         return Carbon::parse($dateToFormat)->format('m/d/Y');
+    }
+
+    public static function formatDateTime($dateToFormat): ?string
+    {
+        if (empty($dateToFormat)) {
+            return null;
+        }
+
+        return Carbon::parse($dateToFormat)->format('F j, Y, g:i A');
     }
 
     public static function createPortalURL($portal)
