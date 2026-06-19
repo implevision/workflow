@@ -71,6 +71,10 @@ class PrepareWorkflowOutputData
                 $printAsPdf->generate($this->jobWorkflowId, $data, $this->templateInformation);
                 break;
 
+            case 'EXECUTE_POST_ACTION':
+                \Log::info('WORKFLOW - Proceeding to execute post action for workflow output');
+                break;
+
             default:
                 throw new \Exception("Unsupported output action type: {$outputActionType}");
         }
