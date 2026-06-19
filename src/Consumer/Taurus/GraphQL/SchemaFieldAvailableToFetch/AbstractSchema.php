@@ -8,6 +8,18 @@ class AbstractSchema
 
     protected int $page = 1;
 
+    protected $appendedPlaceHolders = [];
+
+    public function setAppendedPlaceHolders(array $appendedPlaceHolders)
+    {
+        $this->appendedPlaceHolders = $appendedPlaceHolders;
+    }
+
+    public function getAppendedPlaceHolders(): array
+    {
+        return $this->appendedPlaceHolders;
+    }
+
     /**
      * Sets the headers for the request.
      *

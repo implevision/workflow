@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\Taurus\PostAction;
+namespace Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument;
 
 use Dompdf\Dompdf;
 use Taurus\Workflow\Consumer\Taurus\Helper;
@@ -8,21 +8,21 @@ use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\WorkflowActions\Helpers\WorkflowOutput\PdfStamper;
 use Taurus\Workflow\Services\WorkflowEmailService;
 
-class PrepareEmailData
 /**
- * Class PrepareEmailData
+ * Class PrepareUploadAsDocumentData
  *
- * This class is responsible for preparing email data for processing.
+ * This class is responsible for preparing data for the "upload as document" post action.
  * It handles the necessary transformations and validations required
- * before the email is sent out.
+ * before the document is uploaded.
  */
+class PrepareUploadAsDocumentData
 {
     /**
-     * Prepares the email data based on the provided payload and placeholders.
+     * Prepares the data for the "upload as document" post action based on the provided payload and placeholders.
      *
-     * @param  mixed  $payload  The data to be processed for the email.
-     * @param  array  $placeholders  An associative array of placeholders to be replaced in the email content.
-     * @return mixed The processed email data.
+     * @param  mixed  $payload  The data to be processed for the document.
+     * @param  array  $placeholders  An associative array of placeholders to be replaced in the document content.
+     * @return mixed The processed document data.
      */
     public static function prepare($payload, $placeholders, $messageId)
     {
@@ -39,12 +39,7 @@ class PrepareEmailData
             if ($isPdf) {
                 $pdfBuffer = self::generateFromPdfTemplate($payload, $placeholders);
             } else {
-                $html = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
-                    $key = trim($matches[1]);
-
-                    return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
-                }, $payload['emailTemplate']);
-
+                $html = self::replacePlaceholders($payload['emailTemplate'], $placeholders);
                 $pdfBuffer = self::htmlToPdf($html, $pageSize, $pageOrientation);
             }
         } catch (\Exception $e) {
@@ -54,11 +49,7 @@ class PrepareEmailData
         $documentName = $payload['actionPayload']['documentName'] ?? '';
         $documentId = $payload['actionPayload']['documentId'] ?? '';
 
-        $subject = preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
-            $key = trim($matches[1]);
-
-            return $placeholders[$key] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
-        }, $payload['subject']);
+        $subject = self::replacePlaceholders($payload['subject'], $placeholders);
 
         $filename = preg_replace('/[^A-Za-z0-9 ]/', '', $subject).' - '.microtime(true).'.pdf';
 
@@ -81,6 +72,13 @@ class PrepareEmailData
             'insertedByFlag' => 'System',
             'activityLogText' => "Email letter for '".$documentName."' generated and uploaded. Message ID - ".$messageId,
         ];
+    }
+
+    private static function replacePlaceholders(string $template, array $placeholders): string
+    {
+        return preg_replace_callback('/{{(.*?)}}/', function ($matches) use ($placeholders) {
+            return $placeholders[trim($matches[1])] ?? ''; // fallback to empty if key not found. $matches[0] will have actual placeholder with {{}}
+        }, $template);
     }
 
     /**
