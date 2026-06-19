@@ -139,6 +139,7 @@ class DispatchWorkflowService
 
         setModuleForCurrentWorkflow($this->workflowInfo['detail']['module']);
         $allConditions = $this->workflowInfo['workFlowConditions'];
+        $nextPageCommand = null;
 
         $graphQLQuery = [];
         // NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
@@ -443,6 +444,20 @@ class DispatchWorkflowService
                             continue;
                         }
                     } // end else (jqFilter path)
+
+                    if ($nextPageCommand === null) {
+                        $nextPageArgs = $moduleClassForGraphQL->getNextPageArgs($response, $queryArgs);
+                        if ($nextPageArgs !== null) {
+                            $nextPageCommand = gitCommandToDispatchWorkflow(
+                                $this->workflowId,
+                                $this->recordIdentifier,
+                                [],
+                                $this->appendPlaceHolders,
+                                $this->referenceId,
+                                $this->page + 1
+                            );
+                        }
+                    }
                 }
 
                 if (config('app.env') != 'production') {
@@ -570,6 +585,10 @@ class DispatchWorkflowService
                 }
             }
             WorkflowLog::markWorkflowCompleted($this->workflowId, $jobWorkflowId);
+        }
+
+        if ($nextPageCommand !== null) {
+            \Illuminate\Support\Facades\Artisan::call($nextPageCommand['command'], $nextPageCommand['options']);
         }
 
         return true;

@@ -5,7 +5,7 @@ namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 use Carbon\Carbon;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
-class RenewalPolicy extends AbstractSchema
+class PolicyRenewal extends AbstractSchema
 {
     /**
      * @var array
@@ -113,6 +113,18 @@ class RenewalPolicy extends AbstractSchema
             'days' => 15,
             'page' => $this->page,
         ];
+    }
+
+    public function getNextPageArgs(array $response, array $currentArgs): ?array
+    {
+        $expired = $response['policyRenewal']['PoliciesExpiredInLast15Days'] ?? [];
+        $expiring = $response['policyRenewal']['PoliciesExpiringIn15Days'] ?? [];
+
+        if (empty($expired) && empty($expiring)) {
+            return null;
+        }
+
+        return array_merge($currentArgs, ['page' => $currentArgs['page'] + 1]);
     }
 
     /**
