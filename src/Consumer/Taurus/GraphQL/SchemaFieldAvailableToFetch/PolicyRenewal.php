@@ -24,7 +24,7 @@ class PolicyRenewal extends AbstractSchema
     public function __construct()
     {
         $this->fieldMapping = $this->initializeFieldMapping();
-        $this->queryName = 'policyRenewal';
+        $this->queryName = 'queryPolicyRenewal';
     }
 
     /**
@@ -63,8 +63,8 @@ class PolicyRenewal extends AbstractSchema
      */
     public function getRecordsFromResponse(array $response): array
     {
-        $expired = $response['policyRenewal']['PoliciesExpiredInLast15Days'] ?? [];
-        $expiring = $response['policyRenewal']['PoliciesExpiringIn15Days'] ?? [];
+        $expired = $response['queryPolicyRenewal']['expiredPolicies'] ?? [];
+        $expiring = $response['queryPolicyRenewal']['expiringPolicies'] ?? [];
 
         $agentMap = [];
 
@@ -117,8 +117,8 @@ class PolicyRenewal extends AbstractSchema
 
     public function getNextPageArgs(array $response, array $currentArgs): ?array
     {
-        $expired = $response['policyRenewal']['PoliciesExpiredInLast15Days'] ?? [];
-        $expiring = $response['policyRenewal']['PoliciesExpiringIn15Days'] ?? [];
+        $expired = $response['queryPolicyRenewal']['expiredPolicies'] ?? [];
+        $expiring = $response['queryPolicyRenewal']['expiringPolicies'] ?? [];
 
         if (empty($expired) && empty($expiring)) {
             return null;
@@ -157,8 +157,8 @@ class PolicyRenewal extends AbstractSchema
             ],
         ];
 
-        $expiredSchema = ['PoliciesExpiredInLast15Days' => $agentSchema];
-        $expiringSchema = ['PoliciesExpiringIn15Days' => $agentSchema];
+        $expiredSchema = ['expiredPolicies' => $agentSchema];
+        $expiringSchema = ['expiringPolicies' => $agentSchema];
         $bothSchema = $expiredSchema + $expiringSchema;
 
         // No jqFilter — data comes from getRecordsFromResponse()
@@ -191,11 +191,12 @@ class PolicyRenewal extends AbstractSchema
     private function formatRenewalDates(array $list): array
     {
         return array_map(function ($item) {
-            if (! empty($item['termEndDate'])) {
-                $item['termEndDate'] = Helper::formatDate($item['termEndDate']);
-            }
-
-            return $item;
+            return [
+                'InsuredName'   => $item['insuredName'] ?? '',
+                'PolicyNo'      => $item['policyNo'] ?? '',
+                'PremiumAmount' => $item['premiumAmount'] ?? '',
+                'TermEndDate'   => ! empty($item['termEndDate']) ? Helper::formatDate($item['termEndDate']) : '',
+            ];
         }, $list);
     }
 }
