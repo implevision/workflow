@@ -51,6 +51,8 @@ return [
 
     'email_queue' => env('WORKFLOW_EMAIL_QUEUE'),
 
+    'ses_configuration_set' => env('WORKFLOW_SES_CONFIGURATION_SET', ''),
+
     'post_action_queue' => env('WORKFLOW_POST_ACTION_QUEUE'),
 
     'graphql' => [
