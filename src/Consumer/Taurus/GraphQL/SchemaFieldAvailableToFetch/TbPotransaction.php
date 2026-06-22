@@ -1046,9 +1046,9 @@ class TbPotransaction extends AbstractSchema
         $targetPolicyLogId = isset($appendedPlaceHolders['id']) ? (int) $appendedPlaceHolders['id'] : null;
 
         $policyLogsGraphQLSchema = [
-                'policyLogs' => [
-                    'id' => null,
-                    'metadata' => null,
+            'policyLogs' => [
+                'id' => null,
+                'metadata' => null,
             ],
         ];
 
