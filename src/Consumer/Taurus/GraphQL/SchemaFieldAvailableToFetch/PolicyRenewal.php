@@ -5,7 +5,7 @@ namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 use Carbon\Carbon;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
-class RenewalPolicy extends AbstractSchema
+class PolicyRenewal extends AbstractSchema
 {
     /**
      * @var array
@@ -24,7 +24,7 @@ class RenewalPolicy extends AbstractSchema
     public function __construct()
     {
         $this->fieldMapping = $this->initializeFieldMapping();
-        $this->queryName = 'policyRenewal';
+        $this->queryName = 'queryPolicyRenewal';
     }
 
     /**
@@ -63,8 +63,8 @@ class RenewalPolicy extends AbstractSchema
      */
     public function getRecordsFromResponse(array $response): array
     {
-        $expired = $response['policyRenewal']['PoliciesExpiredInLast15Days'] ?? [];
-        $expiring = $response['policyRenewal']['PoliciesExpiringIn15Days'] ?? [];
+        $expired = $response['queryPolicyRenewal']['expiredPolicies'] ?? [];
+        $expiring = $response['queryPolicyRenewal']['expiringPolicies'] ?? [];
 
         $agentMap = [];
 
@@ -115,6 +115,18 @@ class RenewalPolicy extends AbstractSchema
         ];
     }
 
+    public function getNextPageArgs(array $response, array $currentArgs): ?array
+    {
+        $expired = $response['queryPolicyRenewal']['expiredPolicies'] ?? [];
+        $expiring = $response['queryPolicyRenewal']['expiringPolicies'] ?? [];
+
+        if (empty($expired) && empty($expiring)) {
+            return null;
+        }
+
+        return array_merge($currentArgs, ['page' => $currentArgs['page'] + 1]);
+    }
+
     /**
      * Initializes the field mapping with GraphQL schema for the Renewal class.
      *
@@ -145,8 +157,8 @@ class RenewalPolicy extends AbstractSchema
             ],
         ];
 
-        $expiredSchema = ['PoliciesExpiredInLast15Days' => $agentSchema];
-        $expiringSchema = ['PoliciesExpiringIn15Days' => $agentSchema];
+        $expiredSchema = ['expiredPolicies' => $agentSchema];
+        $expiringSchema = ['expiringPolicies' => $agentSchema];
         $bothSchema = $expiredSchema + $expiringSchema;
 
         // No jqFilter — data comes from getRecordsFromResponse()
@@ -179,11 +191,12 @@ class RenewalPolicy extends AbstractSchema
     private function formatRenewalDates(array $list): array
     {
         return array_map(function ($item) {
-            if (! empty($item['termEndDate'])) {
-                $item['termEndDate'] = Helper::formatDate($item['termEndDate']);
-            }
-
-            return $item;
+            return [
+                'InsuredName'   => $item['insuredName'] ?? '',
+                'PolicyNo'      => $item['policyNo'] ?? '',
+                'PremiumAmount' => $item['premiumAmount'] ?? '',
+                'TermEndDate'   => ! empty($item['termEndDate']) ? Helper::formatDate($item['termEndDate']) : '',
+            ];
         }, $list);
     }
 }
