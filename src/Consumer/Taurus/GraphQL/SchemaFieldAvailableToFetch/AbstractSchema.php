@@ -6,7 +6,7 @@ class AbstractSchema
 {
     protected $headers = [];
 
-    protected int $page = 1;
+    protected int $page = 0;
 
     protected $appendedPlaceHolders = [];
 

@@ -151,7 +151,7 @@ function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
     return sprintf('php artisan %s %s', $command['command'], implode(' ', $parts));
 }
 
-function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [], ?string $referenceId = null, $page = 1)
+function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [], ?string $referenceId = null, $page = 0)
 {
     $hasData = ! empty($data);
     $hasPlaceholders = ! empty($entityPlaceHoldersToAppend);
