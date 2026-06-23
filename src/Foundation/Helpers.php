@@ -156,7 +156,7 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data 
     $hasData = ! empty($data);
     $hasPlaceholders = ! empty($entityPlaceHoldersToAppend);
     $hasReferenceId = $referenceId !== null;
-    $hasPage = $page > 1;
+    $hasPage = $page > 0;
 
     $data = json_encode((array) $data);
     $entityPlaceHoldersToAppend = json_encode((array) $entityPlaceHoldersToAppend);
