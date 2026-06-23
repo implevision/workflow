@@ -94,93 +94,123 @@ class TbAgentTasksMasterMapping extends AbstractSchema
         $fieldMapping = [
             'TaskId' => [
                 'GraphQLschemaToReplace' => [
-                    'id' => null,
+                    'agentTask' => [
+                        'id' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.id',
             ],
             'TransactionId' => [
                 'GraphQLschemaToReplace' => [
-                    'transactionId' => null,
+                    'agentTask' => [
+                        'transactionId' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.transactionId',
             ],
             'MasterId' => [
                 'GraphQLschemaToReplace' => [
-                    'policyId' => null,
+                    'agentTask' => [
+                        'policyId' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.policyId',
             ],
             'AgentId' => [
                 'GraphQLschemaToReplace' => [
-                    'agentId' => null,
+                    'agentTask' => [
+                        'agentId' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.agentId',
             ],
             'AgencyId' => [
                 'GraphQLschemaToReplace' => [
-                    'agencyId' => null,
+                    'agentTask' => [
+                        'agencyId' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.agencyId',
             ],
             'Note' => [
                 'GraphQLschemaToReplace' => [
-                    'note' => null,
+                    'agentTask' => [
+                        'note' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.note',
             ],
             'IsActive' => [
                 'GraphQLschemaToReplace' => [
-                    'isActive' => null,
+                    'agentTask' => [
+                        'isActive' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.isActive',
             ],
             'IsDeleted' => [
                 'GraphQLschemaToReplace' => [
-                    'isDeleted' => null,
+                    'agentTask' => [
+                        'isDeleted' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.isDeleted',
             ],
             'CompleteStatus' => [
                 'GraphQLschemaToReplace' => [
-                    'completeStatus' => null,
+                    'agentTask' => [
+                        'completeStatus' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.completeStatus',
             ],
             'CompleteDate' => [
                 'GraphQLschemaToReplace' => [
-                    'completeDate' => null,
+                    'agentTask' => [
+                        'completeDate' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.completeDate',
                 'parseResultCallback' => 'formatDate',
             ],
             'MetaData' => [
                 'GraphQLschemaToReplace' => [
-                    'metadata' => null,
+                    'agentTask' => [
+                        'metadata' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.metadata',
             ],
             'CreatedBy' => [
                 'GraphQLschemaToReplace' => [
-                    'createdBy' => null,
+                    'agentTask' => [
+                        'createdBy' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.createdBy',
             ],
             'CreatedAt' => [
                 'GraphQLschemaToReplace' => [
-                    'createdAt' => null,
+                    'agentTask' => [
+                        'createdAt' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.createdAt',
                 'parseResultCallback' => 'formatDateToGMT',
             ],
             'UpdatedBy' => [
                 'GraphQLschemaToReplace' => [
-                    'updatedBy' => null,
+                    'agentTask' => [
+                        'updatedBy' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.updatedBy',
             ],
             'UpdatedAt' => [
                 'GraphQLschemaToReplace' => [
-                    'updatedAt' => null,
+                    'agentTask' => [
+                        'updatedAt' => null,
+                    ],
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.updatedAt',
                 'parseResultCallback' => 'formatDate',
