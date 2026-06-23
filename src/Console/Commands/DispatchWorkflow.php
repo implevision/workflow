@@ -54,8 +54,10 @@ class DispatchWorkflow extends Command
         setRecordIdentifierForRunningWorkflow($recordIdentifier);
 
         try {
-            \Log::info('WORKFLOW - Dispatching workflow with ID '.$workflowId);
-            \Log::info("WORKFLOW - Page: $page");
+            \Log::info('WORKFLOW - Dispatching workflow', [
+                'workflow_id' => $workflowId,
+                'page' => $page,
+            ]);
             $recordIdentifier ? \Log::info('WORKFLOW - Dispatching workflow with record identifier '.$recordIdentifier) : null;
 
             $workflow = new DispatchWorkflowService($workflowId, $recordIdentifier, $data, $appendPlaceHolders, $referenceId, $page);
