@@ -151,11 +151,12 @@ function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
     return sprintf('php artisan %s %s', $command['command'], implode(' ', $parts));
 }
 
-function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [], ?string $referenceId = null)
+function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [], ?string $referenceId = null, $page = 0)
 {
     $hasData = ! empty($data);
     $hasPlaceholders = ! empty($entityPlaceHoldersToAppend);
     $hasReferenceId = $referenceId !== null;
+    $hasPage = $page > 0;
 
     $data = json_encode((array) $data);
     $entityPlaceHoldersToAppend = json_encode((array) $entityPlaceHoldersToAppend);
@@ -172,6 +173,9 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data 
         }
         if ($hasReferenceId) {
             $options[] = "referenceId=$referenceId";
+        }
+        if ($hasPage) {
+            $options[] = "page=$page";
         }
 
         return [
@@ -195,6 +199,9 @@ function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data 
         }
         if ($hasReferenceId) {
             $options['--referenceId'] = $referenceId;
+        }
+        if ($hasPage) {
+            $options['--page'] = $page;
         }
 
         return [
