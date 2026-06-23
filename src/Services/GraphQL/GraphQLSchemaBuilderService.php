@@ -97,13 +97,35 @@ class GraphQLSchemaBuilderService
      * @param  array  $variables  Optional query variables
      * @return string Complete GraphQL query
      */
-    public function generateGraphQLQuery($data, $queryName, $variable = [])
+    public function generateGraphQLQuery($data, $queryName, $variable = [], $queryArgs = [])
     {
+        if (! empty($queryArgs)) {
+            return $this->generateGraphQLQueryWithNamedArgs($data, $queryName, $queryArgs);
+        }
+
         $fields = $this->arrayToGraphQLFields($data, 0);
 
         $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
 
         return "query {\n  $queryName(where: ".$variablesStr."){\n".
+            preg_replace('/^/m', '    ', $fields)."\n  }\n}";
+    }
+
+    /**
+     * Generates a GraphQL query using named arguments (e.g. PolicyRenewal(date: "...", days: 15))
+     * instead of a where: clause. Used for modules like Renewal that use custom query args.
+     */
+    public function generateGraphQLQueryWithNamedArgs(array $data, string $queryName, array $args): string
+    {
+        $fields = $this->arrayToGraphQLFields($data, 0);
+
+        $argsStr = implode(', ', array_map(
+            fn ($k, $v) => is_string($v) ? "$k: \"$v\"" : "$k: $v",
+            array_keys($args),
+            $args
+        ));
+
+        return "query {\n  $queryName($argsStr){\n".
             preg_replace('/^/m', '    ', $fields)."\n  }\n}";
     }
 
