@@ -24,7 +24,7 @@ class PostActionService
             throw new \InvalidArgumentException("Unknown post action: {$postAction}");
         }
 
-        $handler = new $handlerClass();
+        $handler = new $handlerClass;
         $data = $payload['payload'];
         unset($payload['payload']);
 
