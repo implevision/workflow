@@ -12,7 +12,7 @@ class DispatchWorkflow extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:dispatch-workflow {--workflowId=} {--recordIdentifier=} {--data=} {--appendPlaceHolders=} {--referenceId=} {--page=1}';
+    protected $signature = 'taurus:dispatch-workflow {--workflowId=} {--recordIdentifier=} {--data=} {--appendPlaceHolders=} {--referenceId=} {--page=0}';
 
     /**
      * The console command description.
@@ -34,7 +34,7 @@ class DispatchWorkflow extends Command
         $appendPlaceHolders = $this->option('appendPlaceHolders');
         $appendPlaceHolders = $appendPlaceHolders ? json_decode($appendPlaceHolders, true) : [];
         $referenceId = $this->option('referenceId');
-        $page = (int) ($this->option('page') ?? 1);
+        $page = (int) ($this->option('page') ?? 0);
 
         if (config('app.env') != 'production' && $page > 3) {
             $this->info("Page $page exceeds the allowed limit of 3 pages. Dispatch aborted.");

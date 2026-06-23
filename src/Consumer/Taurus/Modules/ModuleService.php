@@ -27,10 +27,6 @@ class ModuleService
         $executionEventIncident,
         $executionEvent
     ) {
-        // PolicyRenewal passes named query args (see PolicyRenewal::getQueryArgs()) and
-        // ignores any where-condition, so this path only applies to date/event modules
-        // that filter records by "X day(s)/month(s)/year(s) before/after an event date".
-
         // Without a target date field or a valid window there is nothing to match on.
         if (empty($executionEvent) || empty($executionFrequency) || empty($executionFrequencyType)) {
             return [];

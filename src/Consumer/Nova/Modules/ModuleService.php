@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Nova\Modules;
 
+use Carbon\Carbon;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 
 class ModuleService
@@ -21,13 +22,24 @@ class ModuleService
      * @throws \Exception If there is an error during the retrieval process.
      */
     public function getQueryForEffectiveAction(
+        $module,
         $executionFrequency,
         $executionFrequencyType,
         $executionEventIncident,
         $executionEvent
     ) {
-        // Nova consumer does not build a date/event where-condition yet.
-        return [];
+        // 'Now {+/-}{NO_OF_DAYS} {days/months/years}' format
+        $timeStrToParse = sprintf(
+            'Now %s%s %s',
+            $executionEventIncident == 'AFTER' ? '+' : '-',
+            $executionFrequency,
+            strtolower($executionFrequencyType).'s',
+        );
+        $timeToParse = Carbon::parse($timeStrToParse);
+
+        // $data = $this->getGraphQLQueryMapping($module, $executionEvent, "=", $timeToParse->format('Y-m-d'));
+
+        return $data;
     }
 
     public function getQueryForRecordIdentifier($module, $recordIdentifier)

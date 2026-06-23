@@ -158,8 +158,6 @@ class PolicyRenewal extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
-        // GraphQL schema — used only for building the query.
-        // Data extraction happens in getRecordsFromResponse().
         $agentSchema = [
             [
                 'logo' => null,
@@ -188,7 +186,6 @@ class PolicyRenewal extends AbstractSchema
 
         $dataSchema = ['data' => $agentSchema];
 
-        // No jqFilter — data comes from getRecordsFromResponse()
         return [
             'Logo' => ['GraphQLschemaToReplace' => $dataSchema],
             'AgentUrl' => ['GraphQLschemaToReplace' => $dataSchema],

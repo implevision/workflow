@@ -56,7 +56,7 @@ class DispatchWorkflowService
      * @param  int  $workflowId  The ID of the workflow to be dispatched.
      * @param  int|string  $recordIdentifier  An optional identifier for the record, default is 0.
      */
-    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [], ?string $referenceId = null, int $page = 1)
+    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [], ?string $referenceId = null, int $page = 0)
     {
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
