@@ -337,6 +337,11 @@ class DispatchWorkflowService
                         }
                         $schemaData = $graphQLSchemaBuilder->getSchema();
                         $moduleClassForGraphQL->setPage($this->page);
+
+                        $moduleClassForGraphQL->setQueryArgsContext(
+                            $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow'] ?? []
+                        );
+
                         $queryArgs = $moduleClassForGraphQL->getQueryArgs();
                         $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery, $queryArgs);
                     } catch (\Exception $e) {

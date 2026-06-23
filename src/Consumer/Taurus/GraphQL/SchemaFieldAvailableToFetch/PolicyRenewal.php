@@ -2,7 +2,6 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
-use Carbon\Carbon;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class PolicyRenewal extends AbstractSchema
@@ -57,70 +56,93 @@ class PolicyRenewal extends AbstractSchema
     }
 
     /**
-     * Groups expired + expiring agents by email into one record each.
-     * Each record contains ExpiredRenewalListData and ExpiringRenewalListData
-     * as separate keys so the email template can show two distinct sections.
+     * Groups agents by email into one record each. The query now returns a
+     * single `data` set whose direction is decided by incidentEvent/executionEvent,
+     * so there is no longer an expired/expiring split here.
      */
     public function getRecordsFromResponse(array $response): array
     {
-        $expired = $response['queryPolicyRenewal']['expiredPolicies'] ?? [];
-        $expiring = $response['queryPolicyRenewal']['expiringPolicies'] ?? [];
+        $agents = $this->agentsFromResponse($response);
 
         $agentMap = [];
 
-        foreach ($expired as $agent) {
+        foreach ($agents as $agent) {
             $email = $agent['agentEmail'] ?? '';
             if (! isset($agentMap[$email])) {
                 $agentMap[$email] = $this->baseAgentRecord($agent);
             }
-            $agentMap[$email]['ExpiredRenewalListData'] = $this->formatRenewalDates($agent['renewalListData'] ?? []);
+            $agentMap[$email]['RenewalListData'] = $this->formatRenewalDates($agent['renewalListData'] ?? []);
         }
 
-        foreach ($expiring as $agent) {
-            $email = $agent['agentEmail'] ?? '';
-            if (! isset($agentMap[$email])) {
-                $agentMap[$email] = $this->baseAgentRecord($agent);
-            }
-            $agentMap[$email]['ExpiringRenewalListData'] = $this->formatRenewalDates($agent['renewalListData'] ?? []);
-        }
+        return array_values(array_filter($agentMap, function ($agent) {
+            return ! empty($agent['RenewalListData']);
+        }));
+    }
 
-        return array_values($agentMap);
+    /**
+     * Extracts the flat list of agent groups from the policyRenewal response.
+     */
+    private function agentsFromResponse(array $response): array
+    {
+        return $response['queryPolicyRenewal']['data'] ?? [];
     }
 
     private function baseAgentRecord(array $agent): array
     {
         return [
-            'AgentEmail' => $agent['agentEmail'] ?? '',
+            'Logo' => $agent['logo'] ?? '',
+            'AgentUrl' => $agent['agentUrl'] ?? '',
             'CompanyName' => $agent['companyName'] ?? '',
             'CompanyAddress' => $agent['companyAddress'] ?? '',
             'CompanyPhoneNumber' => $agent['companyPhoneNumber'] ?? '',
-            'Logo' => $agent['logo'] ?? '',
-            'AgentUrl' => $agent['agentUrl'] ?? '',
-            'ExpiredRenewalListData' => [],
-            'ExpiringRenewalListData' => [],
+            'AgentEmail' => $agent['agentEmail'] ?? '',
+            'AgencyEmail' => $agent['agencyEmail'] ?? '',
+            'AgentFloodCode' => $agent['agentFloodCode'] ?? '',
+            'AgentFullName' => $agent['agentFullName'] ?? '',
+            'AgencyFloodCode' => $agent['agencyFloodCode'] ?? '',
+            'AgencyFullName' => $agent['agencyFullName'] ?? '',
+            'AgencyAccountId' => $agent['agencyAccountId'] ?? '',
+            'RenewalListData' => [],
         ];
     }
 
     /**
-     * Returns the date and days arguments required by policyRenewal query.
-     * date = today's date (dynamic at runtime)
-     * days = 15 (fixed renewal window)
+     * Returns the arguments required by the policyRenewal query, mapped from the
+     * workflow's raw dateTimeInfo config (passed via setQueryArgsContext):
+     *   frequency        <- executionFrequency
+     *   typeOfFrequency  <- executionFrequencyType (DAY|MONTH|YEAR)
+     *   incidentEvent    <- executionEventIncident (AFTER|BEFORE)
+     *   executionEvent   <- executionEvent
      */
     public function getQueryArgs(): array
     {
-        return [
-            'date' => Carbon::today()->format('Y-m-d'),
-            'days' => 15,
+        $context = $this->queryArgsContext;
+
+        $args = [
+            'frequency' => (int) (($context['executionFrequency'] ?? null) ?: 15),
+            'typeOfFrequency' => $context['executionFrequencyType'] ?? 'DAY',
+            'incidentEvent' => $context['executionEventIncident'] ?? 'AFTER',
+            'executionEvent' => $context['executionEvent'] ?? null,
             'page' => $this->page,
         ];
+
+        // Drop null/empty args so the generated GraphQL stays valid (no "executionEvent: " gaps).
+        return array_filter($args, fn ($value) => $value !== null && $value !== '');
     }
 
     public function getNextPageArgs(array $response, array $currentArgs): ?array
     {
-        $expired = $response['queryPolicyRenewal']['expiredPolicies'] ?? [];
-        $expiring = $response['queryPolicyRenewal']['expiringPolicies'] ?? [];
+        $agents = $this->agentsFromResponse($response);
 
-        if (empty($expired) && empty($expiring)) {
+        $hasRenewalData = false;
+        foreach ($agents as $agent) {
+            if (! empty($agent['renewalListData'])) {
+                $hasRenewalData = true;
+                break;
+            }
+        }
+
+        if (! $hasRenewalData) {
             return null;
         }
 
@@ -140,46 +162,47 @@ class PolicyRenewal extends AbstractSchema
         // Data extraction happens in getRecordsFromResponse().
         $agentSchema = [
             [
-                'companyPhoneNumber' => null,
+                'logo' => null,
+                'agentUrl' => null,
                 'companyName' => null,
                 'companyAddress' => null,
-                'agentUrl' => null,
+                'companyPhoneNumber' => null,
                 'agentEmail' => null,
-                'logo' => null,
+                'agencyEmail' => null,
+                'agentFloodCode' => null,
+                'agentFullName' => null,
+                'agencyFloodCode' => null,
+                'agencyFullName' => null,
+                'agencyAccountId' => null,
                 'renewalListData' => [
                     [
-                        'insuredName' => null,
                         'policyNo' => null,
-                        'premiumAmount' => null,
+                        'insuredName' => null,
                         'termEndDate' => null,
+                        'premiumAmount' => null,
+                        'paymentAmt' => null,
                     ],
                 ],
             ],
         ];
 
-        $expiredSchema = ['expiredPolicies' => $agentSchema];
-        $expiringSchema = ['expiringPolicies' => $agentSchema];
-        $bothSchema = $expiredSchema + $expiringSchema;
+        $dataSchema = ['data' => $agentSchema];
 
         // No jqFilter — data comes from getRecordsFromResponse()
         return [
-            'AgentEmail' => ['GraphQLschemaToReplace' => $bothSchema],
-            'CompanyName' => ['GraphQLschemaToReplace' => $bothSchema],
-            'CompanyAddress' => ['GraphQLschemaToReplace' => $bothSchema],
-            'CompanyPhoneNumber' => ['GraphQLschemaToReplace' => $bothSchema],
-            'Logo' => ['GraphQLschemaToReplace' => $bothSchema],
-            'AgentUrl' => ['GraphQLschemaToReplace' => $bothSchema],
-            'RenewalListData' => ['GraphQLschemaToReplace' => $bothSchema],
-            'ExpiredAgentEmail' => ['GraphQLschemaToReplace' => $expiredSchema],
-            'ExpiredCompanyName' => ['GraphQLschemaToReplace' => $expiredSchema],
-            'ExpiredCompanyAddress' => ['GraphQLschemaToReplace' => $expiredSchema],
-            'ExpiredCompanyPhoneNumber' => ['GraphQLschemaToReplace' => $expiredSchema],
-            'ExpiredRenewalListData' => ['GraphQLschemaToReplace' => $expiredSchema],
-            'ExpiringAgentEmail' => ['GraphQLschemaToReplace' => $expiringSchema],
-            'ExpiringCompanyName' => ['GraphQLschemaToReplace' => $expiringSchema],
-            'ExpiringCompanyAddress' => ['GraphQLschemaToReplace' => $expiringSchema],
-            'ExpiringCompanyPhoneNumber' => ['GraphQLschemaToReplace' => $expiringSchema],
-            'ExpiringRenewalListData' => ['GraphQLschemaToReplace' => $expiringSchema],
+            'Logo' => ['GraphQLschemaToReplace' => $dataSchema],
+            'AgentUrl' => ['GraphQLschemaToReplace' => $dataSchema],
+            'CompanyName' => ['GraphQLschemaToReplace' => $dataSchema],
+            'CompanyAddress' => ['GraphQLschemaToReplace' => $dataSchema],
+            'CompanyPhoneNumber' => ['GraphQLschemaToReplace' => $dataSchema],
+            'AgentEmail' => ['GraphQLschemaToReplace' => $dataSchema],
+            'AgencyEmail' => ['GraphQLschemaToReplace' => $dataSchema],
+            'AgentFloodCode' => ['GraphQLschemaToReplace' => $dataSchema],
+            'AgentFullName' => ['GraphQLschemaToReplace' => $dataSchema],
+            'AgencyFloodCode' => ['GraphQLschemaToReplace' => $dataSchema],
+            'AgencyFullName' => ['GraphQLschemaToReplace' => $dataSchema],
+            'AgencyAccountId' => ['GraphQLschemaToReplace' => $dataSchema],
+            'RenewalListData' => ['GraphQLschemaToReplace' => $dataSchema],
         ];
     }
 
@@ -192,10 +215,11 @@ class PolicyRenewal extends AbstractSchema
     {
         return array_map(function ($item) {
             return [
-                'InsuredName'   => $item['insuredName'] ?? '',
                 'PolicyNo'      => $item['policyNo'] ?? '',
-                'PremiumAmount' => $item['premiumAmount'] ?? '',
+                'InsuredName'   => $item['insuredName'] ?? '',
                 'TermEndDate'   => ! empty($item['termEndDate']) ? Helper::formatDate($item['termEndDate']) : '',
+                'PremiumAmount' => $item['premiumAmount'] ?? '',
+                'PaymentAmt'    => $item['paymentAmt'] ?? '',
             ];
         }, $list);
     }

@@ -573,10 +573,10 @@ class WorkflowService
             return [];
         }
 
-        // This method should implement the logic to get matching records based on the effective action
-        // For now, it returns an empty array as a placeholder
+        // Build the where-condition for the module's effective action. $module is only
+        // needed here to resolve the module service; the module method derives everything
+        // from the date/event window.
         return $moduleService->getQueryForEffectiveAction(
-            $module,
             $executionFrequency,
             $executionFrequencyType,
             $executionEventIncident,

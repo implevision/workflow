@@ -10,6 +10,14 @@ class AbstractSchema
 
     protected $appendedPlaceHolders = [];
 
+    /**
+     * Date/event context derived from the workflow's dateTimeInfo config.
+     * Used by modules whose query takes named date args (e.g. PolicyRenewal).
+     *
+     * @var array
+     */
+    protected array $queryArgsContext = [];
+
     public function setAppendedPlaceHolders(array $appendedPlaceHolders)
     {
         $this->appendedPlaceHolders = $appendedPlaceHolders;
@@ -18,6 +26,16 @@ class AbstractSchema
     public function getAppendedPlaceHolders(): array
     {
         return $this->appendedPlaceHolders;
+    }
+
+    public function setQueryArgsContext(array $queryArgsContext): void
+    {
+        $this->queryArgsContext = $queryArgsContext;
+    }
+
+    public function getQueryArgsContext(): array
+    {
+        return $this->queryArgsContext;
     }
 
     /**
@@ -57,9 +75,9 @@ class AbstractSchema
     /**
      * Returns custom query arguments to pass directly to the root query.
      * Override in module schema classes when the query uses named args instead of where:.
-     * Example: PolicyRenewal(date: "2025-10-29", days: 15)
+     * Example: queryPolicyRenewal(frequency: 15, typeOfFrequency: "DAY", incidentEvent: "AFTER")
      *
-     * @return array key => value pairs, e.g. ['date' => '2025-10-29', 'days' => 15]
+     * @return array key => value pairs, e.g. ['frequency' => 15, 'typeOfFrequency' => 'DAY']
      */
     public function getQueryArgs(): array
     {
