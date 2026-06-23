@@ -212,11 +212,11 @@ class PolicyRenewal extends AbstractSchema
     {
         return array_map(function ($item) {
             return [
-                'PolicyNo'      => $item['policyNo'] ?? '',
-                'InsuredName'   => $item['insuredName'] ?? '',
-                'TermEndDate'   => ! empty($item['termEndDate']) ? Helper::formatDate($item['termEndDate']) : '',
+                'PolicyNo' => $item['policyNo'] ?? '',
+                'InsuredName' => $item['insuredName'] ?? '',
+                'TermEndDate' => ! empty($item['termEndDate']) ? Helper::formatDate($item['termEndDate']) : '',
                 'PremiumAmount' => $item['premiumAmount'] ?? '',
-                'PaymentAmt'    => $item['paymentAmt'] ?? '',
+                'PaymentAmt' => $item['paymentAmt'] ?? '',
             ];
         }, $list);
     }

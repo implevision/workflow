@@ -52,7 +52,7 @@ class ModuleService
      * @param  int|string  $frequency  Number of units in the window (e.g. 15)
      * @param  string  $frequencyType  DAY | MONTH | YEAR
      * @param  string  $incident  AFTER | BEFORE
-     * @return string  Target date as 'Y-m-d'
+     * @return string Target date as 'Y-m-d'
      */
     protected function resolveEventTargetDate($frequency, $frequencyType, $incident): string
     {
@@ -118,5 +118,10 @@ class ModuleService
     public function getPostFixForTaskDefinition()
     {
         return '';
+    }
+
+    public function isCustomResolverDefinedForModule()
+    {
+        return false;
     }
 }

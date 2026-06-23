@@ -573,6 +573,10 @@ class WorkflowService
             return [];
         }
 
+        if ($moduleService->isCustomResolverDefinedForModule()) {
+            return [];
+        }
+
         // Build the where-condition for the module's effective action. $module is only
         // needed here to resolve the module service; the module method derives everything
         // from the date/event window.

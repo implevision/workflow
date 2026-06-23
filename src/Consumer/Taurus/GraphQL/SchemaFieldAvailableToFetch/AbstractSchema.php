@@ -6,15 +6,13 @@ class AbstractSchema
 {
     protected $headers = [];
 
-    protected int $page = 1;
+    protected int $page = 0;
 
     protected $appendedPlaceHolders = [];
 
     /**
      * Date/event context derived from the workflow's dateTimeInfo config.
      * Used by modules whose query takes named date args (e.g. PolicyRenewal).
-     *
-     * @var array
      */
     protected array $queryArgsContext = [];
 
