@@ -51,7 +51,7 @@ class Helper
         if (empty($dateToFormat)) {
             return null;
         }
-        
+
         return Carbon::parse($dateToFormat)->format('m/d/Y');
     }
 

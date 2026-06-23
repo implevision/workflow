@@ -1046,17 +1046,15 @@ class TbPotransaction extends AbstractSchema
         $targetPolicyLogId = isset($appendedPlaceHolders['noteId']) ? (int) $appendedPlaceHolders['noteId'] : null;
 
         $policyLogsGraphQLSchema = [
-            'policy' => [
-                'policyLogs' => [
-                    'id' => null,
-                    'metadata' => null,
-                ],
+            'policyLogs' => [
+                'id' => null,
+                'metadata' => null,
             ],
         ];
 
         $policyLogsJqFilter = $targetPolicyLogId !== null
-            ? "([.policyQuery.policy.policyLogs[]? | select(.id == {$targetPolicyLogId})][0])"
-            : '(.policyQuery.policy.policyLogs | .[0]?)';
+            ? "([.policyQuery.policyLogs[]? | select(.id == {$targetPolicyLogId})][0])"
+            : '(.policyQuery.policyLogs | .[0]?)';
 
         $fieldMapping['PolicyLogNote'] = [
             'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
