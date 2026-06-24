@@ -1043,8 +1043,6 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parseCancelRefundAmount',
         ];
 
-        $targetPolicyLogId = isset($appendedPlaceHolders['id']) ? (int) $appendedPlaceHolders['id'] : null;
-
         $policyLogsGraphQLSchema = [
             'policyLogs' => [
                 'id' => null,
@@ -1052,20 +1050,63 @@ class TbPotransaction extends AbstractSchema
             ],
         ];
 
-        $policyLogsJqFilter = $targetPolicyLogId !== null
-            ? "([.policyQuery.policyLogs[]? | select(.id == {$targetPolicyLogId})][0])"
-            : '(.policyQuery.policyLogs | .[0]?)';
+        $targetPolicyLogId = isset($appendedPlaceHolders['noteId']) ? (int) $appendedPlaceHolders['noteId'] : null;
 
-        $fieldMapping['PolicyLogNote'] = [
+        $policyLogsJqFilter = $targetPolicyLogId !== null
+            ? "[.policyQuery.policyLogs[]? | select((.id|tostring) == ({$targetPolicyLogId}|tostring))]"
+            : '[.policyQuery.policyLogs[]?]';
+
+        $fieldMapping['policyNoteList'] = [
             'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
             'jqFilter' => $policyLogsJqFilter,
-            'parseResultCallback' => 'parsePolicyLogNote',
+            'parseResultCallback' => 'parsePolicyLogs',
         ];
 
-        $fieldMapping['PolicyLogDate'] = [
-            'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
-            'jqFilter' => $policyLogsJqFilter,
-            'parseResultCallback' => 'parsePolicyLogDate',
+        $targetDocUploadId = isset($appendedPlaceHolders['docUploadId']) ? (int) $appendedPlaceHolders['docUploadId'] : null;
+
+        $documentListGraphQLSchema = [
+            'policy' => [
+                'docuploadinfo' => [
+                    'id' => null,
+                    'uploadDate' => null,
+                    'docUploadDocInfoRel' => [
+                        'docInfo' => ['docName' => null],
+                    ],
+                ],
+            ],
+        ];
+
+        $documentListJqFilter = $targetDocUploadId !== null
+            ? "[.policyQuery.policy.docuploadinfo[]? | select((.id|tostring) == ({$targetDocUploadId}|tostring))]"
+            : '[.policyQuery.policy.docuploadinfo[]?]';
+
+        $fieldMapping['documentList'] = [
+            'GraphQLschemaToReplace' => $documentListGraphQLSchema,
+            'jqFilter' => $documentListJqFilter,
+            'parseResultCallback' => 'parseDocuments',
+        ];
+
+        $targetTaskId = isset($appendedPlaceHolders['taskId']) ? (int) $appendedPlaceHolders['taskId'] : null;
+
+        $agentTasksGraphQLSchema = [
+            'agentTasks' => [
+                'id' => null,
+                'taskMapping' => [
+                    'id' => null,
+                    'title' => null,
+                    'createdAt' => null,
+                ],
+            ],
+        ];
+
+        $taskListJqFilter = $targetTaskId !== null
+            ? "[.policyQuery.agentTasks[]? | select((.id|tostring) == ({$targetTaskId}|tostring)) | .taskMapping[]?]"
+            : '[.policyQuery.agentTasks[]?.taskMapping[]?]';
+
+        $fieldMapping['taskList'] = [
+            'GraphQLschemaToReplace' => $agentTasksGraphQLSchema,
+            'jqFilter' => $taskListJqFilter,
+            'parseResultCallback' => 'parseAgentTasks',
         ];
 
         return $fieldMapping;
@@ -1566,22 +1607,40 @@ class TbPotransaction extends AbstractSchema
         return \is_array($metadata) ? $metadata : [];
     }
 
-    public function parsePolicyLogNote($policyLog): ?string
+    public function parsePolicyLogs(array|string $policyLogs): array
     {
-        if (! \is_array($policyLog)) {
-            return null;
-        }
+        return $this->buildLoopRows($policyLogs, function (array $policyLog): array {
+            $metadata = $this->decodePolicyLogMetadata($policyLog);
+            $date = $metadata['date'] ?? null;
 
-        return $this->decodePolicyLogMetadata($policyLog)['note'] ?? null;
+            return [
+                'PolicyLogNote' => $metadata['note'] ?? null,
+                'PolicyLogDate' => $date ? $this->formatDate($date) : null,
+            ];
+        });
     }
 
-    public function parsePolicyLogDate($policyLog): ?string
+    public function parseAgentTasks(array|string $taskMappings): array
     {
-        if (! \is_array($policyLog)) {
-            return null;
-        }
-        $date = $this->decodePolicyLogMetadata($policyLog)['date'] ?? null;
+        return $this->buildLoopRows($taskMappings, function (array $taskMapping): array {
+            $createdAt = $taskMapping['createdAt'] ?? null;
 
-        return $date ? $this->formatDate($date) : null;
+            return [
+                'TaskTitle' => $taskMapping['title'] ?? null,
+                'TaskDate' => $createdAt ? $this->formatDate($createdAt) : null,
+            ];
+        });
+    }
+
+    public function parseDocuments(array|string $documents): array
+    {
+        return $this->buildLoopRows($documents, function (array $document): array {
+            $uploadDate = $document['uploadDate'] ?? null;
+
+            return [
+                'DocumentName' => $this->formatFileName($document['docUploadDocInfoRel'][0]['docInfo'][0]['docName'] ?? null),
+                'DocumentDate' => $uploadDate ? $this->formatDate($uploadDate) : null,
+            ];
+        });
     }
 }
