@@ -116,6 +116,30 @@ class AbstractSchema
     }
 
     /**
+     * Builds loop rows for an {{#each}} placeholder from a GraphQL list result.
+     *
+     * Handles the shared boilerplate — decoding a JSON string, dropping
+     * non-array entries, and reindexing — so each loop field only needs to
+     * supply a mapper that turns one item into its row of placeholder values.
+     *
+     * @param  array|string  $items  Raw list (JSON string or array) from the jqFilter
+     * @param  callable  $rowMapper  fn(array $item): array — returns one row's placeholders
+     * @return array List of rows
+     */
+    protected function buildLoopRows(array|string $items, callable $rowMapper): array
+    {
+        if (\is_string($items)) {
+            $items = json_decode($items, true);
+        }
+
+        if (! \is_array($items)) {
+            return [];
+        }
+
+        return array_values(array_map($rowMapper, array_filter($items, 'is_array')));
+    }
+
+    /**
      * Override in module schema classes that handle their own GraphQL fetch
      * and data parsing (e.g. modules with custom query args instead of where:).
      *

@@ -1043,8 +1043,6 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parseCancelRefundAmount',
         ];
 
-        $targetPolicyLogId = isset($appendedPlaceHolders['noteId']) ? (int) $appendedPlaceHolders['noteId'] : null;
-
         $policyLogsGraphQLSchema = [
             'policyLogs' => [
                 'id' => null,
@@ -1052,66 +1050,63 @@ class TbPotransaction extends AbstractSchema
             ],
         ];
 
+        $targetPolicyLogId = isset($appendedPlaceHolders['noteId']) ? (int) $appendedPlaceHolders['noteId'] : null;
+
         $policyLogsJqFilter = $targetPolicyLogId !== null
-            ? "([.policyQuery.policyLogs[]? | select(.id == {$targetPolicyLogId})][0])"
-            : '(.policyQuery.policyLogs | .[0]?)';
+            ? "[.policyQuery.policyLogs[]? | select((.id|tostring) == ({$targetPolicyLogId}|tostring))]"
+            : '[.policyQuery.policyLogs[]?]';
 
-        $fieldMapping['PolicyLogNote'] = [
+        $fieldMapping['policyNoteList'] = [
             'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
             'jqFilter' => $policyLogsJqFilter,
-            'parseResultCallback' => 'parsePolicyLogNote',
-        ];
-
-        $fieldMapping['PolicyLogDate'] = [
-            'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
-            'jqFilter' => $policyLogsJqFilter,
-            'parseResultCallback' => 'parsePolicyLogDate',
+            'parseResultCallback' => 'parsePolicyLogs',
         ];
 
         $targetDocUploadId = isset($appendedPlaceHolders['docUploadId']) ? (int) $appendedPlaceHolders['docUploadId'] : null;
 
-        $docUploadGraphQLSchema = [
+        $documentListGraphQLSchema = [
             'policy' => [
                 'docuploadinfo' => [
-                    'id' => null,         
-                    'doctypes' => ['docTypeCode' => null],
+                    'id' => null,
+                    'uploadDate' => null,
                     'docUploadDocInfoRel' => [
-                        'docInfo' => ['docPath' => null, 'docName' => null],
+                        'docInfo' => ['docName' => null],
                     ],
                 ],
             ],
         ];
 
-        $docUploadJqFilter = $targetDocUploadId !== null
-            ? "([.policyQuery.policy.docuploadinfo[]? | select(.id == {$targetDocUploadId})][0])"
-            : '(.policyQuery.policy.docuploadinfo | .[0]?)';
+        $documentListJqFilter = $targetDocUploadId !== null
+            ? "[.policyQuery.policy.docuploadinfo[]? | select((.id|tostring) == ({$targetDocUploadId}|tostring))]"
+            : '[.policyQuery.policy.docuploadinfo[]?]';
 
-        $fieldMapping['AttachAgentUploadedDoc'] = [
-            'GraphQLschemaToReplace' => $docUploadGraphQLSchema,
-            'jqFilter' => $docUploadJqFilter,
-            'parseResultCallback' => 'generatePresignedUrl',
+        $fieldMapping['documentList'] = [
+            'GraphQLschemaToReplace' => $documentListGraphQLSchema,
+            'jqFilter' => $documentListJqFilter,
+            'parseResultCallback' => 'parseDocuments',
         ];
 
         $targetTaskId = isset($appendedPlaceHolders['taskId']) ? (int) $appendedPlaceHolders['taskId'] : null;
 
         $agentTasksGraphQLSchema = [
-                'agentTasks' => [
+            'agentTasks' => [
+                'id' => null,
+                'taskMapping' => [
                     'id' => null,
-                    'note' => null,
-                    'completeStatus' => null,
-                    'taskMapping' => [
-                        'title' => null,
-                    ],
+                    'title' => null,
+                    'createdAt' => null,
+                ],
             ],
         ];
 
-        $agentTaskJqFilter = $targetTaskId !== null
-            ? "([.policyQuery.agentTasks[]? | select(.id == {$targetTaskId})][0])"
-            : '(.policyQuery.agentTasks | .[0]?)';
+        $taskListJqFilter = $targetTaskId !== null
+            ? "[.policyQuery.agentTasks[]? | select((.id|tostring) == ({$targetTaskId}|tostring)) | .taskMapping[]?]"
+            : '[.policyQuery.agentTasks[]?.taskMapping[]?]';
 
-        $fieldMapping['TaskTitle'] = [
+        $fieldMapping['taskList'] = [
             'GraphQLschemaToReplace' => $agentTasksGraphQLSchema,
-            'jqFilter' => $agentTaskJqFilter.'.taskMapping[0].title',
+            'jqFilter' => $taskListJqFilter,
+            'parseResultCallback' => 'parseAgentTasks',
         ];
 
 
@@ -1613,22 +1608,40 @@ class TbPotransaction extends AbstractSchema
         return \is_array($metadata) ? $metadata : [];
     }
 
-    public function parsePolicyLogNote($policyLog): ?string
+    public function parsePolicyLogs(array|string $policyLogs): array
     {
-        if (! \is_array($policyLog)) {
-            return null;
-        }
+        return $this->buildLoopRows($policyLogs, function (array $policyLog): array {
+            $metadata = $this->decodePolicyLogMetadata($policyLog);
+            $date = $metadata['date'] ?? null;
 
-        return $this->decodePolicyLogMetadata($policyLog)['note'] ?? null;
+            return [
+                'PolicyLogNote' => $metadata['note'] ?? null,
+                'PolicyLogDate' => $date ? $this->formatDate($date) : null,
+            ];
+        });
     }
 
-    public function parsePolicyLogDate($policyLog): ?string
+    public function parseAgentTasks(array|string $taskMappings): array
     {
-        if (! \is_array($policyLog)) {
-            return null;
-        }
-        $date = $this->decodePolicyLogMetadata($policyLog)['date'] ?? null;
+        return $this->buildLoopRows($taskMappings, function (array $taskMapping): array {
+            $createdAt = $taskMapping['createdAt'] ?? null;
 
-        return $date ? $this->formatDate($date) : null;
+            return [
+                'TaskTitle' => $taskMapping['title'] ?? null,
+                'TaskDate' => $createdAt ? $this->formatDate($createdAt) : null,
+            ];
+        });
+    }
+
+    public function parseDocuments(array|string $documents): array
+    {
+        return $this->buildLoopRows($documents, function (array $document): array {
+            $uploadDate = $document['uploadDate'] ?? null;
+
+            return [
+                'DocumentName' => $this->formatFileName($document['docUploadDocInfoRel'][0]['docInfo'][0]['docName'] ?? null),
+                'DocumentDate' => $uploadDate ? $this->formatDate($uploadDate) : null,
+            ];
+        });
     }
 }
