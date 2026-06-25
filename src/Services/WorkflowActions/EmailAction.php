@@ -39,7 +39,7 @@ class EmailAction extends AbstractWorkflowAction
         $this->emailInformation = $editedPayload;
     }
 
-    private function loadTemplateById(int $id): void
+    private function loadTemplateById(string $id): void
     {
         $response = WorkflowEmailService::getEmailInformation($id);
 
