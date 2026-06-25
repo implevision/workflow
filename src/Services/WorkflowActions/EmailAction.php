@@ -2,7 +2,6 @@
 
 namespace Taurus\Workflow\Services\WorkflowActions;
 
-use Illuminate\Support\Facades\Log;
 use Taurus\Workflow\Services\WorkflowActions\Helpers\Email\PrepareEmailData;
 use Taurus\Workflow\Services\WorkflowEmailService;
 
@@ -19,17 +18,17 @@ class EmailAction extends AbstractWorkflowAction
 
         // Use the edited template payload directly if provided (manual workflow execution).
         if (! empty($payload['editedTemplatePayload'])) {
-            $this->loadEditedEmailTemplate($payload['editedTemplatePayload']);
+            $this->loadEditedTemplate($payload['editedTemplatePayload']);
 
             return;
         }
 
-        $this->loadEmailTemplateById($payload['id']);
+        $this->loadTemplateById($payload['id']);
     }
 
-    private function loadEditedEmailTemplate(array $editedPayload): void
+    private function loadEditedTemplate(array $editedPayload): void
     {
-        $response = WorkflowEmailService::extractPlaceholdersFromTemplate($editedPayload);
+        $response = WorkflowEmailService::extractPlaceholders($editedPayload);
 
         if (empty($response) || empty($response['data']) || ! $response['status']) {
             throw new \Exception('Error extracting placeholders from the template.');
@@ -40,7 +39,7 @@ class EmailAction extends AbstractWorkflowAction
         $this->emailInformation = $editedPayload;
     }
 
-    private function loadEmailTemplateById(int $id): void
+    private function loadTemplateById(int $id): void
     {
         $response = WorkflowEmailService::getEmailInformation($id);
 
@@ -76,7 +75,7 @@ class EmailAction extends AbstractWorkflowAction
         $data = $this->getData();
         $payload = $this->getPayload();
 
-        Log::info('WORKFLOW - Preparing email data');
+        \Log::info('WORKFLOW - Preparing email data');
         $prepareEmailData = new PrepareEmailData;
         $prepareEmailData->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
             'csvFile' => $feedFile,

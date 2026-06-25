@@ -28,7 +28,7 @@ class WorkflowOutputAction extends AbstractWorkflowAction
 
     private function loadEditedTemplate(array $editedPayload): void
     {
-        $response = WorkflowEmailService::extractPlaceholdersFromTemplate($editedPayload);
+        $response = WorkflowEmailService::extractPlaceholders($editedPayload);
 
         if (empty($response) || empty($response['data']) || ! $response['status']) {
             throw new \Exception('Error extracting placeholders from the template.');
