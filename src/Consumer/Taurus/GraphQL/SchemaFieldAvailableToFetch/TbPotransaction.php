@@ -1100,7 +1100,7 @@ class TbPotransaction extends AbstractSchema
         ];
 
         $taskListJqFilter = $targetTaskId !== null
-            ? "[.policyQuery.agentTasks[]? | select((.id|tostring) == ({$targetTaskId}|tostring)) | .taskMapping[]?]"
+            ? "[.policyQuery.agentTasks[]?.taskMapping[]? | select((.id|tostring) == ({$targetTaskId}|tostring))]"
             : '[.policyQuery.agentTasks[]?.taskMapping[]?]';
 
         $fieldMapping['taskList'] = [
