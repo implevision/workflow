@@ -16,37 +16,38 @@ class WorkflowOutputAction extends AbstractWorkflowAction
             throw new \Exception('Template ID is required.');
         }
 
-        // Allowing to use the edited letter template payload directly if provided
-        // instead of fetching from the service for manual workflow execution.
-        if (
-            isset($payload['editedLetterTemplatePayload']) &&
-            ! empty($payload['editedLetterTemplatePayload'])
-        ) {
-            $response = WorkflowEmailService::extractPlaceholdersFromTemplate($payload['editedLetterTemplatePayload']);
-
-            if (empty($response) || empty($response['data']) || ! $response['status']) {
-                throw new \Exception('Error extracting placeholders from the template.');
-            }
-
-            $payload['editedLetterTemplatePayload']['extractedPlaceholders'] =
-                $response['data']['extractedPlaceholders'] ?? [];
-
-            $this->templateInformation = $payload['editedLetterTemplatePayload'];
+        // Use the edited template payload directly if provided (manual workflow execution).
+        if (! empty($payload['editedTemplatePayload'])) {
+            $this->loadEditedTemplate($payload['editedTemplatePayload']);
 
             return;
         }
 
-        try {
-            $response = WorkflowEmailService::getEmailInformation($payload['id']);
+        $this->loadTemplateById($payload['id']);
+    }
 
-            if (empty($response) || empty($response['data']) || ! $response['status']) {
-                throw new \Exception('No template found for the given ID.');
-            }
+    private function loadEditedTemplate(array $editedPayload): void
+    {
+        $response = WorkflowEmailService::extractPlaceholdersFromTemplate($editedPayload);
 
-            $this->templateInformation = $response['data'];
-        } catch (\Exception $e) {
-            throw $e;
+        if (empty($response) || empty($response['data']) || ! $response['status']) {
+            throw new \Exception('Error extracting placeholders from the template.');
         }
+
+        $editedPayload['extractedPlaceholders'] = $response['data']['extractedPlaceholders'] ?? [];
+
+        $this->templateInformation = $editedPayload;
+    }
+
+    private function loadTemplateById(int $id): void
+    {
+        $response = WorkflowEmailService::getEmailInformation($id);
+
+        if (empty($response) || empty($response['data']) || ! $response['status']) {
+            throw new \Exception('No template found for the given ID.');
+        }
+
+        $this->templateInformation = $response['data'];
     }
 
     public function getListOfRequiredData()

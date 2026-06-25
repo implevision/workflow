@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Services\WorkflowActions;
 
+use Illuminate\Support\Facades\Log;
 use Taurus\Workflow\Services\WorkflowActions\Helpers\Email\PrepareEmailData;
 use Taurus\Workflow\Services\WorkflowEmailService;
 
@@ -16,37 +17,38 @@ class EmailAction extends AbstractWorkflowAction
             throw new \Exception('Email template ID is required.');
         }
 
-        // Allowing to use the edited email template payload directly if provided
-        // instead of fetching from the service for manual workflow execution.
-        if (
-            isset($payload['editedEmailTemplatePayload']) &&
-            ! empty($payload['editedEmailTemplatePayload'])
-        ) {
-            $response = WorkflowEmailService::extractPlaceholdersFromTemplate($payload['editedEmailTemplatePayload']);
-
-            if (empty($response) || empty($response['data']) || ! $response['status']) {
-                throw new \Exception('Error extracting placeholders from the template.');
-            }
-
-            $payload['editedEmailTemplatePayload']['extractedPlaceholders'] =
-                $response['data']['extractedPlaceholders'] ?? [];
-
-            $this->emailInformation = $payload['editedEmailTemplatePayload'];
+        // Use the edited template payload directly if provided (manual workflow execution).
+        if (! empty($payload['editedTemplatePayload'])) {
+            $this->loadEditedEmailTemplate($payload['editedTemplatePayload']);
 
             return;
         }
 
-        try {
-            $response = WorkflowEmailService::getEmailInformation($payload['id']);
+        $this->loadEmailTemplateById($payload['id']);
+    }
 
-            if (empty($response) || empty($response['data']) || ! $response['status']) {
-                throw new \Exception('No email template found for the given ID.');
-            }
+    private function loadEditedEmailTemplate(array $editedPayload): void
+    {
+        $response = WorkflowEmailService::extractPlaceholdersFromTemplate($editedPayload);
 
-            $this->emailInformation = $response['data'];
-        } catch (\Exception $e) {
-            throw $e;
+        if (empty($response) || empty($response['data']) || ! $response['status']) {
+            throw new \Exception('Error extracting placeholders from the template.');
         }
+
+        $editedPayload['extractedPlaceholders'] = $response['data']['extractedPlaceholders'] ?? [];
+
+        $this->emailInformation = $editedPayload;
+    }
+
+    private function loadEmailTemplateById(int $id): void
+    {
+        $response = WorkflowEmailService::getEmailInformation($id);
+
+        if (empty($response) || empty($response['data']) || ! $response['status']) {
+            throw new \Exception('No email template found for the given ID.');
+        }
+
+        $this->emailInformation = $response['data'];
     }
 
     public function getListOfRequiredData()
@@ -74,17 +76,13 @@ class EmailAction extends AbstractWorkflowAction
         $data = $this->getData();
         $payload = $this->getPayload();
 
-        try {
-            \Log::info('WORKFLOW - Preparing email data');
-            $prepareEmailData = new PrepareEmailData;
-            $prepareEmailData->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
-                'csvFile' => $feedFile,
-                'data' => $data,
-                'postAction' => ! empty($payload['postAction']) ? $payload['postAction'] : '',
-                'actionPayload' => $payload ?? [],
-            ], $this->emailInformation)->execute();
-        } catch (\Exception $e) {
-            throw $e;
-        }
+        Log::info('WORKFLOW - Preparing email data');
+        $prepareEmailData = new PrepareEmailData;
+        $prepareEmailData->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
+            'csvFile' => $feedFile,
+            'data' => $data,
+            'postAction' => $payload['postAction'] ?? '',
+            'actionPayload' => $payload,
+        ], $this->emailInformation)->execute();
     }
 }
