@@ -52,6 +52,7 @@ class WorkflowEmailService
             'x-client-key' => config('workflow.email_template_service_client_key'),
             'X-Tenant' => getTenant(),
         ])
+            ->acceptJson()
             ->post(config('workflow.email_template_service_url').'/api/email/template/extract-placeholders', $payload);
 
         if ($response->successful()) {

@@ -12,16 +12,15 @@ class WorkflowOutputAction extends AbstractWorkflowAction
     public function handle()
     {
         $payload = $this->getPayload();
+        if (empty($payload['id'])) {
+            throw new \Exception('Template ID is required.');
+        }
 
         // Use the edited template payload directly if provided (manual workflow execution).
         if (! empty($payload['editedTemplatePayload'])) {
             $this->loadEditedTemplate($payload['editedTemplatePayload']);
 
             return;
-        }
-
-        if (empty($payload['id'])) {
-            throw new \Exception('Template ID is required.');
         }
 
         $this->loadTemplateById($payload['id']);
