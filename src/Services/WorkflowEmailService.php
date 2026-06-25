@@ -45,4 +45,19 @@ class WorkflowEmailService
             throw new \Exception('Failed to fetch PDF file from email-builder service: '.$response->body());
         }
     }
+
+    public static function extractPlaceholdersFromTemplate($payload)
+    {
+        $response = Http::withHeaders([
+            'x-client-key' => config('workflow.email_template_service_client_key'),
+            'X-Tenant' => getTenant(),
+        ])
+            ->post(config('workflow.email_template_service_url').'/api/email/template/extract-placeholders', $payload);
+
+        if ($response->successful()) {
+            return $response->json();
+        } else {
+            throw new \Exception('Failed to extract placeholders from template via email-builder service: '.$response->body());
+        }
+    }
 }

@@ -15,16 +15,27 @@ class EmailAction extends AbstractWorkflowAction
         if (empty($payload['id'])) {
             throw new \Exception('Email template ID is required.');
         }
+
         // Allowing to use the edited email template payload directly if provided
         // instead of fetching from the service for manual workflow execution.
         if (
             isset($payload['editedEmailTemplatePayload']) &&
             ! empty($payload['editedEmailTemplatePayload'])
         ) {
+            $response = WorkflowEmailService::extractPlaceholdersFromTemplate($payload['editedEmailTemplatePayload']);
+
+            if (empty($response) || empty($response['data']) || ! $response['status']) {
+                throw new \Exception('Error extracting placeholders from the template.');
+            }
+
+            $payload['editedEmailTemplatePayload']['extractedPlaceholders'] =
+                $response['data']['extractedPlaceholders'] ?? [];
+
             $this->emailInformation = $payload['editedEmailTemplatePayload'];
 
             return;
         }
+
         try {
             $response = WorkflowEmailService::getEmailInformation($payload['id']);
 

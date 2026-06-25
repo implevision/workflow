@@ -15,16 +15,27 @@ class WorkflowOutputAction extends AbstractWorkflowAction
         if (empty($payload['id'])) {
             throw new \Exception('Template ID is required.');
         }
+
         // Allowing to use the edited letter template payload directly if provided
         // instead of fetching from the service for manual workflow execution.
         if (
             isset($payload['editedLetterTemplatePayload']) &&
             ! empty($payload['editedLetterTemplatePayload'])
         ) {
+            $response = WorkflowEmailService::extractPlaceholdersFromTemplate($payload['editedLetterTemplatePayload']);
+
+            if (empty($response) || empty($response['data']) || ! $response['status']) {
+                throw new \Exception('Error extracting placeholders from the template.');
+            }
+
+            $payload['editedLetterTemplatePayload']['extractedPlaceholders'] =
+                $response['data']['extractedPlaceholders'] ?? [];
+
             $this->templateInformation = $payload['editedLetterTemplatePayload'];
 
             return;
         }
+
         try {
             $response = WorkflowEmailService::getEmailInformation($payload['id']);
 
