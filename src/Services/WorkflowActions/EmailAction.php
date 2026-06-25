@@ -75,13 +75,17 @@ class EmailAction extends AbstractWorkflowAction
         $data = $this->getData();
         $payload = $this->getPayload();
 
+        try {
         \Log::info('WORKFLOW - Preparing email data');
         $prepareEmailData = new PrepareEmailData;
         $prepareEmailData->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
             'csvFile' => $feedFile,
             'data' => $data,
-            'postAction' => $payload['postAction'] ?? '',
-            'actionPayload' => $payload,
+            'postAction' => ! empty($payload['postAction']) ? $payload['postAction'] : '',
+            'actionPayload' => $payload ?? [],
         ], $this->emailInformation)->execute();
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 }
