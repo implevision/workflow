@@ -46,7 +46,7 @@ class WorkflowEmailService
         }
     }
 
-    public static function extractPlaceholders($payload)
+    public static function extractPlaceholders(array $payload)
     {
         $response = Http::withHeaders([
             'x-client-key' => config('workflow.email_template_service_client_key'),
