@@ -13,7 +13,12 @@ class SES
     {
         preg_match_all('/{{\s*(.*?)\s*}}/', $html, $matches);
 
-        return $matches[1]; // Return only the extracted placeholders
+        $placeholders = $matches[1] ?? [];
+
+        return array_filter($placeholders, function ($placeholder) {
+            return ! str_starts_with($placeholder, '#')
+                && ! str_starts_with($placeholder, '/');
+        });
     }
 
     public static function getSesClient()
@@ -34,14 +39,14 @@ class SES
         return new SesV2Client($awsConfig);
     }
 
-    public static function createRequest($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo = [], $configurationSetName = '', $tenant = '')
+    public static function createRequest($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [])
     {
         $isRequireBulkEmailRequest = count($payload) > 1 ? true : false;
         try {
             if ($isRequireBulkEmailRequest) {
-                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
+                $messageId = self::sendBulkEmail($from, $subject, $emailTemplate, $payload, $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc);
             } else {
-                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
+                $messageId = self::sendEmail($from, $subject, $emailTemplate, last($payload), $plainEmailTemplate, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc);
             }
         } catch (\Exception $e) {
             throw new \Exception('Error sending email: '.$e->getMessage());
@@ -50,8 +55,20 @@ class SES
         return $messageId;
     }
 
-    public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')
+    public static function sendBulkEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [])
     {
+        // If template has block helpers ({{#if}}, {{#each}}), SES inline TemplateContent
+        // cannot process them. Fall back to per-recipient sendEmail() so renderTemplate()
+        // pre-renders the blocks for each recipient individually.
+        if (preg_match('/\{\{#(?:if|each)\s/', $htmlContent)) {
+            $messageId = null;
+            foreach ($payload as $item) {
+                $messageId = self::sendEmail($from, $subject, $htmlContent, $item, $textContent, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
+            }
+
+            return $messageId;
+        }
+
         try {
             $sesClient = self::getSesClient();
         } catch (\Exception $e) {
@@ -83,6 +100,8 @@ class SES
             $bulkEmailEntries[] = [
                 'Destination' => [
                     'ToAddresses' => (array) $item['email'],
+                    ...($cc ? ['CcAddresses' => (array) $cc] : []),
+                    ...($bcc ? ['BccAddresses' => (array) $bcc] : []),
                 ],
                 'ReplacementEmailContent' => [
                     'ReplacementTemplate' => [
@@ -135,13 +154,73 @@ class SES
         }
     }
 
-    public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '')
+    /**
+     * Pre-render {{#each}} blocks in PHP before sending to SES.
+     * SES inline TemplateContent does not support Handlebars block helpers.
+     */
+    public static function renderTemplate(string $content, array $data): string
+    {
+        // First pass: handle {{#if}} blocks — SES inline templates do not support block helpers
+        $content = preg_replace_callback(
+            '/\{\{#if\s+(\w+)\s*\}\}(.*?)\{\{\/if\}\}/s',
+            function ($matches) use ($data) {
+                $varName = $matches[1];
+                $inner = $matches[2];
+                $value = $data[$varName] ?? null;
+
+                return ! empty($value) ? $inner : '';
+            },
+            $content
+        );
+
+        // Second pass: handle {{#each}} blocks
+        $content = preg_replace_callback(
+            '/\{\{#each\s+(\w+)\s*\}\}(.*?)\{\{\/each\}\}/s',
+            function ($matches) use ($data) {
+                $arrayName = $matches[1];
+                $inner = $matches[2];
+                $items = $data[$arrayName] ?? [];
+
+                // Support JSON-encoded arrays (e.g. from GraphQL string payloads)
+                if (is_string($items)) {
+                    $decoded = json_decode($items, true);
+                    $items = is_array($decoded) ? $decoded : [];
+                }
+
+                if (! is_array($items)) {
+                    return '';
+                }
+
+                $result = '';
+                foreach ($items as $item) {
+                    $rendered = $inner;
+                    if (is_array($item)) {
+                        foreach ($item as $key => $value) {
+                            $rendered = str_replace('{{'.$key.'}}', $value, $rendered);
+                        }
+                    }
+                    $result .= $rendered;
+                }
+
+                return $result;
+            },
+            $content
+        );
+
+        return $content;
+    }
+
+    public static function sendEmail($from, $subject, $htmlContent, $payload, $textContent = '', $jobWorkflowId = 0, $replyTo = [], $configurationSetName = '', $tenant = '', $cc = [], $bcc = [])
     {
         try {
             $sesClient = self::getSesClient();
         } catch (\Exception $e) {
             throw new \Exception('Error creating SES client: '.$e->getMessage());
         }
+
+        // Pre-render {{#each}} blocks that SES inline templates do not support
+        $htmlContent = self::renderTemplate($htmlContent, $payload);
+        $subject = self::renderTemplate($subject, $payload);
 
         // SES dose not support if any placeholder is missing in the email template.
         // So we need to fill the missing placeholders with empty string
@@ -160,6 +239,12 @@ class SES
         $recipient = $payload['email'];
         unset($payload['email']);
 
+        // Save attachments before removing arrays from payload
+        $attachments = $payload['attachments'] ?? [];
+
+        // Remove array values (already rendered by renderTemplate above)
+        $payload = array_filter($payload, fn ($v) => ! is_array($v));
+
         $payload = array_map(function ($value) {
             return empty($value) ? '' : $value;
         }, $payload);
@@ -174,13 +259,13 @@ class SES
             }
         }
 
-        $attachments = $payload['attachments'];
-
         try {
             $response = $sesClient->sendEmail([
                 ...(! empty($configurationSetName) ? ['ConfigurationSetName' => $configurationSetName] : []),
                 'Destination' => [
                     'ToAddresses' => (array) $recipient,
+                    ...($cc ? ['CcAddresses' => (array) $cc] : []),
+                    ...($bcc ? ['BccAddresses' => (array) $bcc] : []),
                 ],
                 'Content' => [
                     'Template' => [

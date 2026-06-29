@@ -19,5 +19,5 @@ interface WorkflowRepositoryInterface
 
     public function restore(int $workflowId): bool;
 
-    public function getMatchingWorkflow($entityType, $entityAction): ?array;
+    public function getMatchingWorkflow($entityType, $entityAction, $withDeleted = false, $entityUpdatedFields = []): ?array;
 }

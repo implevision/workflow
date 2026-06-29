@@ -117,33 +117,96 @@ function getCliCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0)
 {
     $command = gitCommandToDispatchWorkflow($workflowId, $recordIdentifier);
 
-    return sprintf('%s %s %s', 'php artisan ', $command['command'], implode(', ', $command['options']));
+    foreach ($command['options'] as $optionKey => $optionValue) {
+        if (is_array($optionValue)) {
+            if ($optionKey === '--tenants') {
+                $command['options'][$optionKey] = implode(',', $optionValue);
+
+                continue;
+            }
+
+            if ($optionKey === '--option') {
+                foreach ($optionValue as $index => $option) {
+                    $command['options'][$optionKey][$index] = sprintf('%s=%s', '--option', $option);
+                }
+
+                $command['options'][$optionKey] = implode(' ', $command['options'][$optionKey]);
+
+                continue;
+            }
+        }
+    }
+
+    $parts = [];
+    foreach ($command['options'] as $key => $value) {
+        if (! str_starts_with($key, '--')) {
+            $parts[] = $value;
+        } elseif ($key === '--option') {
+            $parts[] = $value;
+        } else {
+            $parts[] = $key.'='.$value;
+        }
+    }
+
+    return sprintf('php artisan %s %s', $command['command'], implode(' ', $parts));
 }
 
-function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [])
+function gitCommandToDispatchWorkflow($workflowId, $recordIdentifier = 0, $data = [], $entityPlaceHoldersToAppend = [], ?string $referenceId = null, $page = 0)
 {
+    $hasData = ! empty($data);
+    $hasPlaceholders = ! empty($entityPlaceHoldersToAppend);
+    $hasReferenceId = $referenceId !== null;
+    $hasPage = $page > 0;
+
     $data = json_encode((array) $data);
     $entityPlaceHoldersToAppend = json_encode((array) $entityPlaceHoldersToAppend);
+
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
+
+        $options = ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier"];
+        if ($hasData) {
+            $options[] = "data=$data";
+        }
+        if ($hasPlaceholders) {
+            $options[] = "appendPlaceHolders=$entityPlaceHoldersToAppend";
+        }
+        if ($hasReferenceId) {
+            $options[] = "referenceId=$referenceId";
+        }
+        if ($hasPage) {
+            $options[] = "page=$page";
+        }
 
         return [
             'command' => 'tenants:run',
             'options' => [
                 'commandname' => 'taurus:dispatch-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["workflowId=$workflowId", "recordIdentifier=$recordIdentifier", "data=$data", "appendPlaceHolders=$entityPlaceHoldersToAppend"],
+                '--option' => $options,
             ],
         ];
     } else {
+        $options = [
+            '--workflowId' => $workflowId,
+            '--recordIdentifier' => $recordIdentifier,
+        ];
+        if ($hasData) {
+            $options['--data'] = $data;
+        }
+        if ($hasPlaceholders) {
+            $options['--appendPlaceHolders'] = $entityPlaceHoldersToAppend;
+        }
+        if ($hasReferenceId) {
+            $options['--referenceId'] = $referenceId;
+        }
+        if ($hasPage) {
+            $options['--page'] = $page;
+        }
+
         return [
             'command' => 'taurus:dispatch-workflow',
-            'options' => [
-                '--workflowId' => $workflowId,
-                '--recordIdentifier' => $recordIdentifier,
-                '--data' => $data,
-                '--appendPlaceHolders' => $entityPlaceHoldersToAppend,
-            ],
+            'options' => $options,
         ];
     }
 }
@@ -186,31 +249,43 @@ function gitCommandToDispatchManualWorkflow(
     ];
 }
 
-function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [])
+function getCommandToDispatchMatchingWorkflow($entity, $entityAction, $entityType, $entityData = [], $appendPlaceHolders = [], $updatedFields = [], ?string $referenceId = null)
 {
     $entityData = json_encode((array) $entityData);
     $appendPlaceHolders = json_encode((array) $appendPlaceHolders);
+    $updatedFields = json_encode((array) $updatedFields);
     if (isTenantBaseSystem()) {
         $tenant = getTenant();
+
+        $options = ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders", "EntityUpdatedFields=$updatedFields"];
+        if ($referenceId !== null) {
+            $options[] = "EntityReferenceId=$referenceId";
+        }
 
         return [
             'command' => 'tenants:run',
             'options' => [
                 'commandname' => 'taurus:invoke-matching-workflow',
                 '--tenants' => [$tenant],
-                '--option' => ["EntityAction=$entityAction", "Entity=$entity", "EntityType=$entityType", "EntityData=$entityData", "EntityPlaceHoldersToAppend=$appendPlaceHolders"],
+                '--option' => $options,
             ],
         ];
     } else {
+        $options = [
+            '--EntityAction' => $entityAction,
+            '--Entity' => $entity,
+            '--EntityType' => $entityType,
+            '--EntityData' => $entityData,
+            '--EntityPlaceHoldersToAppend' => $appendPlaceHolders,
+            '--EntityUpdatedFields' => $updatedFields,
+        ];
+        if ($referenceId !== null) {
+            $options['--EntityReferenceId'] = $referenceId;
+        }
+
         return [
             'command' => 'taurus:invoke-matching-workflow',
-            'options' => [
-                '--EntityAction' => $entityAction,
-                '--Entity' => $entity,
-                '--EntityType' => $entityType,
-                '--EntityData' => $entityData,
-                '--EntityPlaceHoldersToAppend' => $appendPlaceHolders,
-            ],
+            'options' => $options,
         ];
     }
 }

@@ -1,13 +1,13 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\Taurus\PostAction;
+namespace Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument;
 
 use Avatar\Infrastructure\Models\Api\v1\DocumentUploadBatchModel;
 use Avatar\Infrastructure\Models\Api\v1\TbClaimLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-class UploadAsDocument
+class UploadAsDocumentService
 {
     /**
      * Predefined module mappings used to resolve module identifiers
@@ -26,6 +26,10 @@ class UploadAsDocument
         ],
         [
             'moduleIdentifier' => 'TbAgentTasksMaster',
+            'module' => 'Policy',
+        ],
+        [
+            'moduleIdentifier' => 'TbAgentTasksMasterMapping',
             'module' => 'Policy',
         ],
         [
@@ -133,7 +137,7 @@ class UploadAsDocument
     public static function moduleMatches(array $moduleArray, string $module): ?array
     {
         foreach ($moduleArray as $value) {
-            if (\Str::contains($module, $value['moduleIdentifier'])) {
+            if (\Str::endsWith($module, $value['moduleIdentifier'])) {
                 return $value;
             }
         }
@@ -181,6 +185,7 @@ class UploadAsDocument
             'TbClaim' => 'getClaimModuleAndReferenceNo',
             'TbPotransaction' => 'getPolicyTransactionModuleAndReferenceNo',
             'TbAgentTasksMaster' => 'getAgentTasksModuleAndReferenceNo',
+            'TbAgentTasksMasterMapping' => 'getAgentTasksMappingModuleAndReferenceNo',
             'TbQuotepolicy' => 'getQuotePolicyModuleAndReferenceNo',
             'TbPersonInfo' => 'getPersonInfoModuleAndReferenceNo',
             'TbUser' => 'getUserModuleAndReferenceNo',
@@ -218,6 +223,23 @@ class UploadAsDocument
         $policyNo = DB::table('tb_policies as policy')
             ->where('n_PolicyNoId_PK', '=', $recordInfo->policymaster_FK)
             ->value('policy.PolicyNo') ?? '';
+
+        return [
+            'module' => $module,
+            'referenceNo' => $policyNo,
+        ];
+    }
+
+    public static function getAgentTasksMappingModuleAndReferenceNo(object $recordInfo, string $module): array
+    {
+        $policyId = DB::table('tb_agent_tasks_master as atm')
+            ->leftJoin('tb_agent_tasks_master_mapping as atmm', 'atmm.agent_tasks_masters_id', '=', 'atm.id')
+            ->where('atmm.id', '=', $recordInfo->id)
+            ->value('atm.policymaster_FK');
+
+        $policyNo = DB::table('tb_policies as policy')
+            ->where('n_PolicyNoId_PK', '=', $policyId)
+            ->value('policy.Policy_No') ?? '';
 
         return [
             'module' => $module,
