@@ -2,12 +2,14 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\PostAction;
 
+use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\SaveClaimLetterHandler;
 use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\UploadAsDocumentHandler;
 
 class PostActionService
 {
     private array $handlers = [
         'uploadAsDocument' => UploadAsDocumentHandler::class,
+        'saveClaimLetter' => SaveClaimLetterHandler::class,
     ];
 
     public function execute($module, $payload, $messageId): void
