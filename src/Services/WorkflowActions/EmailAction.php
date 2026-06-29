@@ -15,17 +15,39 @@ class EmailAction extends AbstractWorkflowAction
         if (empty($payload['id'])) {
             throw new \Exception('Email template ID is required.');
         }
-        try {
-            $response = WorkflowEmailService::getEmailInformation($payload['id']);
 
-            if (empty($response) || empty($response['data']) || ! $response['status']) {
-                throw new \Exception('No email template found for the given ID.');
-            }
+        // Use the edited template payload directly if provided (manual workflow execution).
+        if (! empty($payload['editedTemplatePayload'])) {
+            $this->loadEditedTemplate($payload['editedTemplatePayload']);
 
-            $this->emailInformation = $response['data'];
-        } catch (\Exception $e) {
-            throw $e;
+            return;
         }
+
+        $this->loadTemplateById($payload['id']);
+    }
+
+    private function loadEditedTemplate(array $editedPayload): void
+    {
+        $response = WorkflowEmailService::extractPlaceholders($editedPayload);
+
+        if (empty($response) || empty($response['data']) || ! $response['status']) {
+            throw new \Exception('Error extracting placeholders from the template.');
+        }
+
+        $editedPayload['extractedPlaceholders'] = $response['data']['extractedPlaceholders'] ?? [];
+
+        $this->emailInformation = $editedPayload;
+    }
+
+    private function loadTemplateById(string $id): void
+    {
+        $response = WorkflowEmailService::getEmailInformation($id);
+
+        if (empty($response) || empty($response['data']) || ! $response['status']) {
+            throw new \Exception('No email template found for the given ID.');
+        }
+
+        $this->emailInformation = $response['data'];
     }
 
     public function getListOfRequiredData()
