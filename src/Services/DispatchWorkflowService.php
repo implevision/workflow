@@ -290,6 +290,12 @@ class DispatchWorkflowService
                     continue;
                 }
 
+                $extendedTemplateInfoForModule = $this->workflowService->getExtendedTemplateInfoForModule(
+                    $this->workflowInfo['detail']['module'],
+                    $actionToExecute->getPayload()
+                );
+                $actionToExecute->setExtendedTemplateInfo($extendedTemplateInfoForModule);
+
                 /***
                  * Placeholders data to extract from appendPlaceHolders
                  */

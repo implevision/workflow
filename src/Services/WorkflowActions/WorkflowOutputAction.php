@@ -47,7 +47,7 @@ class WorkflowOutputAction extends AbstractWorkflowAction
             throw new \Exception('No template found for the given ID.');
         }
 
-        $this->templateInformation = $response['data'];
+        $this->templateInformation = [...$response['data'], ...$this->extendedTemplateInfo];
     }
 
     public function getListOfRequiredData()

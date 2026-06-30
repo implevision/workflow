@@ -638,6 +638,23 @@ class WorkflowService
         }
     }
 
+    public function getExtendedTemplateInfoForModule(string $module, array $templatePayload = []): array
+    {
+        try {
+            $moduleService = $this->getModuleService($module);
+
+            if ($moduleService instanceof stdClass) {
+                return [];
+            }
+
+            return $moduleService->getExtendedTemplateInfo($templatePayload);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return [];
+        }
+    }
+
     public function getPostActionService()
     {
         try {

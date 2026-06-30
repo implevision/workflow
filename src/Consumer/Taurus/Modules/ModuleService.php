@@ -124,4 +124,9 @@ class ModuleService
     {
         return false;
     }
+
+    public function getExtendedTemplateInfo(array $templatePayload = []): array
+    {
+        return [];
+    }
 }

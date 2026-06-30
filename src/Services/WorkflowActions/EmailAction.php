@@ -47,7 +47,7 @@ class EmailAction extends AbstractWorkflowAction
             throw new \Exception('No email template found for the given ID.');
         }
 
-        $this->emailInformation = $response['data'];
+        $this->emailInformation = [...$response['data'], ...$this->extendedTemplateInfo];
     }
 
     public function getListOfRequiredData()
