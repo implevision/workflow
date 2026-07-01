@@ -104,11 +104,16 @@ class DispatchManualWorkflowService
 
             // Instantiate and initialise the action class
             $actionToExecute = null;
+            $extendedTemplateInfoForModule = $this->workflowService->getExtendedTemplateInfoForModule(
+                $this->module,
+                $actionPayload
+            );
 
             switch ($actionType) {
                 case 'EMAIL':
                     try {
                         $actionToExecute = new EmailAction($actionType, $actionPayload);
+                        $actionToExecute->setExtendedTemplateInfo($extendedTemplateInfoForModule);
                         $actionToExecute->handle();
                     } catch (\Exception $e) {
                         $this->workflowService->addWorkflowLog(
@@ -126,6 +131,7 @@ class DispatchManualWorkflowService
                 case 'WORKFLOW_OUTPUT':
                     try {
                         $actionToExecute = new WorkflowOutputAction($actionType, $actionPayload);
+                        $actionToExecute->setExtendedTemplateInfo($extendedTemplateInfoForModule);
                         $actionToExecute->handle();
                     } catch (\Exception $e) {
                         $this->workflowService->addWorkflowLog(
