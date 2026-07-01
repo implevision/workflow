@@ -73,4 +73,9 @@ class ModuleService
         }
         return GraphQLSchemaBuilderService::getQueryMapping($column, $operator, $value);
     }*/
+
+    public function getExtendedTemplateInfo(array $templatePayload = []): array
+    {
+        return [];
+    }
 }
