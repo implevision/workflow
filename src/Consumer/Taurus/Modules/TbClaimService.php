@@ -19,7 +19,9 @@ class TbClaimService extends ModuleService
                 'workflowTemplateId' => $templatePayload['id'] ?? null,
             ];
 
-            return OnDemandWorkflowService::getClaimIdFromTemplatePayload($payload);
+            $response = OnDemandWorkflowService::fetchExtendedTemplateInfo($payload);
+
+            return $response;
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error getting extended template info for TbClaim.', [
                 'message' => $e->getMessage(),
