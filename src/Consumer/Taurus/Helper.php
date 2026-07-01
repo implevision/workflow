@@ -77,6 +77,7 @@ class Helper
                 $hostedDomain = 'https://'.getTenant().'.agent.'.$hostedDomain;
                 break;
             case 'CorePortal':
+                $hostedDomain = 'https://'.getTenant().'.'.$hostedDomain;
                 break;
         }
 
