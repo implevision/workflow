@@ -89,6 +89,10 @@ class UploadAsDocumentService
             'referenceNo' => $referenceNo,
         ];
 
+        if ($module == 'Producer') {
+            $fileArray['referencePK'] = $recordIdentifier;
+        }
+
         try {
             $isDocumentUploaded = $documentUploadBatchModel->uploadDocumentForAllModules([$fileArray], $throwException = true);
         } catch (\Exception $e) {
