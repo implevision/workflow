@@ -64,7 +64,7 @@ class WorkflowOutputAction extends AbstractWorkflowAction
         return ! empty($payload['mandatoryPlaceholders']) ? $payload['mandatoryPlaceholders'] : [];
     }
 
-    public function execute()
+    public function execute(): array
     {
         $workflowId = $this->getWorkflowId();
         $jobWorkflowId = $this->getJobWorkflowId();
@@ -75,7 +75,7 @@ class WorkflowOutputAction extends AbstractWorkflowAction
         try {
             \Log::info('WORKFLOW - Preparing workflow output data');
             $prepareWorkflowOutputData = new PrepareWorkflowOutputData;
-            $prepareWorkflowOutputData->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
+            return $prepareWorkflowOutputData->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
                 'data' => $data,
                 'postAction' => ! empty($payload['postAction']) ? $payload['postAction'] : '',
                 'actionPayload' => $payload ?? [],

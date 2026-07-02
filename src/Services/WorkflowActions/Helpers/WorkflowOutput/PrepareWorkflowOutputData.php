@@ -2,7 +2,9 @@
 
 namespace Taurus\Workflow\Services\WorkflowActions\Helpers\WorkflowOutput;
 
+use Illuminate\Support\Facades\Event;
 use Taurus\Workflow\Events\PostActionEvent;
+use Taurus\Workflow\Services\WorkflowService;
 
 class PrepareWorkflowOutputData
 {
@@ -30,7 +32,7 @@ class PrepareWorkflowOutputData
         return $this;
     }
 
-    public function execute()
+    public function execute(): array
     {
         $data = $this->payload['data'] ?? [];
         $postAction = $this->payload['postAction'] ?? '';
@@ -58,8 +60,15 @@ class PrepareWorkflowOutputData
             ];
 
             \Log::info('WORKFLOW - Executing post action for workflow output');
-            event(new PostActionEvent($actionPayload['module'], $actionPayload, (string) $this->jobWorkflowId));
+            $listenerResults = Event::dispatch(
+                new PostActionEvent($actionPayload['module'], $actionPayload, (string) $this->jobWorkflowId)
+            );
+
+            // Event::dispatch() returns an array of each listener's return value; flatten them into one result list.
+            return array_merge(...array_map(fn ($r) => \is_array($r) ? $r : [], (array) $listenerResults));
         }
+
+        return [];
     }
 
     private function generateOutput(string $outputActionType, array $data)
