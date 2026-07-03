@@ -86,7 +86,6 @@ class TbUser extends AbstractSchema
                 'Email' => $user['email'] ?? '',
                 'UserFullName' => $user['screenName'] ?? '',
 
-                'TemporaryPassword' => $this->getTemporaryPassword(),
                 'LoginURL' => $this->getLoginUrl(),
                 'DashboardURL' => $this->getDashboard(),
                 'OutsideDocumentListURL' => $this->getOutsideDocumentList(),
@@ -127,26 +126,21 @@ class TbUser extends AbstractSchema
             'UserFullName' => ['GraphQLschemaToReplace' => $dataSchema],
         ];
 
-        $fieldMapping['TemporaryPassword'] = [
-            'GraphQLschemaToReplace' => [],
-            'jqFilter' => '',
-            'parseResultCallback' => 'getTemporaryPassword',
-        ];
 
         $fieldMapping['LoginURL'] = [
-            'GraphQLschemaToReplace' => [],
+            'GraphQLschemaToReplace' => $dataSchema,
             'jqFilter' => '',
             'parseResultCallback' => 'getLoginUrl',
         ];
 
         $fieldMapping['DashboardURL'] = [
-            'GraphQLschemaToReplace' => [],
+            'GraphQLschemaToReplace' => $dataSchema,
             'jqFilter' => '',
             'parseResultCallback' => 'getDashboard',
         ];
 
         $fieldMapping['OutsideDocumentListURL'] = [
-            'GraphQLschemaToReplace' => [],
+            'GraphQLschemaToReplace' => $dataSchema,
             'jqFilter' => '',
             'parseResultCallback' => 'getOutsideDocumentList',
         ];
@@ -154,20 +148,15 @@ class TbUser extends AbstractSchema
         return $fieldMapping;
     }
 
-    public function getTemporaryPassword(): string
-    {
-        // TODO: implement temporary password generation logic
-        return '';
-    }
 
     public function getLoginUrl(): string
     {
-        return Helper::createPortalURL('CorePortal').'/login';
+        return Helper::createPortalURL('AgentPortal').'/login';
     }
 
     public function getDashboard(): string
     {
-        return Helper::createPortalURL('CorePortal').'/dashboard';
+        return Helper::createPortalURL('AgentPortal').'/dashboard';
     }
 
     public function getOutsideDocumentList(): string
