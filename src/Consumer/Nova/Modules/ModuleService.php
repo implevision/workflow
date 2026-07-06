@@ -74,6 +74,33 @@ class ModuleService
         return GraphQLSchemaBuilderService::getQueryMapping($column, $operator, $value);
     }*/
 
+    public function getServicePostFix($module)
+    {
+        $module = explode('\\', $module);
+        $module = end($module);
+        $moduleClass = app("Taurus\\Workflow\\Consumer\\Nova\\Modules\\$module".'Service');
+
+        try {
+            class_exists($moduleClass::class) or throw new \Exception("Module class $moduleClass does not exist.");
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return '';
+        }
+
+        return $moduleClass->getPostFixForTaskDefinition();
+    }
+
+    public function getPostFixForTaskDefinition()
+    {
+        return '';
+    }
+
+    public function isCustomResolverDefinedForModule()
+    {
+        return false;
+    }
+
     public function getExtendedTemplateInfo(array $templatePayload = []): array
     {
         return [];
