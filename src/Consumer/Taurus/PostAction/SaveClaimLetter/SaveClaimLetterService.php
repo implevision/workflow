@@ -12,7 +12,7 @@ class SaveClaimLetterService
             $data = [
                 'claimid' => $payload['recordIdentifier'] ?? null,
                 'docFor' => $payload['actionPayload']['saveClaimLetter']['createDocumentCopyFor'] ?? null,
-                'isPreview' => 'N',
+                'isPreview' => $payload['actionPayload']['saveClaimLetter']['isPreview'] ?? 'N',
                 'otherInfo' => [
                     'recipientName' => $payload['actionPayload']['saveClaimLetter']['recipientName'] ?? '',
                     'address' => $payload['actionPayload']['saveClaimLetter']['address'] ?? '',
@@ -27,7 +27,11 @@ class SaveClaimLetterService
                 'template' => $data['template'],
             ]);
 
-            Claim::getClaimLetterGenerate($data);
+            $response = Claim::getClaimLetterGenerate($data);
+            return [
+                'type' => 'S3_URL',
+                'value' => $response['docPathId'] ?? null,
+            ];
         } catch (\Exception $e) {
             \Log::error('WORKFLOW - Error saving claim letter: '.$e->getMessage(), [
                 'module' => $module,

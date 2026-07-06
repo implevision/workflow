@@ -18,6 +18,8 @@ class AbstractWorkflowAction
 
     protected $feedFile;
 
+    protected array $extendedTemplateInfo = [];
+
     public function __construct($action, $payload)
     {
         $this->action = $action;
@@ -76,6 +78,16 @@ class AbstractWorkflowAction
     {
         $this->feedFile = $feedFile;
         $this->data = $data;
+    }
+
+    public function setExtendedTemplateInfo(array $templateInfo): void
+    {
+        $this->extendedTemplateInfo = $templateInfo;
+    }
+
+    public function getExtendedTemplateInfo(): array
+    {
+        return $this->extendedTemplateInfo;
     }
 
     public function getListOfRequiredData()

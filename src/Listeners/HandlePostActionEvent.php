@@ -10,7 +10,7 @@ class HandlePostActionEvent
     /**
      * Handle the event.
      */
-    public function handle(PostActionEvent $event): void
+    public function handle(PostActionEvent $event): array
     {
         $payload = $event->payload;
         $module = $event->module;
@@ -24,17 +24,18 @@ class HandlePostActionEvent
             // Log the error or handle it as needed
             \Log::error('WORKFLOW - Error setting workflow context: '.$e->getMessage());
 
-            return;
+            return [];
         }
 
         try {
             $workflowService = app(WorkflowService::class);
-            $workflowService->getPostActionService()->execute($module, $payload, $messageId);
+
+            return $workflowService->getPostActionService()->execute($module, $payload, $messageId);
         } catch (\Throwable $e) {
             // Log the error or handle it as needed
             \Log::error('WORKFLOW - Error to execute post action '.$e->getMessage().$e->getFile().$e->getLine());
 
-            return;
+            return [];
         }
     }
 }

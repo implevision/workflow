@@ -12,7 +12,7 @@ class PostActionService
         'saveClaimLetter' => SaveClaimLetterHandler::class,
     ];
 
-    public function execute($module, $payload, $messageId): void
+    public function execute($module, $payload, $messageId): array
     {
         $postAction = $payload['postAction'] ?? null;
 
@@ -30,9 +30,12 @@ class PostActionService
         $data = $payload['payload'];
         unset($payload['payload']);
 
+        $results = [];
         foreach ($data as $placeholders) {
             $preparedData = $handler->prepare($payload, $placeholders, $messageId);
-            $handler->execute($module, $payload, $preparedData);
+            $results[] = $handler->execute($module, $payload, $preparedData);
         }
+
+        return $results;
     }
 }

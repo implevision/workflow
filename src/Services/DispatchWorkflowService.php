@@ -228,10 +228,15 @@ class DispatchWorkflowService
                     'status' => WorkflowLog::STATUS_IN_PROGRESS,
                     'action_type' => $actionType,
                 ]);
+                $extendedTemplateInfoForModule = $this->workflowService->getExtendedTemplateInfoForModule(
+                    $this->workflowInfo['detail']['module'],
+                    $actionPayload
+                );
                 switch ($actionType) {
                     case 'EMAIL':
                         try {
                             $actionToExecute = new EmailAction($actionType, $actionPayload);
+                            $actionToExecute->setExtendedTemplateInfo($extendedTemplateInfoForModule);
                             $actionToExecute->handle();
                         } catch (\Exception $e) {
                             $this->workflowService->addWorkflowLog(
@@ -266,6 +271,7 @@ class DispatchWorkflowService
                     case 'WORKFLOW_OUTPUT':
                         try {
                             $actionToExecute = new WorkflowOutputAction($actionType, $actionPayload);
+                            $actionToExecute->setExtendedTemplateInfo($extendedTemplateInfoForModule);
                             $actionToExecute->handle();
                         } catch (\Exception $e) {
                             $this->workflowService->addWorkflowLog(
