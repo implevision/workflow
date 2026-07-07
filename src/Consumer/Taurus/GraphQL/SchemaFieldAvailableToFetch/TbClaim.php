@@ -376,16 +376,19 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'getCurrentYear',
         ];
 
-        $fieldMapping['HoldingCompanyName'] = [
-            'GraphQLschemaToReplace' => [],
-            'jqFilter' => '',
-            'parseResultCallback' => 'getHoldingCompanyName',
-        ];
-
-        $fieldMapping['HoldingCompanyPhoneNumber'] = [
-            'GraphQLschemaToReplace' => [],
-            'jqFilter' => '',
-            'parseResultCallback' => 'getHoldingCompanyPhoneNumber',
+        $fieldMapping['CompanyPhoneNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'agency' => [
+                    'brandedCompany' => [
+                        'company' => [
+                            'companyPhone' => null,
+                        ],
+                    ],
+                ],
+                'policyId' => null,
+            ],
+            'jqFilter' => '.claim',
+            'parseResultCallback' => 'parseCompanyPhoneNumber',
         ];
 
         $deductibles = [
@@ -585,22 +588,39 @@ class TbClaim extends AbstractSchema
 
     public function parseCompanyName($response)
     {
+        return $this->resolveCompanyDetail($response, 'companyName', 'wyo');
+    }
+
+    public function parseCompanyPhoneNumber($response)
+    {
+        return $this->resolveCompanyDetail($response, 'companyPhone', 'company_phone');
+    }
+
+    private function resolveCompanyDetail($response, string $companyKey, string $holdingKey): string
+    {
         [$brandedCompanyArr, $policyId] = $this->extractClaimContext($response);
 
-        $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
-        if (! empty($companyName)) {
-            return $companyName;
+        $value = $brandedCompanyArr['company'][$companyKey] ?? null;
+        if (! empty($value)) {
+            return $value;
         }
 
-        $policyData = TbPolicy::find($policyId);
-        $holdingCompanyId = TbProduct::find($policyData?->n_ProductId_FK)?->holding_company_id;
+        $productId = TbPolicy::find($policyId)?->n_ProductId_FK;
+        if (empty($productId)) {
+            return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
+        }
+
+        $holdingCompanyId = TbProduct::find($productId)?->holding_company_id ?? null;
+        if (empty($holdingCompanyId)) {
+            return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
+        }
 
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
-        if (! empty($holdingCompanyDetail['wyo'])) {
-            return $holdingCompanyDetail['wyo'];
+        if (! empty($holdingCompanyDetail[$holdingKey])) {
+            return $holdingCompanyDetail[$holdingKey];
         }
 
-        return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+        return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
     }
 
     private function extractClaimContext($response): array
@@ -660,22 +680,6 @@ class TbClaim extends AbstractSchema
     public function getCurrentYear()
     {
         return date('Y');
-    }
-
-    public function getHoldingCompanyName()
-    {
-        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
-
-        return $holdingCompanyDetail['wyo'] ?? '';
-    }
-
-    public function getHoldingCompanyPhoneNumber()
-    {
-        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
-
-        $phoneNumber = $holdingCompanyDetail['company_phone'] ?? '';
-
-        return Helper::formatPhone($phoneNumber);
     }
 
     public function parseCoverageDeductibleAmount($coverageDetails)
