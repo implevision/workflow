@@ -8,17 +8,26 @@ use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbClaim extends AbstractSchema
 {
-    private const COVERAGE_DESC_BUILDING = 'Building';
+    private const COVERAGE_DESC = [
+        'Building' => 'Building',
+        'Content' => 'Content',
+    ];
 
-    private const COVERAGE_DESC_CONTENT = 'Content';
+    private const TRAN_TYPE = [
+        'LossPayment' => 'Loss Payment',
+        'LossReserves' => 'Loss Reserves',
+    ];
 
-    private const TRAN_TYPE_LOSS_PAYMENT = 'Loss Payment';
+    private const RESERVE_TYPE = [
+        'Advance' => 'A',
+        'Final' => 'F',
+        'Supplemental' => '',
+    ];
 
-    private const RESERVE_TYPE_ADVANCE = 'A';
-
-    private const TRAN_SUB_TYPE_BUILDING_CLAIM_PAYMENT = 'BUILDCLAIMPAYMENT';
-
-    private const TRAN_SUB_TYPE_CONTENT_CLAIM_PAYMENT = 'CONTCLAIMPAYMENT';
+    private const TRAN_SUB_TYPE_CLAIM_PAYMENT = [
+        'Building' => 'BUILDCLAIMPAYMENT',
+        'Content' => 'CONTCLAIMPAYMENT',
+    ];
 
     /**
      * @var array
@@ -411,7 +420,7 @@ class TbClaim extends AbstractSchema
             'GraphQLschemaToReplace' => $deductibles,
             'jqFilter' => sprintf(
                 '[.claim.transaction.coverageDetails[] | select(.coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageDesc == "%s")]',
-                self::COVERAGE_DESC_BUILDING
+                self::COVERAGE_DESC['Building']
             ),
             'parseResultCallback' => 'parseCoverageDeductibleAmount',
         ];
@@ -420,7 +429,7 @@ class TbClaim extends AbstractSchema
             'GraphQLschemaToReplace' => $deductibles,
             'jqFilter' => sprintf(
                 '[.claim.transaction.coverageDetails[] | select(.coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageDesc == "%s")]',
-                self::COVERAGE_DESC_CONTENT
+                self::COVERAGE_DESC['Content']
             ),
             'parseResultCallback' => 'parseCoverageDeductibleAmount',
         ];
@@ -440,9 +449,9 @@ class TbClaim extends AbstractSchema
             'GraphQLschemaToReplace' => $advancePayment,
             'jqFilter' => sprintf(
                 '[.claim.claimReserve[] | select(.tranTypeCode == "%s" and .claimReserveDetail.reserveType == "%s" and .tranSubTypeCode == "%s")]',
-                self::TRAN_TYPE_LOSS_PAYMENT,
-                self::RESERVE_TYPE_ADVANCE,
-                self::TRAN_SUB_TYPE_BUILDING_CLAIM_PAYMENT
+                self::TRAN_TYPE['LossPayment'],
+                self::RESERVE_TYPE['Advance'],
+                self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']
             ),
             'parseResultCallback' => 'sumAmounts',
         ];
@@ -451,9 +460,9 @@ class TbClaim extends AbstractSchema
             'GraphQLschemaToReplace' => $advancePayment,
             'jqFilter' => sprintf(
                 '[.claim.claimReserve[] | select(.tranTypeCode == "%s" and .claimReserveDetail.reserveType == "%s" and .tranSubTypeCode == "%s")]',
-                self::TRAN_TYPE_LOSS_PAYMENT,
-                self::RESERVE_TYPE_ADVANCE,
-                self::TRAN_SUB_TYPE_CONTENT_CLAIM_PAYMENT
+                self::TRAN_TYPE['LossPayment'],
+                self::RESERVE_TYPE['Advance'],
+                self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']
             ),
             'parseResultCallback' => 'sumAmounts',
         ];
@@ -475,8 +484,8 @@ class TbClaim extends AbstractSchema
             'GraphQLschemaToReplace' => $payment,
             'jqFilter' => sprintf(
                 '[.claim.claimReserve[] | select(.tranTypeCode == "%s" and .claimCoverageTrans.tbCvgpccoverage.coverageDesc == "%s") | .claimCoverageTrans]',
-                self::TRAN_TYPE_LOSS_PAYMENT,
-                self::COVERAGE_DESC_BUILDING
+                self::TRAN_TYPE['LossPayment'],
+                self::COVERAGE_DESC['Building']
             ),
             'parseResultCallback' => 'sumAmounts',
         ];
@@ -485,8 +494,8 @@ class TbClaim extends AbstractSchema
             'GraphQLschemaToReplace' => $payment,
             'jqFilter' => sprintf(
                 '[.claim.claimReserve[] | select(.tranTypeCode == "%s" and .claimCoverageTrans.tbCvgpccoverage.coverageDesc == "%s") | .claimCoverageTrans]',
-                self::TRAN_TYPE_LOSS_PAYMENT,
-                self::COVERAGE_DESC_CONTENT
+                self::TRAN_TYPE['LossPayment'],
+                self::COVERAGE_DESC['Content']
             ),
             'parseResultCallback' => 'sumAmounts',
         ];
