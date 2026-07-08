@@ -697,18 +697,20 @@ class TbClaim extends AbstractSchema
     {
         $deductibleValue = ! empty($coverageDetails) && is_array($coverageDetails) ? (reset($coverageDetails)['prDiscountCode'] ?? null) : null;
 
-        if ($deductibleValue) {
-            preg_match('/(\d+(?:\.\d+)?)$/', $deductibleValue, $matches);
-            $deductibleValue = $matches[1] ?? $deductibleValue;
+        if (! $deductibleValue) {
+            return Helper::formatCurrency(0);
         }
 
-        return $deductibleValue ? Helper::formatCurrency($deductibleValue) : "";
+        preg_match('/(\d+(?:\.\d+)?)$/', $deductibleValue, $matches);
+        $deductibleValue = $matches[1] ?? $deductibleValue;
+
+        return Helper::formatCurrency($deductibleValue);
     }
 
     public function sumAmounts($items)
     {
         if (! is_array($items)) {
-            return "";
+            return Helper::formatCurrency(0);
         }
 
         $amount = 0;
@@ -717,6 +719,6 @@ class TbClaim extends AbstractSchema
             $amount += data_get($item, 'amount', 0);
         }
 
-        return $amount ? Helper::formatCurrency(abs($amount)) : "";
+        return Helper::formatCurrency(abs($amount));
     }
 }
