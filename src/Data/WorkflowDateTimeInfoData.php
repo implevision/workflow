@@ -27,7 +27,7 @@ class WorkflowDateTimeInfoData extends Data
             executionEvent: $data['executionEvent'] ?? null,
             recurringFrequency: $data['recurringFrequency'] ?? null,
             executionEffectiveDate: $data['executionEffectiveDate'] ?? null,
-            executionEffectiveTime: $data['executionEffectiveTime' ?? null]
+            executionEffectiveTime: $data['executionEffectiveTime'] ?? null
         );
     }
 }

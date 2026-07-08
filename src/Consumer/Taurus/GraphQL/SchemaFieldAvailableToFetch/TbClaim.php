@@ -168,6 +168,14 @@ class TbClaim extends AbstractSchema
             'jqFilter' => '.claimQuery.insuredPerson.phoneInfo[0].phoneNumber',
         ];
 
+        $fieldMapping['ClaimCreatedDate'] = [
+            'GraphQLschemaToReplace' => [
+                'createdAt' => null,
+            ],
+            'jqFilter' => '.claimQuery.createdAt',
+            'parseResultCallback' => 'formatDate',
+        ];
+
         $fieldMapping['InsuredPropertyAddress'] = [
             'GraphQLschemaToReplace' => [
                 'insuredPerson' => [
@@ -660,6 +668,110 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'generatePresignedUrl',
         ];
 
+        $fieldMapping['AdjusterName'] = [
+            'GraphQLschemaToReplace' => [
+                'adjuster' => [
+                    'screenName' => null,
+                ],
+            ],
+            'jqFilter' => '.claim.adjuster.screenName',
+        ];
+
+        $fieldMapping['CurrentYear'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'getCurrentYear',
+        ];
+
+        $fieldMapping['HoldingCompanyName'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'getHoldingCompanyName',
+        ];
+
+        $fieldMapping['HoldingCompanyPhoneNumber'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'getHoldingCompanyPhoneNumber',
+        ];
+
+        $deductibles = [
+            'transaction' => [
+                'coverageDetails' => [
+                    'coverageSchedules' => [
+                        'policyCoverageMaster' => [
+                            'policyCoverageCoverages' => [
+                                'coverageCode' => null,
+                            ],
+                        ],
+                    ],
+                    'insuredCoverageValue' => null,
+                    'prDiscountCode' => null,
+                ],
+            ],
+        ];
+
+        $fieldMapping['BuildingCoverageDeductibleAmount'] = [
+            'GraphQLschemaToReplace' => $deductibles,
+            'jqFilter' => '.claim.transaction.coverageDetails',
+            'parseResultCallback' => 'parseBuildingDeductibles',
+        ];
+
+        $fieldMapping['ContentsCoverageDeductibleAmount'] = [
+            'GraphQLschemaToReplace' => $deductibles,
+            'jqFilter' => '.claim.transaction.coverageDetails',
+            'parseResultCallback' => 'parseContentsDeductibles',
+        ];
+
+        $advancePayment = [
+            'claimReserve' => [
+                'tranTypeCode' => null,
+                'tranSubTypeCode' => null,
+                'amount' => null,
+                'claimReserveDetail' => [
+                    'reserveType' => null,
+                ],
+            ],
+        ];
+
+        $fieldMapping['BuildingAdvancePayment'] = [
+            'GraphQLschemaToReplace' => $advancePayment,
+            'jqFilter' => '.claim.claimReserve',
+            'parseResultCallback' => 'parseBuildingAdvancePayment',
+        ];
+
+        $fieldMapping['ContentAdvancePayment'] = [
+            'GraphQLschemaToReplace' => $advancePayment,
+            'jqFilter' => '.claim.claimReserve',
+            'parseResultCallback' => 'parseContentAdvancePayment',
+        ];
+
+        $payment = [
+            'claimReserve' => [
+                'tranTypeCode' => null,
+                'tranSubTypeCode' => null,
+                'claimCoverageTrans' => [
+                    'coverageCode' => null,
+                    'amount' => null,
+                    'tbCvgpccoverage' => [
+                        'coverageCode' => null,
+                    ],
+                ],
+            ],
+        ];
+
+        $fieldMapping['BuildingPayment'] = [
+            'GraphQLschemaToReplace' => $payment,
+            'jqFilter' => '.claim.claimReserve',
+            'parseResultCallback' => 'parseBuildingPayment',
+        ];
+
+        $fieldMapping['ContentPayment'] = [
+            'GraphQLschemaToReplace' => $payment,
+            'jqFilter' => '.claim.claimReserve',
+            'parseResultCallback' => 'parseContentPayment',
+        ];
+
         return $fieldMapping;
     }
 
@@ -676,7 +788,8 @@ class TbClaim extends AbstractSchema
         }
 
         $address = [
-            'addressLine1' => ($addressArr['houseNo'] ?? '') . ' ' . ($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'addressLine2' => $addressArr['addressLine2'] ?? '',
             'city' => $addressArr['tbCity']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
             'postalCode' => $addressArr['postalCode'] ?? null,
@@ -902,5 +1015,124 @@ class TbClaim extends AbstractSchema
         ));
 
         return $data;
+    }
+
+    public function getCurrentYear()
+    {
+        return date('Y');
+    }
+
+    public function getHoldingCompanyName()
+    {
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+        return $holdingCompanyDetail['wyo'] ?? '';
+    }
+
+    public function getHoldingCompanyPhoneNumber()
+    {
+        $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
+
+        $phoneNumber = $holdingCompanyDetail['company_phone'] ?? '';
+
+        return Helper::formatPhone($phoneNumber);
+    }
+
+    public function parseBuildingDeductibles($coverageDetails)
+    {
+        $buildingDeductibles = array_filter($coverageDetails, function ($coverageDetail) {
+            return data_get($coverageDetail, 'coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageCode') === 'FLDBLDCVGAMT';
+        });
+
+        $buildingDeductibleValue = ! empty($buildingDeductibles) ? (reset($buildingDeductibles)['prDiscountCode'] ?? null) : null;
+
+        if ($buildingDeductibleValue) {
+            preg_match('/(\d+(?:\.\d+)?)$/', $buildingDeductibleValue, $matches);
+            $buildingDeductibleValue = $matches[1] ?? $buildingDeductibleValue;
+        }
+
+        return $buildingDeductibleValue ? Helper::formatCurrency($buildingDeductibleValue) : Helper::formatCurrency(0);
+    }
+
+    public function parseContentsDeductibles($coverageDetails)
+    {
+        $contentsDeductibles = array_filter($coverageDetails, function ($coverageDetail) {
+            return data_get($coverageDetail, 'coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageCode') === 'FLDCONTCVGAMT';
+        });
+
+        $contentsDeductibleValue = ! empty($contentsDeductibles) ? (reset($contentsDeductibles)['prDiscountCode'] ?? null) : null;
+
+        if ($contentsDeductibleValue) {
+            preg_match('/(\d+(?:\.\d+)?)$/', $contentsDeductibleValue, $matches);
+            $contentsDeductibleValue = $matches[1] ?? $contentsDeductibleValue;
+        }
+
+        return $contentsDeductibleValue ? Helper::formatCurrency($contentsDeductibleValue) : Helper::formatCurrency(0);
+    }
+
+    public function parseBuildingAdvancePayment($claimReserves)
+    {
+        $buildingAdvancePayments = array_filter($claimReserves, function ($reserve) {
+            return data_get($reserve, 'tranTypeCode') === 'Loss Payment' && data_get($reserve, 'claimReserveDetail.reserveType') === 'A';
+        });
+
+        $amount = 0;
+
+        foreach ($buildingAdvancePayments as $payment) {
+            if (data_get($payment, 'tranSubTypeCode') === 'BUILDCLAIMPAYMENT') {
+                $amount += data_get($payment, 'amount', 0);
+            }
+        }
+
+        return Helper::formatCurrency(abs($amount ?? 0));
+    }
+
+    public function parseContentAdvancePayment($claimReserves)
+    {
+        $contentsAdvancePayments = array_filter($claimReserves, function ($reserve) {
+            return data_get($reserve, 'tranTypeCode') === 'Loss Payment' && data_get($reserve, 'claimReserveDetail.reserveType') === 'A';
+        });
+
+        $amount = 0;
+
+        foreach ($contentsAdvancePayments as $payment) {
+            if (data_get($payment, 'tranSubTypeCode') === 'CONTCLAIMPAYMENT') {
+                $amount += data_get($payment, 'amount', 0);
+            }
+        }
+
+        return Helper::formatCurrency(abs($amount ?? 0));
+    }
+
+    public function parseBuildingPayment($coverageDetails)
+    {
+        $buildingPayments = array_filter($coverageDetails, function ($coverageDetail) {
+            return data_get($coverageDetail, 'tranTypeCode') === 'Loss Payment' &&
+                data_get($coverageDetail, 'claimCoverageTrans.tbCvgpccoverage.coverageCode') === 'FLDBLDCVGAMT';
+        });
+
+        $amount = 0;
+
+        foreach ($buildingPayments as $payment) {
+            $amount += data_get($payment, 'claimCoverageTrans.amount', 0);
+        }
+
+        return Helper::formatCurrency(abs($amount) ?? 0);
+    }
+
+    public function parseContentPayment($coverageDetails)
+    {
+        $contentsPayments = array_filter($coverageDetails, function ($coverageDetail) {
+            return data_get($coverageDetail, 'tranTypeCode') === 'Loss Payment' &&
+                data_get($coverageDetail, 'claimCoverageTrans.tbCvgpccoverage.coverageCode') === 'FLDCONTCVGAMT';
+        });
+
+        $amount = 0;
+
+        foreach ($contentsPayments as $payment) {
+            $amount += data_get($payment, 'claimCoverageTrans.amount', 0);
+        }
+
+        return Helper::formatCurrency(abs($amount) ?? 0);
     }
 }

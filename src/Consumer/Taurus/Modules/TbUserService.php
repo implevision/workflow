@@ -2,10 +2,10 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\Modules;
 
-class TbAgentTasksMasterService extends ModuleService
+class TbUserService extends ModuleService
 {
     public function getPostFixForTaskDefinition()
     {
-        return 'policy';
+        return 'auth';
     }
 }

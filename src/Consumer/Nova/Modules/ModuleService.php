@@ -1,6 +1,6 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\Taurus\Modules;
+namespace Taurus\Workflow\Consumer\Nova\Modules;
 
 use Carbon\Carbon;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
@@ -22,48 +22,24 @@ class ModuleService
      * @throws \Exception If there is an error during the retrieval process.
      */
     public function getQueryForEffectiveAction(
+        $module,
         $executionFrequency,
         $executionFrequencyType,
         $executionEventIncident,
         $executionEvent
     ) {
-        // Without a target date field or a valid window there is nothing to match on.
-        if (empty($executionEvent) || empty($executionFrequency) || empty($executionFrequencyType)) {
-            return [];
-        }
-
-        $targetDate = $this->resolveEventTargetDate(
+        // 'Now {+/-}{NO_OF_DAYS} {days/months/years}' format
+        $timeStrToParse = sprintf(
+            'Now %s%s %s',
+            $executionEventIncident == 'AFTER' ? '+' : '-',
             $executionFrequency,
-            $executionFrequencyType,
-            $executionEventIncident
+            strtolower($executionFrequencyType).'s',
         );
+        $timeToParse = Carbon::parse($timeStrToParse);
 
-        // Match records whose event date field equals the target date.
-        return GraphQLSchemaBuilderService::getQueryMapping($executionEvent, 'EQ', $targetDate);
-    }
+        // $data = $this->getGraphQLQueryMapping($module, $executionEvent, "=", $timeToParse->format('Y-m-d'));
 
-    /**
-     * Resolves the date to match against, relative to today.
-     * Reusable by any module that schedules off a "before/after an event" window.
-     *
-     *   AFTER  -> today + frequency  (event is in the future)
-     *   BEFORE -> today - frequency  (event was in the past)
-     *
-     * @param  int|string  $frequency  Number of units in the window (e.g. 15)
-     * @param  string  $frequencyType  DAY | MONTH | YEAR
-     * @param  string  $incident  AFTER | BEFORE
-     * @return string Target date as 'Y-m-d'
-     */
-    protected function resolveEventTargetDate($frequency, $frequencyType, $incident): string
-    {
-        $sign = $incident === 'AFTER' ? '+' : '-';
-
-        return Carbon::parse(sprintf(
-            'now %s%d %s',
-            $sign,
-            (int) $frequency,
-            strtolower($frequencyType).'s'
-        ))->format('Y-m-d');
+        return $data;
     }
 
     public function getQueryForRecordIdentifier($module, $recordIdentifier)
@@ -102,7 +78,7 @@ class ModuleService
     {
         $module = explode('\\', $module);
         $module = end($module);
-        $moduleClass = app("Taurus\\Workflow\\Consumer\\Taurus\\Modules\\$module".'Service');
+        $moduleClass = app("Taurus\\Workflow\\Consumer\\Nova\\Modules\\$module".'Service');
 
         try {
             class_exists($moduleClass::class) or throw new \Exception("Module class $moduleClass does not exist.");

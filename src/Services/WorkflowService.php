@@ -84,10 +84,16 @@ class WorkflowService
                     $instanceActions = $condition['instanceActions'] ?? [];
                     unset($condition['instanceActions']);
                     unset($condition['id']);
+                    $notes = $condition['notes'] ?? null;
+                    unset($condition['notes']);
+                    $status = isset($condition['status']) ? (int) $condition['status'] : 1;
+                    unset($condition['status']);
 
                     $conditionEntry = $this->workflowConditionRepo->create([
                         'workflow_id' => $workflow->id,
                         'conditions' => $condition ?? [],
+                        'notes' => $notes,
+                        'status' => $status,
                     ]);
 
                     // Save workflow actions related to the condition
@@ -109,6 +115,7 @@ class WorkflowService
             if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow']) && $data['when']['effectiveActionToExecuteWorkflow'] === 'CUSTOM_DATE_AND_TIME') {
                 $workflowId = $workflow->id;
                 $workflows = $this->workflowRepo->getById($workflowId)->toArray();
+                // TODO: This must be implemented consumer wise. Broadcast the WF id and let CONSUMER handle it.
                 $this->scheduleWorkflows([$workflows]);
             }
 
@@ -148,6 +155,8 @@ class WorkflowService
                 'applyRuleTo' => $applyRuleTo,
                 's3FilePath' => $conditions['s3FilePath'] ?? null,
                 'applyConditionRules' => $conditions['applyConditionRules'] ?? [],
+                'notes' => $condition->notes ?? '',
+                'status' => (bool) ($condition->status ?? true),
                 'instanceActions' => $condition->actions->map(function ($action) {
                     $payload = $action->payload ?? [];
 
@@ -218,18 +227,26 @@ class WorkflowService
 
                     $conditionId = $condition['id'] ?? null;
                     unset($condition['id']);
+                    $notes = $condition['notes'] ?? null;
+                    unset($condition['notes']);
+                    $status = isset($condition['status']) ? (int) $condition['status'] : 1;
+                    unset($condition['status']);
 
                     // Update or Create Condition
                     if (! empty($conditionId)) {
                         $conditionEntry = $this->workflowConditionRepo->update($conditionId, [
                             'workflow_id' => $workflow->id,
                             'conditions' => $condition ?? [],
+                            'notes' => $notes,
+                            'status' => $status,
                         ]);
                         $newConditionIds[] = $conditionId;
                     } else {
                         $conditionEntry = $this->workflowConditionRepo->create([
                             'workflow_id' => $workflow->id,
                             'conditions' => $condition ?? [],
+                            'notes' => $notes,
+                            'status' => $status,
                         ]);
                         $newConditionIds[] = $conditionEntry->id;
                     }
@@ -430,17 +447,19 @@ class WorkflowService
         }
     }
 
-    public function createScheduleToExecuteWorkflow($groupName, $workflowId, $scheduleExpression)
+    public function createScheduleToExecuteWorkflow($groupName, $workflowId, $module, $scheduleExpression)
     {
         // TODO: pass record identifier if any
         $commandToRunWorkflow = getCliCommandToDispatchWorkflow($workflowId);
+
+        $getServicePostFixForModule = $this->getServicePostFixForModule($module);
 
         try {
             $target = [
                 'arn' => config('workflow.aws_lambda_function_arn_to_invoke_workflow'),
                 'roleArn' => config('workflow.aws_iam_role_arn_to_invoke_lambda_from_event_bridge'),
                 'input' => json_encode([
-                    'task_definition' => config('workflow.task_definition'),
+                    'task_definition' => config('workflow.task_definition_prefix').$getServicePostFixForModule,
                     'command' => $commandToRunWorkflow,
                 ]),
             ];
@@ -465,7 +484,7 @@ class WorkflowService
                     $scheduleGroupArnObject = $this->workflowConfigRepo->getByKey('schedule_group_arn');
                     $scheduleGroupsArn = $scheduleGroupArnObject->config_value ?? null;
                 } catch (\Exception $e) {
-                    \Log::error('Error fetching schedule group ARN: '.$e->getMessage());
+                    \Log::info('No schedule group ARN found: '.$e->getMessage());
                 }
 
                 $isAwsInfraAlreadySetup = $scheduleGroupsArn ? true : false;
@@ -523,7 +542,7 @@ class WorkflowService
                     }
 
                     // SCHEDULE IN EVENT BRIDGE ONLY ONCE
-                    $scheduleObj = $this->createScheduleToExecuteWorkflow($groupName, $workflow['id'], $configureTimeForEventSchedulerToAwakeWorkflowSystem);
+                    $scheduleObj = $this->createScheduleToExecuteWorkflow($groupName, $workflow['id'], $workflow['module'], $configureTimeForEventSchedulerToAwakeWorkflowSystem);
 
                     if ($scheduleObj) {
                         $this->workflowRepo->update($workflow['id'], [
@@ -554,10 +573,14 @@ class WorkflowService
             return [];
         }
 
-        // This method should implement the logic to get matching records based on the effective action
-        // For now, it returns an empty array as a placeholder
+        if ($moduleService->isCustomResolverDefinedForModule()) {
+            return [];
+        }
+
+        // Build the where-condition for the module's effective action. $module is only
+        // needed here to resolve the module service; the module method derives everything
+        // from the date/event window.
         return $moduleService->getQueryForEffectiveAction(
-            $module,
             $executionFrequency,
             $executionFrequencyType,
             $executionEventIncident,
@@ -570,6 +593,17 @@ class WorkflowService
         $moduleService = $this->getModuleService($module);
 
         return $moduleService->getQueryForRecordIdentifier($module, $recordIdentifier);
+    }
+
+    public function getServicePostFixForModule($module)
+    {
+        $moduleService = $this->getModuleService($module);
+
+        if ($moduleService instanceof \stdClass) {
+            return '';
+        }
+
+        return $moduleService->getServicePostFix($module);
     }
 
     private function getModuleService($module)
@@ -588,7 +622,7 @@ class WorkflowService
         }
     }
 
-    public function getGraphQLQueryMappingService($module)
+    public function getGraphQLQueryMappingService($module, $appendPlaceHolders = [])
     {
         try {
             $consumerService = $this->getConsumerService();
@@ -596,11 +630,28 @@ class WorkflowService
                 return new stdClass;
             }
 
-            return $consumerService->getGraphQLQueryMappingService($module);
+            return $consumerService->getGraphQLQueryMappingService($module, $appendPlaceHolders);
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 
             return new stdClass;
+        }
+    }
+
+    public function getExtendedTemplateInfoForModule(string $module, array $templatePayload = []): array
+    {
+        try {
+            $moduleService = $this->getModuleService($module);
+
+            if ($moduleService instanceof stdClass) {
+                return [];
+            }
+
+            return $moduleService->getExtendedTemplateInfo($templatePayload);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return [];
         }
     }
 
