@@ -388,7 +388,12 @@ class DispatchWorkflowService
                             $data[] = $record;
                         }
                     } else {
+                        if (empty(array_first($response))) {
+                            \Log::debug('WORKFLOW - GraphQL unable to fetch the data');
+                            // \Log::debug('WORKFLOW - GraphQL Request Payload: ' . $graphQLRequestPayload);
 
+                            continue;
+                        }
                         $parsedData = [];
 
                         try {
