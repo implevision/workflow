@@ -693,24 +693,28 @@ class TbClaim extends AbstractSchema
 
     public function parseCoverageDeductibleAmount($coverageDetails)
     {
-        $deductibleValue = ! empty($coverageDetails) ? (reset($coverageDetails)['prDiscountCode'] ?? null) : null;
+        $deductibleValue = ! empty($coverageDetails) && is_array($coverageDetails) ? (reset($coverageDetails)['prDiscountCode'] ?? null) : null;
 
         if ($deductibleValue) {
             preg_match('/(\d+(?:\.\d+)?)$/', $deductibleValue, $matches);
             $deductibleValue = $matches[1] ?? $deductibleValue;
         }
 
-        return $deductibleValue ? Helper::formatCurrency($deductibleValue) : Helper::formatCurrency(0);
+        return $deductibleValue ? Helper::formatCurrency($deductibleValue) : "";
     }
 
     public function sumAmounts($items)
     {
+        if (! is_array($items)) {
+            return "";
+        }
+
         $amount = 0;
 
         foreach ($items as $item) {
             $amount += data_get($item, 'amount', 0);
         }
 
-        return Helper::formatCurrency(abs($amount));
+        return $amount ? Helper::formatCurrency(abs($amount)) : "";
     }
 }
