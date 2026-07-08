@@ -602,7 +602,9 @@ class TbClaim extends AbstractSchema
 
     public function parseCompanyPhoneNumber($response)
     {
-        return $this->resolveCompanyDetail($response, 'companyPhone', 'company_phone');
+        $phone = $this->resolveCompanyDetail($response, 'companyPhone', 'company_phone');
+
+        return ! empty($phone) ? Helper::formatPhone($phone) : '';
     }
 
     private function resolveCompanyDetail($response, string $companyKey, string $holdingKey): string
