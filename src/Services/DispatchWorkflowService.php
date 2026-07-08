@@ -491,13 +491,14 @@ class DispatchWorkflowService
                 try {
                     // VALIDATE ALL REQUIRED INFO IS PRESENT OR NOT
                     $hasPriorDataForWorkflow = false;
+                    $missingMandateDataRecords = [];
 
                     foreach ($data as $index => $dataItem) {
                         $data[$index]['hasPriorDataForWorkflow'] = true;
                         foreach ($listOfMandateData as $mandateData) {
                             if (! isset($dataItem[$mandateData]) || empty($dataItem[$mandateData])) {
                                 $data[$index]['hasPriorDataForWorkflow'] = false;
-                                break;
+                                $missingMandateDataRecords[] = $mandateData;
                             }
                         }
 
@@ -509,9 +510,9 @@ class DispatchWorkflowService
                                 $this->workflowId,
                                 $jobWorkflowId,
                                 'MISSING_MANDATE_DATA',
-                                ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]
+                                ['missingMandateDataRecords' => $missingMandateDataRecords, 'data' => $data[$index], 'listOfMandateData' => $listOfMandateData]
                             );
-                            \Log::warning('WORKFLOW - Missing mandate data', ['data' => $data[$index], 'listOfMandateData' => $listOfMandateData]);
+                            \Log::warning('WORKFLOW - Missing mandate data', ['missingMandateDataRecords' => $missingMandateDataRecords, 'data' => $data[$index], 'listOfMandateData' => $listOfMandateData]);
                             unset($data[$index]);
 
                             continue;
