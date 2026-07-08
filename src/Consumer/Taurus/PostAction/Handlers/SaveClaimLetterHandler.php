@@ -2,8 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\PostAction\Handlers;
 
-use Taurus\Workflow\Consumer\Taurus\PostAction\SaveClaimLetter\SaveClaimLetterService;
 use Taurus\Workflow\Consumer\Taurus\PostAction\SaveClaimLetter\PrepareSaveClaimLetterData;
+use Taurus\Workflow\Consumer\Taurus\PostAction\SaveClaimLetter\SaveClaimLetterService;
 
 class SaveClaimLetterHandler implements PostActionHandlerInterface
 {
