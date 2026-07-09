@@ -472,12 +472,12 @@ class TbClaim extends AbstractSchema
             ],
         ];
 
-        $fieldMapping['RapLatestStatusText'] = [
+        $fieldMapping['RapLatestStatus'] = [
             'GraphQLschemaToReplace' => $statusLogSchema,
             'jqFilter' => '[.claimQuery.statusLog[] | select(.tranTypeCode == "Rap_Open" or .tranTypeCode == "Rap_Close")] | sort_by(.insertedDate) | reverse | .[0].tranSubTypeCode',
         ];
 
-        $fieldMapping['IccLatestStatusText'] = [
+        $fieldMapping['IccLatestStatus'] = [
             'GraphQLschemaToReplace' => $statusLogSchema,
             'jqFilter' => '[.claimQuery.statusLog[] | select(.tranTypeCode == "Icc_Open" or .tranTypeCode == "Icc_Close")] | sort_by(.insertedDate) | reverse | .[0].tranSubTypeCode',
         ];
