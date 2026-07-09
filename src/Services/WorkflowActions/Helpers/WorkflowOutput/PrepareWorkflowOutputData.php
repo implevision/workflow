@@ -4,7 +4,6 @@ namespace Taurus\Workflow\Services\WorkflowActions\Helpers\WorkflowOutput;
 
 use Illuminate\Support\Facades\Event;
 use Taurus\Workflow\Events\PostActionEvent;
-use Taurus\Workflow\Services\WorkflowService;
 
 class PrepareWorkflowOutputData
 {

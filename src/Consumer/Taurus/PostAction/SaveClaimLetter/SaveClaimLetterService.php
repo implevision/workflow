@@ -28,6 +28,7 @@ class SaveClaimLetterService
             ]);
 
             $response = Claim::getClaimLetterGenerate($data);
+
             return [
                 'type' => 'S3_URL',
                 'value' => $response['docPathId'] ?? null,

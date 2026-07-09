@@ -75,6 +75,7 @@ class WorkflowOutputAction extends AbstractWorkflowAction
         try {
             \Log::info('WORKFLOW - Preparing workflow output data');
             $prepareWorkflowOutputData = new PrepareWorkflowOutputData;
+
             return $prepareWorkflowOutputData->prepare($workflowId, $jobWorkflowId, $recordIdentifier, $payload['id'], [
                 'data' => $data,
                 'postAction' => ! empty($payload['postAction']) ? $payload['postAction'] : '',

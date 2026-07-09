@@ -9,7 +9,6 @@ use Avatar\Infrastructure\Models\Api\v1\TbPrdoccodedoc;
 use Avatar\Infrastructure\Models\Api\v1\TbPrdoclist;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
-
 /**
  * Class PrepareSaveClaimLetterData
  *

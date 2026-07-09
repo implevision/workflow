@@ -183,9 +183,10 @@ class WebhookAction extends AbstractWorkflowAction
             }, $input);
         }
 
-        return preg_replace_callback('/{{\s*(.*?)\s*}}/', function ($matches) use ($placeholders, $replaceWithEmptySpaceIfNotAvailable, $resolveNested) {
-            $placeholder = $matches[1];
-            $defaultValue = $replaceWithEmptySpaceIfNotAvailable ? '' : '{{'.$placeholder.'}}';
+        return preg_replace_callback('/{{\s*(.*?)\s*}}|\[\[\s*(.*?)\s*\]\]/', function ($matches) use ($placeholders, $replaceWithEmptySpaceIfNotAvailable, $resolveNested) {
+            $isBracketStyle = ! isset($matches[1]) || $matches[1] === '';
+            $placeholder = $isBracketStyle ? ($matches[2] ?? '') : $matches[1];
+            $defaultValue = $replaceWithEmptySpaceIfNotAvailable ? '' : ($isBracketStyle ? '[['.$placeholder.']]' : '{{'.$placeholder.'}}');
 
             if ($resolveNested && is_array($placeholders)) {
                 $value = $this->resolveNestedValue($placeholders, $placeholder);
