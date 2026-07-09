@@ -464,11 +464,22 @@ class TbClaim extends AbstractSchema
             'jqFilter' => '.claimQuery.allocatedTo.fcn',
         ];
 
-        $fieldMapping['RapLatestStatusText'] = [
-            'GraphQLschemaToReplace' => [
-                'rapLatestStatusText' => null,
+        $statusLogSchema = [
+            'statusLog' => [
+                'tranTypeCode' => null,
+                'tranSubTypeCode' => null,
+                'insertedDate' => null,
             ],
-            'jqFilter' => '.claimQuery.rapLatestStatusText',
+        ];
+
+        $fieldMapping['RapLatestStatusText'] = [
+            'GraphQLschemaToReplace' => $statusLogSchema,
+            'jqFilter' => '[.claimQuery.statusLog[] | select(.tranTypeCode == "Rap_Open" or .tranTypeCode == "Rap_Close")] | sort_by(.insertedDate) | reverse | .[0].tranSubTypeCode',
+        ];
+
+        $fieldMapping['IccLatestStatusText'] = [
+            'GraphQLschemaToReplace' => $statusLogSchema,
+            'jqFilter' => '[.claimQuery.statusLog[] | select(.tranTypeCode == "Icc_Open" or .tranTypeCode == "Icc_Close")] | sort_by(.insertedDate) | reverse | .[0].tranSubTypeCode',
         ];
 
         $claimAdditionalSchema = [
@@ -482,10 +493,6 @@ class TbClaim extends AbstractSchema
             'jqFilter' => '.claimQuery.addInfo.claimDetailJson.newScreenData.gcof',
         ];
 
-        $fieldMapping['ClaimNewGCOF'] = [
-            'GraphQLschemaToReplace' => $claimAdditionalSchema,
-            'jqFilter' => '.claimQuery.addInfo.claimDetailJson.newScreenData.newGcof',
-        ];
 
         $fieldMapping['ClaimWaterLineFlipExt'] = [
             'GraphQLschemaToReplace' => $claimAdditionalSchema,
@@ -529,61 +536,73 @@ class TbClaim extends AbstractSchema
         $fieldMapping['BuildingAdvancedPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.building_advanced_payment_amount',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['BuildingFinalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.building_final_payment_amount',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['BuildingSupplementalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.building_supplemental_payment_amount',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['BuildingTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.total_building_payments',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['ContentsAdvancedPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.contents_advanced_payment_amount',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['ContentsFinalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.contents_final_payment_amount',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['ContentsSupplementalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.contents_supplemental_payment_amount',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['ContentsTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.total_contents_payments',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['ICCAdvancedPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.icc_advanced_payment_amount',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['ICCFinalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.icc_final_payment_amount',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['ICCSupplementalPayment'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.icc_supplemental_payment_amount',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['ICCTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentTotalsSchema,
             'jqFilter' => '.claimQuery.paymentTotals.total_icc_payments',
+            'parseResultCallback' => 'formatCurrency',
         ];
 
         $fieldMapping['CauseOfLoss'] = [
@@ -778,6 +797,11 @@ class TbClaim extends AbstractSchema
     public function formatDate($dateToFormat)
     {
         return Helper::formatDate($dateToFormat);
+    }
+
+    public function formatCurrency($amount)
+    {
+        return Helper::formatCurrency($amount);
     }
 
 
