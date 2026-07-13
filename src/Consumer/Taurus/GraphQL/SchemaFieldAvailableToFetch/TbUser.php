@@ -47,6 +47,55 @@ class TbUser extends AbstractSchema
     }
 
     /**
+     * Signals that this class handles its own record extraction via
+     * getRecordsFromResponse(), bypassing the jqFilter mechanism.
+     * This is what enables bulk email — one record per user in the response.
+     */
+    public function hasCustomRecordExtraction(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Turns every user in the GraphQL response into its own payload record.
+     * Each record becomes one recipient, so DispatchWorkflowService builds a
+     * multi-recipient payload and SES::createRequest() routes it through
+     * sendBulkEmail() automatically.
+     */
+    public function getRecordsFromResponse(array $response): array
+    {
+        $node = $response['userQuery'] ?? [];
+
+        // Handle both shapes in one place:
+        //   - paginated:  userQuery.data[]  (with paginatorInfo)
+        //   - direct list: userQuery[]      (no data/paginatorInfo wrapper)
+        // Empty/missing response falls through to [], so no records are built.
+        $users = $node['data'] ?? (array_is_list($node) ? $node : []);
+
+        $records = [];
+        foreach ($users as $user) {
+            if (empty($user['email'])) {
+                continue; 
+            }
+
+            $records[] = [
+                'UserId' => $user['id'] ?? '',
+                'Username' => $user['username'] ?? '',
+                'UserFirstName' => $user['firstName'] ?? '',
+                'UserLastName' => $user['lastName'] ?? '',
+                'Email' => $user['email'] ?? '',
+                'UserFullName' => $user['screenName'] ?? '',
+
+                'LoginURL' => $this->getLoginUrl(),
+                'DashboardURL' => $this->getDashboard(),
+                'OutsideDocumentListURL' => $this->getOutsideDocumentList(),
+            ];
+        }
+
+        return $records;
+    }
+
+    /**
      * Initializes the field mapping with GraphQL schema for the TbUser class.
      *
      * KEYS are PLACEHOLDER for the GraphQL schema to be replaced.
@@ -55,64 +104,43 @@ class TbUser extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
-        $fieldMapping = [
-
-            'UserId' => [
-                'GraphQLschemaToReplace' => [
+        $dataSchema = [
+            'data' => [
+                [
                     'id' => null,
-                ],
-                'jqFilter' => '.userQuery.id',
-            ],
-
-            'Username' => [
-                'GraphQLschemaToReplace' => [
                     'username' => null,
-                ],
-                'jqFilter' => '.userQuery.username',
-            ],
-
-            'UserFirstName' => [
-                'GraphQLschemaToReplace' => [
                     'firstName' => null,
-                ],
-                'jqFilter' => '.userQuery.firstName',
-            ],
-
-            'UserLastName' => [
-                'GraphQLschemaToReplace' => [
                     'lastName' => null,
-                ],
-                'jqFilter' => '.userQuery.lastName',
-            ],
-
-            'Email' => [
-                'GraphQLschemaToReplace' => [
                     'email' => null,
+                    'screenName' => null,
                 ],
-                'jqFilter' => '.userQuery.email',
             ],
         ];
 
-        $fieldMapping['TemporaryPassword'] = [
-            'GraphQLschemaToReplace' => [],
-            'jqFilter' => '',
-            'parseResultCallback' => 'getTemporaryPassword',
+        $fieldMapping = [
+            'UserId' => ['GraphQLschemaToReplace' => $dataSchema],
+            'Username' => ['GraphQLschemaToReplace' => $dataSchema],
+            'UserFirstName' => ['GraphQLschemaToReplace' => $dataSchema],
+            'UserLastName' => ['GraphQLschemaToReplace' => $dataSchema],
+            'Email' => ['GraphQLschemaToReplace' => $dataSchema],
+            'UserFullName' => ['GraphQLschemaToReplace' => $dataSchema],
         ];
+
 
         $fieldMapping['LoginURL'] = [
-            'GraphQLschemaToReplace' => [],
+            'GraphQLschemaToReplace' => $dataSchema,
             'jqFilter' => '',
             'parseResultCallback' => 'getLoginUrl',
         ];
 
         $fieldMapping['DashboardURL'] = [
-            'GraphQLschemaToReplace' => [],
+            'GraphQLschemaToReplace' => $dataSchema,
             'jqFilter' => '',
             'parseResultCallback' => 'getDashboard',
         ];
 
         $fieldMapping['OutsideDocumentListURL'] = [
-            'GraphQLschemaToReplace' => [],
+            'GraphQLschemaToReplace' => $dataSchema,
             'jqFilter' => '',
             'parseResultCallback' => 'getOutsideDocumentList',
         ];
@@ -120,20 +148,15 @@ class TbUser extends AbstractSchema
         return $fieldMapping;
     }
 
-    public function getTemporaryPassword(): string
-    {
-        // TODO: implement temporary password generation logic
-        return '';
-    }
 
     public function getLoginUrl(): string
     {
-        return Helper::createPortalURL('CorePortal').'/login';
+        return Helper::createPortalURL('AgentPortal').'/login';
     }
 
     public function getDashboard(): string
     {
-        return Helper::createPortalURL('CorePortal').'/dashboard';
+        return Helper::createPortalURL('AgentPortal').'/dashboard';
     }
 
     public function getOutsideDocumentList(): string
