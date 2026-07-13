@@ -474,6 +474,12 @@ class TbPersonInfo extends AbstractSchema
             'jqFilter' => '[.producerQuery.userAgents[] | select(.user.level.userLevelCode == "PRINCIPLE" and .user.userStatus == "111" and .user.email != null)] | first | .user.email',
         ];
 
+        $fieldMapping['DashboardURL'] = [
+            'GraphQLschemaToReplace' => '',
+            'jqFilter' => '',
+            'parseResultCallback' => 'getDashboard',
+        ];
+
         return $fieldMapping;
     }
 
@@ -664,5 +670,10 @@ class TbPersonInfo extends AbstractSchema
     public function parseAgentCommissionPercentageForAgreement()
     {
         return 'Twenty-two Percent (22%)';
+    }
+
+    public function getDashboard(): string
+    {
+        return Helper::createPortalURL('AgentPortal').'/dashboard';
     }
 }
