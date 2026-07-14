@@ -460,7 +460,7 @@ class WorkflowService
                 'roleArn' => config('workflow.aws_iam_role_arn_to_invoke_lambda_from_event_bridge'),
                 'input' => json_encode([
                     'task_definition' => config('workflow.task_definition_prefix').$getServicePostFixForModule,
-                    'command' => $commandToRunWorkflow,
+                    'command' => explode(' ', $commandToRunWorkflow),
                 ]),
             ];
             $scheduleGroupName = getEventSchedulerNameToExecuteWorkflow($workflowId);
