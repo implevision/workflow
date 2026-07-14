@@ -8,6 +8,27 @@ use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbClaim extends AbstractSchema
 {
+    private const COVERAGE_DESC = [
+        'Building' => 'Building',
+        'Content' => 'Content',
+    ];
+
+    private const TRAN_TYPE = [
+        'LossPayment' => 'Loss Payment',
+        'LossReserves' => 'Loss Reserves',
+    ];
+
+    private const RESERVE_TYPE = [
+        'Advance' => 'A',
+        'Final' => 'F',
+        'Supplemental' => '',
+    ];
+
+    private const TRAN_SUB_TYPE_CLAIM_PAYMENT = [
+        'Building' => 'BUILDCLAIMPAYMENT',
+        'Content' => 'CONTCLAIMPAYMENT',
+    ];
+
     /**
      * @var array
      *
@@ -117,6 +138,13 @@ class TbClaim extends AbstractSchema
                 ],
                 'jqFilter' => '.claim.claimCommunication',
                 'parseResultCallback' => 'parseClaimCommunication',
+            ],
+            'ClaimCreatedDate' => [
+                'GraphQLschemaToReplace' => [
+                    'createdAt' => null,
+                ],
+                'jqFilter' => '.claim.createdAt',
+                'parseResultCallback' => 'formatDate',
             ],
         ];
 
@@ -357,6 +385,121 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'getCurrentYear',
         ];
 
+        $fieldMapping['CompanyPhoneNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'agency' => [
+                    'brandedCompany' => [
+                        'company' => [
+                            'companyPhone' => null,
+                        ],
+                    ],
+                ],
+                'policyId' => null,
+            ],
+            'jqFilter' => '.claim',
+            'parseResultCallback' => 'parseCompanyPhoneNumber',
+        ];
+
+        $deductibles = [
+            'transaction' => [
+                'coverageDetails' => [
+                    'coverageSchedules' => [
+                        'policyCoverageMaster' => [
+                            'policyCoverageCoverages' => [
+                                'coverageDesc' => null,
+                            ],
+                        ],
+                    ],
+                    'insuredCoverageValue' => null,
+                    'prDiscountCode' => null,
+                ],
+            ],
+        ];
+
+        $fieldMapping['BuildingCoverageDeductibleAmount'] = [
+            'GraphQLschemaToReplace' => $deductibles,
+            'jqFilter' => sprintf(
+                '[.claim.transaction.coverageDetails[] | select(.coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageDesc == "%s")]',
+                self::COVERAGE_DESC['Building']
+            ),
+            'parseResultCallback' => 'parseCoverageDeductibleAmount',
+        ];
+
+        $fieldMapping['ContentsCoverageDeductibleAmount'] = [
+            'GraphQLschemaToReplace' => $deductibles,
+            'jqFilter' => sprintf(
+                '[.claim.transaction.coverageDetails[] | select(.coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageDesc == "%s")]',
+                self::COVERAGE_DESC['Content']
+            ),
+            'parseResultCallback' => 'parseCoverageDeductibleAmount',
+        ];
+
+        $advancePayment = [
+            'claimReserve' => [
+                'tranTypeCode' => null,
+                'tranSubTypeCode' => null,
+                'amount' => null,
+                'claimReserveDetail' => [
+                    'reserveType' => null,
+                ],
+            ],
+        ];
+
+        $fieldMapping['BuildingAdvancePayment'] = [
+            'GraphQLschemaToReplace' => $advancePayment,
+            'jqFilter' => sprintf(
+                '[.claim.claimReserve[] | select(.tranTypeCode == "%s" and .claimReserveDetail.reserveType == "%s" and .tranSubTypeCode == "%s")]',
+                self::TRAN_TYPE['LossPayment'],
+                self::RESERVE_TYPE['Advance'],
+                self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']
+            ),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ContentAdvancePayment'] = [
+            'GraphQLschemaToReplace' => $advancePayment,
+            'jqFilter' => sprintf(
+                '[.claim.claimReserve[] | select(.tranTypeCode == "%s" and .claimReserveDetail.reserveType == "%s" and .tranSubTypeCode == "%s")]',
+                self::TRAN_TYPE['LossPayment'],
+                self::RESERVE_TYPE['Advance'],
+                self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']
+            ),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $payment = [
+            'claimReserve' => [
+                'tranTypeCode' => null,
+                'tranSubTypeCode' => null,
+                'claimCoverageTrans' => [
+                    'amount' => null,
+                    'tbCvgpccoverage' => [
+                        'coverageDesc' => null,
+                    ],
+                ],
+            ],
+        ];
+
+        $fieldMapping['BuildingPayment'] = [
+            'GraphQLschemaToReplace' => $payment,
+            'jqFilter' => sprintf(
+                '[.claim.claimReserve[] | select(.tranTypeCode == "%s" and .claimCoverageTrans.tbCvgpccoverage.coverageDesc == "%s") | .claimCoverageTrans]',
+                self::TRAN_TYPE['LossPayment'],
+                self::COVERAGE_DESC['Building']
+            ),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ContentPayment'] = [
+            'GraphQLschemaToReplace' => $payment,
+            'jqFilter' => sprintf(
+                '[.claim.claimReserve[] | select(.tranTypeCode == "%s" and .claimCoverageTrans.tbCvgpccoverage.coverageDesc == "%s") | .claimCoverageTrans]',
+                self::TRAN_TYPE['LossPayment'],
+                self::COVERAGE_DESC['Content']
+            ),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
         return $fieldMapping;
     }
 
@@ -373,6 +516,7 @@ class TbClaim extends AbstractSchema
 
         $address = [
             'addressLine1' => ($addressArr['houseNo'] ?? '').' '.($addressArr['streetName'] ?? ($addressArr['addressLine1'] ?? '')),
+            'addressLine2' => $addressArr['addressLine2'] ?? '',
             'city' => $addressArr['tbCity']['name'] ?? null,
             // 'county' => $addressArr['tbCounty']['name'] ?? null,
             'state' => $addressArr['tbState']['name'] ?? null,
@@ -453,22 +597,41 @@ class TbClaim extends AbstractSchema
 
     public function parseCompanyName($response)
     {
+        return $this->resolveCompanyDetail($response, 'companyName', 'wyo');
+    }
+
+    public function parseCompanyPhoneNumber($response)
+    {
+        $phone = $this->resolveCompanyDetail($response, 'companyPhone', 'company_phone');
+
+        return ! empty($phone) ? Helper::formatPhone($phone) : '';
+    }
+
+    private function resolveCompanyDetail($response, string $companyKey, string $holdingKey): string
+    {
         [$brandedCompanyArr, $policyId] = $this->extractClaimContext($response);
 
-        $companyName = $brandedCompanyArr['company']['companyName'] ?? null;
-        if (! empty($companyName)) {
-            return $companyName;
+        $value = $brandedCompanyArr['company'][$companyKey] ?? null;
+        if (! empty($value)) {
+            return $value;
         }
 
-        $policyData = TbPolicy::find($policyId);
-        $holdingCompanyId = TbProduct::find($policyData?->n_ProductId_FK)?->holding_company_id;
+        $productId = TbPolicy::find($policyId)?->n_ProductId_FK;
+        if (empty($productId)) {
+            return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
+        }
+
+        $holdingCompanyId = TbProduct::find($productId)?->holding_company_id ?? null;
+        if (empty($holdingCompanyId)) {
+            return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
+        }
 
         $holdingCompanyDetail = Helper::getHoldingCompanyDetail($holdingCompanyId);
-        if (! empty($holdingCompanyDetail['wyo'])) {
-            return $holdingCompanyDetail['wyo'];
+        if (! empty($holdingCompanyDetail[$holdingKey])) {
+            return $holdingCompanyDetail[$holdingKey];
         }
 
-        return Helper::getHoldingCompanyDetail()['wyo'] ?? '';
+        return Helper::getHoldingCompanyDetail()[$holdingKey] ?? '';
     }
 
     private function extractClaimContext($response): array
@@ -528,5 +691,34 @@ class TbClaim extends AbstractSchema
     public function getCurrentYear()
     {
         return date('Y');
+    }
+
+    public function parseCoverageDeductibleAmount($coverageDetails)
+    {
+        $deductibleValue = ! empty($coverageDetails) && is_array($coverageDetails) ? (reset($coverageDetails)['prDiscountCode'] ?? null) : null;
+
+        if (! $deductibleValue) {
+            return Helper::formatCurrency(0);
+        }
+
+        preg_match('/(\d+(?:\.\d+)?)$/', $deductibleValue, $matches);
+        $deductibleValue = $matches[1] ?? $deductibleValue;
+
+        return Helper::formatCurrency($deductibleValue);
+    }
+
+    public function sumAmounts($items)
+    {
+        if (! is_array($items)) {
+            return Helper::formatCurrency(0);
+        }
+
+        $amount = 0;
+
+        foreach ($items as $item) {
+            $amount += data_get($item, 'amount', 0);
+        }
+
+        return Helper::formatCurrency(abs($amount));
     }
 }

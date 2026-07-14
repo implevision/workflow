@@ -56,17 +56,19 @@ class DispatchManualWorkflowService
     /**
      * Execute all selected workflow actions.
      */
-    public function dispatch(): bool
+    public function dispatch(): array
     {
+        $actionResults = [];
+
         if (empty($this->selectedActions)) {
             \Log::error('MANUAL WORKFLOW - No actions selected.');
 
-            return false;
+            return ['success' => false, 'jobWorkflowId' => null, 'results' => $actionResults];
         }
 
         $jobWorkflowId = $this->createJobWorkflow();
         if (! $jobWorkflowId) {
-            return false;
+            return ['success' => false, 'jobWorkflowId' => null, 'results' => $actionResults];
         }
 
         setModuleForCurrentWorkflow($this->module);
@@ -104,11 +106,16 @@ class DispatchManualWorkflowService
 
             // Instantiate and initialise the action class
             $actionToExecute = null;
+            $extendedTemplateInfoForModule = $this->workflowService->getExtendedTemplateInfoForModule(
+                $this->module,
+                $actionPayload
+            );
 
             switch ($actionType) {
                 case 'EMAIL':
                     try {
                         $actionToExecute = new EmailAction($actionType, $actionPayload);
+                        $actionToExecute->setExtendedTemplateInfo($extendedTemplateInfoForModule);
                         $actionToExecute->handle();
                     } catch (\Exception $e) {
                         $this->workflowService->addWorkflowLog(
@@ -126,6 +133,7 @@ class DispatchManualWorkflowService
                 case 'WORKFLOW_OUTPUT':
                     try {
                         $actionToExecute = new WorkflowOutputAction($actionType, $actionPayload);
+                        $actionToExecute->setExtendedTemplateInfo($extendedTemplateInfoForModule);
                         $actionToExecute->handle();
                     } catch (\Exception $e) {
                         $this->workflowService->addWorkflowLog(
@@ -377,7 +385,7 @@ class DispatchManualWorkflowService
 
                 $actionToExecute->setWorkflowData(0, $jobWorkflowId, $this->recordIdentifier);
                 $actionToExecute->setDataForAction('', $data);
-                $actionToExecute->execute();
+                $actionResults[$actionType] = $actionToExecute->execute();
             } catch (\Exception $e) {
                 $this->workflowService->addWorkflowLog(
                     0,
@@ -393,7 +401,11 @@ class DispatchManualWorkflowService
 
         WorkflowLog::markWorkflowCompleted(0, $jobWorkflowId);
 
-        return true;
+        return [
+            'success' => true,
+            'jobWorkflowId' => $jobWorkflowId,
+            'results' => $actionResults,
+        ];
     }
 
     /**
