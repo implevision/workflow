@@ -1109,6 +1109,35 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parseAgentTasks',
         ];
 
+        // Note: The following fields are dependent on the AssignedTaskId placeholder being provided.
+        // Task is assigned to an under writer and we need to get the assigned person's name and email.
+
+        $assignedTaskId = isset($appendedPlaceHolders['AssignedTaskId']) ? (int) $appendedPlaceHolders['AssignedTaskId'] : null;
+
+        $fieldMapping['AssigneeName'] = [
+            'GraphQLschemaToReplace' => [
+                'tbTasks' => [
+                    'taskId' => null,
+                    'assignedTo' => [
+                        'screenName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => ".policyQuery.tbTasks[] | select((.taskId|tostring) == ({$assignedTaskId}|tostring)) | .assignedTo.screenName",
+        ];
+
+        $fieldMapping['AssigneeEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'tbTasks' => [
+                    'taskId' => null,
+                    'assignedTo' => [
+                        'email' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => ".policyQuery.tbTasks[] | select((.taskId|tostring) == ({$assignedTaskId}|tostring)) | .assignedTo.email",
+        ];
+
         return $fieldMapping;
     }
 
