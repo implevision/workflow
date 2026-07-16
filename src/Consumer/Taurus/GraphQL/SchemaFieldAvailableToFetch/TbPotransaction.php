@@ -1109,6 +1109,32 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parseAgentTasks',
         ];
 
+        $assignedTaskId = isset($appendedPlaceHolders['AssignedTaskId']) ? (int) $appendedPlaceHolders['AssignedTaskId'] : null;
+
+        $fieldMapping['AssigneeName'] = [
+            'GraphQLschemaToReplace' => [
+                'tbTasks' => [
+                    'taskId' => null,
+                    'assignedTo' => [
+                        'screenName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => ".policyQuery.tbTasks[] | select((.taskId|tostring) == ({$assignedTaskId}|tostring)) | .assignedTo.screenName",
+        ];
+
+        $fieldMapping['AssigneeEmail'] = [
+            'GraphQLschemaToReplace' => [
+                'tbTasks' => [
+                    'taskId' => null,
+                    'assignedTo' => [
+                        'email' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => ".policyQuery.tbTasks[] | select((.taskId|tostring) == ({$assignedTaskId}|tostring)) | .assignedTo.email",
+        ];
+
         return $fieldMapping;
     }
 
