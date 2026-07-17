@@ -471,7 +471,8 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '[.producerQuery.userAgents[] | select(.user.level.userLevelCode == "PRINCIPLE" and .user.userStatus == "111" and .user.email != null)] | first | .user.email',
+            'jqFilter' => '[.producerQuery.userAgents[] | select(.user.level.userLevelCode == "PRINCIPLE" and (.user.userStatus|tostring) == "111" and .user.email != null) | .user.email]',
+            'parseResultCallback' => 'parseAgencyManagerEmails',
         ];
 
         return $fieldMapping;
@@ -664,5 +665,14 @@ class TbPersonInfo extends AbstractSchema
     public function parseAgentCommissionPercentageForAgreement()
     {
         return 'Twenty-two Percent (22%)';
+    }
+
+    public function parseAgencyManagerEmails($emails)
+    {
+        if (empty($emails) || ! \is_array($emails)) {
+            return null;
+        }
+
+        return implode(',', array_filter(array_unique($emails)));
     }
 }
