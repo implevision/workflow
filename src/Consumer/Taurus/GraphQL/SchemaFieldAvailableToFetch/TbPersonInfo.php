@@ -412,7 +412,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.producerQuery.accounts[].agentStatementMaster[] | select(.agentStatementMasterPK == '.json_encode($targetAgentStatementMasterPK).')',
+            'jqFilter' => ".producerQuery.accounts[].agentStatementMaster[] | select((.agentStatementMasterPK|tostring) == ({$targetAgentStatementMasterPK}|tostring))",
             'parseResultCallback' => 'generatePresignedUrlForStatementSheet',
         ];
 
