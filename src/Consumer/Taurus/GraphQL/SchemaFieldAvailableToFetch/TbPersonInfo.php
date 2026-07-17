@@ -664,7 +664,7 @@ class TbPersonInfo extends AbstractSchema
 
     public function parseAgentCommissionPercentageForAgreement()
     {
-        return 'Twenty-two Percent (22%)';
+        return 'Twenty (20%)';
     }
 
     public function parseAgencyManagerEmails($emails)
