@@ -61,8 +61,10 @@ class WorkflowSeeder extends Command
         $s3Path = $this->option('s3-path');
 
         if ($s3Path) {
+            \Log::info("WORKFLOW SEEDER - Fetching workflow JSON from S3 path: {$s3Path}");
             [$bucket, $key] = explode('/', $s3Path, 2);
             $path = $s3Path;
+            $workflow = basename($key, '.json');
 
             try {
                 $json = S3::getInfo($bucket, $key);
@@ -179,6 +181,7 @@ class WorkflowSeeder extends Command
             $emailTemplateContentAsString = file_get_contents($emailTemplateFilePath);
         } else {
             [$bucket] = explode('/', $s3Path, 2);
+            \Log::info("WORKFLOW SEEDER - Fetching email template from S3 path: {$bucket}/{$filePath}");
             try {
                 $emailTemplateContentAsString = S3::getInfo($bucket, $filePath);
             } catch (\Exception $e) {
