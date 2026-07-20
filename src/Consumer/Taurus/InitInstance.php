@@ -69,4 +69,15 @@ class InitInstance
             throw new \Exception("Post action service class '$postActionServiceClass' does not exist.");
         }
     }
+
+    public function getEmailUnsubscribeService()
+    {
+        $emailUnsubscribeServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\Email\\UnsubscribeService';
+
+        if (class_exists($emailUnsubscribeServiceClass)) {
+            return new $emailUnsubscribeServiceClass;
+        } else {
+            throw new \Exception("Email unsubscribe service class '$emailUnsubscribeServiceClass' does not exist.");
+        }
+    }
 }

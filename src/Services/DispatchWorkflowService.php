@@ -509,6 +509,15 @@ class DispatchWorkflowService
                             } else {
                                 $data[$index]['email'] = explode(',', $emailPlaceHolderValue);
                             }
+
+                            $data[$index]['email'] = $this->workflowService->removeUnsubscribedEmails(
+                                $data[$index]['email'],
+                                [
+                                    'workflow_id' => $this->workflowId,
+                                    'job_workflow_id' => $jobWorkflowId,
+                                    'campaign_type' => "marketing",
+                                ]
+                            );
                         }
                     }
 
