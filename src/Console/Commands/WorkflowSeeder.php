@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Taurus\Workflow\Console\Commands\Seeders\WorkflowSeederFormatter;
 use Taurus\Workflow\Data\WorkflowData;
 use Taurus\Workflow\Http\Requests\WorkflowRequest;
+use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\WorkflowService;
 
 class WorkflowSeeder extends Command
@@ -18,7 +19,7 @@ class WorkflowSeeder extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:seed-workflow {--workflow=} {--skip-tenant=} {--template-only}';
+    protected $signature = 'taurus:seed-workflow {--workflow=} {--skip-tenant=} {--template-only} {--s3-path=}';
 
     /**
      * The console command description.
@@ -57,9 +58,25 @@ class WorkflowSeeder extends Command
 
         \Log::info("WORKFLOW SEEDER - Starting seeding process for workflow: {$workflow}".($templateOnly ? ' (template-only)' : ''));
 
-        $path = database_path("{$this->initialFilePath}/{$workflow}.json");
-        $json = file_get_contents($path);
-        if ($json === false) {
+        $s3Path = $this->option('s3-path');
+
+        if ($s3Path) {
+            [$bucket, $key] = explode('/', $s3Path, 2);
+            $path = $s3Path;
+
+            try {
+                $json = S3::getInfo($bucket, $key);
+            } catch (\Exception $e) {
+                \Log::error("WORKFLOW SEEDER - Failed to fetch file from S3 path {$s3Path} for workflow. Error: ".$e->getMessage());
+
+                return 1;
+            }
+        } else {
+            $path = database_path("{$this->initialFilePath}/{$workflow}.json");
+            $json = file_get_contents($path);
+        }
+
+        if ($json === false || $json === null) {
             \Log::error("WORKFLOW SEEDER - No file contents found in {$path} for workflow.");
 
             return 1;
@@ -86,7 +103,7 @@ class WorkflowSeeder extends Command
             return 0;
         }
 
-        return $this->seedActions($data['externalServices'], $workflow, $path);
+        return $this->seedActions($data['externalServices'], $workflow, $path, $s3Path);
     }
 
     private function seedWorkflow(array $data, string $workflow): int
@@ -122,17 +139,17 @@ class WorkflowSeeder extends Command
         return 0;
     }
 
-    private function seedActions(array $externalServices, string $workflow, string $path): int
+    private function seedActions(array $externalServices, string $workflow, string $path, ?string $s3Path = null): int
     {
         try {
             foreach ($externalServices as $key => $service) {
                 switch ($key) {
                     case 'email':
                     case 'template':
-                        $this->insertTemplate($service);
+                        $this->insertTemplate($service, $s3Path);
                         break;
                     default:
-                        \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path} for workflow.");
+                        \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path}".($s3Path ? " (S3 path: {$s3Path})" : '').' for workflow.');
                         break;
                 }
             }
@@ -154,10 +171,21 @@ class WorkflowSeeder extends Command
         return 0;
     }
 
-    private function insertTemplate($data)
+    private function insertTemplate($data, $s3Path = null)
     {
-        $emailTemplateFilePath = database_path("{$this->initialFilePath}/{$data['filePath']}");
-        $emailTemplateContentAsString = file_get_contents($emailTemplateFilePath);
+        $filePath = "{$this->initialFilePath}/{$data['filePath']}";
+        if (! $s3Path) {
+            $emailTemplateFilePath = database_path($filePath);
+            $emailTemplateContentAsString = file_get_contents($emailTemplateFilePath);
+        } else {
+            [$bucket] = explode('/', $s3Path, 2);
+            try {
+                $emailTemplateContentAsString = S3::getInfo($bucket, $filePath);
+            } catch (\Exception $e) {
+                \Log::error("WORKFLOW SEEDER - Failed to fetch email template from S3 path {$s3Path}. Error: ".$e->getMessage());
+                throw new Exception("Failed to fetch email template from S3 path {$s3Path}. Error: ".$e->getMessage());
+            }
+        }
 
         $client = new Client;
 
