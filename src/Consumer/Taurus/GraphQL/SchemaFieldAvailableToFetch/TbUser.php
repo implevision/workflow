@@ -75,7 +75,7 @@ class TbUser extends AbstractSchema
         $records = [];
         foreach ($users as $user) {
             if (empty($user['email'])) {
-                continue; 
+                continue;
             }
 
             $records[] = [
@@ -126,7 +126,6 @@ class TbUser extends AbstractSchema
             'UserFullName' => ['GraphQLschemaToReplace' => $dataSchema],
         ];
 
-
         $fieldMapping['LoginURL'] = [
             'GraphQLschemaToReplace' => $dataSchema,
             'jqFilter' => '',
@@ -147,7 +146,6 @@ class TbUser extends AbstractSchema
 
         return $fieldMapping;
     }
-
 
     public function getLoginUrl(): string
     {
