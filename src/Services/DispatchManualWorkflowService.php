@@ -199,6 +199,11 @@ class DispatchManualWorkflowService
                     $graphQLQuery
                 );
 
+                if (config('app.env') != 'production') {
+                    \Log::info('WORKFLOW - GraphQL Request Payload: ',[
+                        'graphQLRequestPayload' => $graphQLRequestPayload,
+                    ]);
+                }
                 $graphQLClient = new GraphQLClient;
                 $response = $graphQLClient->query($graphQLRequestPayload);
             } catch (\Exception $e) {
