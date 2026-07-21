@@ -145,15 +145,15 @@ class WorkflowSeeder extends Command
     {
         try {
             foreach ($externalServices as $key => $service) {
-                switch ($key) {
-                    case 'email':
-                    case 'template':
-                        $this->insertTemplate($service, $s3Path);
-                        break;
-                    default:
-                        \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path}".($s3Path ? " (S3 path: {$s3Path})" : '').' for workflow.');
-                        break;
+                if (\is_int($key)) {
+                    foreach ($service as $nestedKey => $nestedService) {
+                        $this->handleExternalService($nestedKey, $nestedService, $path, $s3Path);
+                    }
+
+                    continue;
                 }
+
+                $this->handleExternalService($key, $service, $path, $s3Path);
             }
         } catch (\Exception $e) {
             \Log::error("WORKFLOW SEEDER - Error while inserting data for workflow: {$workflow}. Error: ".$e->getMessage(), [
@@ -171,6 +171,19 @@ class WorkflowSeeder extends Command
         \Log::info("WORKFLOW SEEDER - Finishing seeding process for workflow: {$workflow}");
 
         return 0;
+    }
+
+    private function handleExternalService(string $key, array $service, string $path, ?string $s3Path = null): void
+    {
+        switch ($key) {
+            case 'email':
+            case 'template':
+                $this->insertTemplate($service, $s3Path);
+                break;
+            default:
+                \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path}".($s3Path ? " (S3 path: {$s3Path})" : '').' for workflow.');
+                break;
+        }
     }
 
     private function insertTemplate($data, $s3Path = null)
