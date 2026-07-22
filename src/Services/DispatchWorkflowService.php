@@ -515,7 +515,7 @@ class DispatchWorkflowService
                                 [
                                     'workflow_id' => $this->workflowId,
                                     'job_workflow_id' => $jobWorkflowId,
-                                    'campaign_type' => "marketing",
+                                    'campaign_type' => $action['payload']['campaignType'] ?? null,
                                 ]
                             );
                         }

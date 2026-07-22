@@ -253,7 +253,7 @@ class GraphQLSchemaBuilderService
         }
 
         // Use jq to filter the JSON data
-        $command = 'echo '.($json).' | jq -r '.($jqFilter);
+        $command = 'echo '.escapeshellarg($json).' | jq -r '.escapeshellarg($jqFilter);
         exec($command.' 2>&1', $result, $returnCode);
 
         if ($returnCode !== 0) {
