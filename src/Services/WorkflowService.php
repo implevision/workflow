@@ -671,6 +671,22 @@ class WorkflowService
         }
     }
 
+    public function getParentClassService()
+    {
+        try {
+            $consumerService = $this->getConsumerService();
+            if ($consumerService instanceof \stdClass) {
+                return new stdClass;
+            }
+
+            return $consumerService->getParentClassService();
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return new stdClass;
+        }
+    }
+
     public function removeUnsubscribedEmails($emails, $context = [])
     {
         try {
