@@ -687,7 +687,7 @@ class WorkflowService
         }
     }
 
-    public function removeUnsubscribedEmails($emails, $context = [])
+    public function getAllowedEmails($emails)
     {
         try {
             $consumerService = $this->getConsumerService();
@@ -695,7 +695,7 @@ class WorkflowService
                 return $emails;
             }
 
-            return $consumerService->getEmailUnsubscribeService()->removeUnsubscribed($emails, $context);
+            return $consumerService->getEmailAllowlistService()->getAllowed($emails);
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 

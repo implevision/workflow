@@ -75,14 +75,14 @@ class InitInstance
         }
     }
 
-    public function getEmailUnsubscribeService()
+    public function getEmailAllowlistService()
     {
-        $emailUnsubscribeServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\Email\\UnsubscribeService';
+        $allowlistServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\Email\\EmailAllowlistService';
 
-        if (class_exists($emailUnsubscribeServiceClass)) {
-            return new $emailUnsubscribeServiceClass;
+        if (class_exists($allowlistServiceClass)) {
+            return new $allowlistServiceClass;
         } else {
-            throw new \Exception("Email unsubscribe service class '$emailUnsubscribeServiceClass' does not exist.");
+            throw new \Exception("Email allowlist service class '$allowlistServiceClass' does not exist.");
         }
     }
     public function getParentClassService()
