@@ -200,7 +200,7 @@ class DispatchManualWorkflowService
                 );
 
                 if (config('app.env') != 'production') {
-                    \Log::info('WORKFLOW - GraphQL Request Payload: ',[
+                    \Log::info('WORKFLOW - GraphQL Request Payload: ', [
                         'graphQLRequestPayload' => $graphQLRequestPayload,
                     ]);
                 }

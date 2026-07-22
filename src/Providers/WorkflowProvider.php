@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Taurus\Workflow\Console\Commands\DispatchManualWorkflow;
 use Taurus\Workflow\Console\Commands\DispatchWorkflow;
+use Taurus\Workflow\Console\Commands\ExecuteWorkflowFromLogs;
 use Taurus\Workflow\Console\Commands\HealthCheck;
 use Taurus\Workflow\Console\Commands\InvokeMatchingWorkflow;
 use Taurus\Workflow\Console\Commands\InvokeUpcomingWorkflow;
@@ -56,6 +57,7 @@ class WorkflowProvider extends ServiceProvider
         $this->commands([
             DispatchManualWorkflow::class,
             DispatchWorkflow::class,
+            ExecuteWorkflowFromLogs::class,
             HealthCheck::class,
             InvokeUpcomingWorkflow::class,
             SetupAWSPlatform::class,
