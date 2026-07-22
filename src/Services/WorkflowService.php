@@ -76,6 +76,7 @@ class WorkflowService
                 'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? '',
                 'workflow_execution_frequency' => $workflowExecutionFrequency,
                 'is_active' => $data['detail']['isActive'] ?? false,
+                'field_to_observe' => $data['when']['fieldUpdateToTrackDownForRecordAction'] ?? '',
             ]);
 
             if (! empty($data['workFlowConditions'])) {
@@ -83,10 +84,16 @@ class WorkflowService
                     $instanceActions = $condition['instanceActions'] ?? [];
                     unset($condition['instanceActions']);
                     unset($condition['id']);
+                    $notes = $condition['notes'] ?? null;
+                    unset($condition['notes']);
+                    $status = isset($condition['status']) ? (int) $condition['status'] : 1;
+                    unset($condition['status']);
 
                     $conditionEntry = $this->workflowConditionRepo->create([
                         'workflow_id' => $workflow->id,
                         'conditions' => $condition ?? [],
+                        'notes' => $notes,
+                        'status' => $status,
                     ]);
 
                     // Save workflow actions related to the condition
@@ -105,10 +112,11 @@ class WorkflowService
 
             DB::commit();
 
-            if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow'])) {
+            if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow']) && $data['when']['effectiveActionToExecuteWorkflow'] === 'CUSTOM_DATE_AND_TIME') {
                 $workflowId = $workflow->id;
                 $workflows = $this->workflowRepo->getById($workflowId)->toArray();
-                $this->scheduleWorkflows($workflows);
+                // TODO: This must be implemented consumer wise. Broadcast the WF id and let CONSUMER handle it.
+                $this->scheduleWorkflows([$workflows]);
             }
 
             return $workflow;
@@ -147,6 +155,8 @@ class WorkflowService
                 'applyRuleTo' => $applyRuleTo,
                 's3FilePath' => $conditions['s3FilePath'] ?? null,
                 'applyConditionRules' => $conditions['applyConditionRules'] ?? [],
+                'notes' => $condition->notes ?? '',
+                'status' => (bool) ($condition->status ?? true),
                 'instanceActions' => $condition->actions->map(function ($action) {
                     $payload = $action->payload ?? [];
 
@@ -174,6 +184,7 @@ class WorkflowService
                 'dateTimeInfoToExecuteWorkflow' => $workflow->date_time_info_to_execute_workflow,
                 'customDateTimeInfoToExecuteWorkflow' => $workflow?->custom_date_time_info_to_execute_workflow ?? [],
                 'odysseyActionToExecuteWorkflow' => $workflow?->odyssey_action_to_execute_workflow ?? '',
+                'fieldUpdateToTrackDownForRecordAction' => $workflow?->field_to_observe ?? '',
             ],
             'workFlowConditions' => $workflowConditions,
         ]);
@@ -202,6 +213,7 @@ class WorkflowService
                 'date_time_info_to_execute_workflow' => $data['when']['dateTimeInfoToExecuteWorkflow'] ?? [],
                 'custom_date_time_info_to_execute_workflow' => $data['when']['customDateTimeInfoToExecuteWorkflow'] ?? [],
                 'odyssey_action_to_execute_workflow' => $data['when']['odysseyActionToExecuteWorkflow'] ?? '',
+                'field_to_observe' => $data['when']['fieldUpdateToTrackDownForRecordAction'] ?? '',
             ]);
 
             // get existing condition IDs
@@ -215,18 +227,26 @@ class WorkflowService
 
                     $conditionId = $condition['id'] ?? null;
                     unset($condition['id']);
+                    $notes = $condition['notes'] ?? null;
+                    unset($condition['notes']);
+                    $status = isset($condition['status']) ? (int) $condition['status'] : 1;
+                    unset($condition['status']);
 
                     // Update or Create Condition
                     if (! empty($conditionId)) {
                         $conditionEntry = $this->workflowConditionRepo->update($conditionId, [
                             'workflow_id' => $workflow->id,
                             'conditions' => $condition ?? [],
+                            'notes' => $notes,
+                            'status' => $status,
                         ]);
                         $newConditionIds[] = $conditionId;
                     } else {
                         $conditionEntry = $this->workflowConditionRepo->create([
                             'workflow_id' => $workflow->id,
                             'conditions' => $condition ?? [],
+                            'notes' => $notes,
+                            'status' => $status,
                         ]);
                         $newConditionIds[] = $conditionEntry->id;
                     }
@@ -379,40 +399,36 @@ class WorkflowService
     }
 
     /**
-     * Retrieves the matching workflow for the given entity type, entity action, and entity.
+     * Retrieves the matching workflow based on the provided entity type, action, entity instance,
+     * and optionally, the updated fields of the entity.
      *
-     * @param  string  $entityType  The type of the entity.
-     * @param  string  $entityAction  The action performed on the entity.
-     * @param  mixed  $entity  The entity object.
-     * @return array|bool The matching workflow, or false if no matching workflow is found.
+     * @param  string  $entityType  The type of the entity to match the workflow against.
+     * @param  string  $entityAction  The action performed on the entity (e.g., create, update, delete).
+     * @param  mixed  $entity  The entity instance to evaluate.
+     * @param  array  $entityUpdatedFields  (optional) The fields of the entity that were updated.
+     * @return bool|array Returns an array with workflow ids if a match is found, or false otherwise.
      */
-    public function getMatchingWorkflow($entityType, $entityAction, $entity): bool|array
+    public function getMatchingWorkflow($entityType, $entityAction, $entityUpdatedFields = []): bool|array
     {
-        $matchedWorkflow = $this->workflowRepo->getMatchingWorkflow($entityType, $entityAction);
+        $matchedWorkflow = $this->workflowRepo->getMatchingWorkflow($entityType, $entityAction, false, $entityUpdatedFields);
         if (empty($matchedWorkflow)) {
             return false;
         }
 
-        return $this->findMatchingWorkflowForEntity($entityType, $entity, $matchedWorkflow);
+        return $this->findMatchingWorkflowForEntity($matchedWorkflow);
     }
 
     /**
-     * Finds the matching workflow for the given entity.
+     * Finds and returns the matching workflow(s) for the given entity.
      *
-     * @param  mixed  $entity  The entity to find the matching workflow for.
-     * @param  mixed  $matchedWorkflow  The matched workflow for the entity.
+     * @param  mixed  $matchedWorkflow  The workflow or criteria used to find the matching workflow(s).
+     * @return array The array of matching workflows for the specified entity.
      */
-    public function findMatchingWorkflowForEntity($entityType, $entity, $matchedWorkflow): array
+    public function findMatchingWorkflowForEntity($matchedWorkflow): array
     {
         $workflowToRun = [];
         foreach ($matchedWorkflow as $workflow) {
-            foreach ($workflow['conditions'] as $conditions) {
-                if ($conditions['conditions']['applyRuleTo'] == 'CERTAIN') {
-                    array_push($workflowToRun, $workflow['id']);
-                } else {
-                    array_push($workflowToRun, $workflow['id']);
-                }
-            }
+            array_push($workflowToRun, $workflow['id']);
         }
 
         return $workflowToRun;
@@ -431,18 +447,20 @@ class WorkflowService
         }
     }
 
-    public function createScheduleToExecuteWorkflow($groupName, $workflowId, $scheduleExpression)
+    public function createScheduleToExecuteWorkflow($groupName, $workflowId, $module, $scheduleExpression)
     {
         // TODO: pass record identifier if any
         $commandToRunWorkflow = getCliCommandToDispatchWorkflow($workflowId);
+
+        $getServicePostFixForModule = $this->getServicePostFixForModule($module);
 
         try {
             $target = [
                 'arn' => config('workflow.aws_lambda_function_arn_to_invoke_workflow'),
                 'roleArn' => config('workflow.aws_iam_role_arn_to_invoke_lambda_from_event_bridge'),
                 'input' => json_encode([
-                    'task_definition' => config('workflow.task_definition'),
-                    'command' => $commandToRunWorkflow,
+                    'task_definition' => config('workflow.task_definition_prefix').$getServicePostFixForModule,
+                    'command' => explode(' ', $commandToRunWorkflow),
                 ]),
             ];
             $scheduleGroupName = getEventSchedulerNameToExecuteWorkflow($workflowId);
@@ -466,7 +484,7 @@ class WorkflowService
                     $scheduleGroupArnObject = $this->workflowConfigRepo->getByKey('schedule_group_arn');
                     $scheduleGroupsArn = $scheduleGroupArnObject->config_value ?? null;
                 } catch (\Exception $e) {
-                    \Log::error('Error fetching schedule group ARN: '.$e->getMessage());
+                    \Log::info('No schedule group ARN found: '.$e->getMessage());
                 }
 
                 $isAwsInfraAlreadySetup = $scheduleGroupsArn ? true : false;
@@ -524,7 +542,7 @@ class WorkflowService
                     }
 
                     // SCHEDULE IN EVENT BRIDGE ONLY ONCE
-                    $scheduleObj = $this->createScheduleToExecuteWorkflow($groupName, $workflow['id'], $configureTimeForEventSchedulerToAwakeWorkflowSystem);
+                    $scheduleObj = $this->createScheduleToExecuteWorkflow($groupName, $workflow['id'], $workflow['module'], $configureTimeForEventSchedulerToAwakeWorkflowSystem);
 
                     if ($scheduleObj) {
                         $this->workflowRepo->update($workflow['id'], [
@@ -555,10 +573,14 @@ class WorkflowService
             return [];
         }
 
-        // This method should implement the logic to get matching records based on the effective action
-        // For now, it returns an empty array as a placeholder
+        if ($moduleService->isCustomResolverDefinedForModule()) {
+            return [];
+        }
+
+        // Build the where-condition for the module's effective action. $module is only
+        // needed here to resolve the module service; the module method derives everything
+        // from the date/event window.
         return $moduleService->getQueryForEffectiveAction(
-            $module,
             $executionFrequency,
             $executionFrequencyType,
             $executionEventIncident,
@@ -571,6 +593,17 @@ class WorkflowService
         $moduleService = $this->getModuleService($module);
 
         return $moduleService->getQueryForRecordIdentifier($module, $recordIdentifier);
+    }
+
+    public function getServicePostFixForModule($module)
+    {
+        $moduleService = $this->getModuleService($module);
+
+        if ($moduleService instanceof \stdClass) {
+            return '';
+        }
+
+        return $moduleService->getServicePostFix($module);
     }
 
     private function getModuleService($module)
@@ -589,7 +622,7 @@ class WorkflowService
         }
     }
 
-    public function getGraphQLQueryMappingService($module)
+    public function getGraphQLQueryMappingService($module, $appendPlaceHolders = [])
     {
         try {
             $consumerService = $this->getConsumerService();
@@ -597,11 +630,28 @@ class WorkflowService
                 return new stdClass;
             }
 
-            return $consumerService->getGraphQLQueryMappingService($module);
+            return $consumerService->getGraphQLQueryMappingService($module, $appendPlaceHolders);
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 
             return new stdClass;
+        }
+    }
+
+    public function getExtendedTemplateInfoForModule(string $module, array $templatePayload = []): array
+    {
+        try {
+            $moduleService = $this->getModuleService($module);
+
+            if ($moduleService instanceof stdClass) {
+                return [];
+            }
+
+            return $moduleService->getExtendedTemplateInfo($templatePayload);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return [];
         }
     }
 
@@ -704,9 +754,6 @@ class WorkflowService
 
     /**
      * Resolve the model class for a given module key from workflowBaseData config.
-     *
-     * @param string $moduleKey
-     * @return string|null
      */
     private function resolveModuleClass(string $moduleKey): ?string
     {
@@ -719,14 +766,10 @@ class WorkflowService
     /**
      * Retrieve completed workflow logs for a given module.
      *
-     * @param string   $moduleKey
-     * @param int      $limit
-     * @param int      $offset
-     * @param int|null $workflowId
      * @return array{data: \Illuminate\Support\Collection, total: int}
      */
     public function getWorkflowlog(string $moduleKey, int $limit = 50, int $offset = 0, ?int $workflowId = null): array
-        {
+    {
         try {
             $moduleClass = $this->resolveModuleClass($moduleKey);
 
@@ -737,16 +780,16 @@ class WorkflowService
             $query = WorkflowLog::with('workflow:id,name')
                 ->where('module', $moduleClass)
                 ->where('status', WorkflowLog::STATUS_COMPLETED)
-                ->when($workflowId !== null, fn($q) => $q->where('workflow_id', $workflowId))
+                ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))
                 ->orderBy('created_at', 'desc');
 
             $total = $query->count();
-            $data  = $query->limit($limit)->offset($offset)->get();
+            $data = $query->limit($limit)->offset($offset)->get();
 
             return ['data' => $data, 'total' => $total];
-
         } catch (\Exception $exception) {
             \Log::error('Error getting workflow log by module: '.$exception->getMessage());
+
             return ['data' => collect(), 'total' => 0];
         }
     }
@@ -754,8 +797,6 @@ class WorkflowService
     /**
      * Get last 7 days workflow execution counts for chart.
      *
-     * @param string $moduleKey
-     * @param int|null $workflowId
      * @return array{labels: string[], data: int[]}
      */
     public function getWorkflowLogChart(string $moduleKey, ?int $workflowId = null): array
@@ -768,13 +809,13 @@ class WorkflowService
             }
 
             $startDate = now()->subDays(6)->startOfDay();
-            $endDate   = now()->endOfDay();
+            $endDate = now()->endOfDay();
 
             $rows = WorkflowLog::where('module', $moduleClass)
                 ->where('status', WorkflowLog::STATUS_COMPLETED)
                 ->where('created_at', '>=', $startDate)
                 ->where('created_at', '<=', $endDate)
-                ->when($workflowId !== null, fn($q) => $q->where('workflow_id', $workflowId))
+                ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))
                 ->selectRaw('DATE(created_at) as log_date, COUNT(*) as log_count')
                 ->groupBy('log_date')
                 ->orderBy('log_date')
@@ -782,28 +823,25 @@ class WorkflowService
                 ->keyBy('log_date');
 
             $labels = [];
-            $data   = [];
-            $now    = now();
+            $data = [];
+            $now = now();
 
             for ($i = 6; $i >= 0; $i--) {
-                $date      = $now->copy()->subDays($i)->format('Y-m-d');
-                $labels[]  = $now->copy()->subDays($i)->format('M j');
-                $data[]    = (int) ($rows->get($date)?->log_count ?? 0);
+                $date = $now->copy()->subDays($i)->format('Y-m-d');
+                $labels[] = $now->copy()->subDays($i)->format('M j');
+                $data[] = (int) ($rows->get($date)?->log_count ?? 0);
             }
 
             return ['labels' => $labels, 'data' => $data];
-
         } catch (\Exception $exception) {
             \Log::error('Error getting workflow log chart data: '.$exception->getMessage());
+
             return ['labels' => [], 'data' => []];
         }
     }
 
     /**
      * Get distinct workflow names and IDs for dropdown filter.
-     *
-     * @param string $moduleKey
-     * @return array
      */
     public function getWorkflowLogFilterDD(string $moduleKey): array
     {
@@ -820,16 +858,16 @@ class WorkflowService
                 ->select('workflow_id')
                 ->distinct()
                 ->get()
-                ->map(fn($log) => [
-                    'id'   => $log->workflow_id,
+                ->map(fn ($log) => [
+                    'id' => $log->workflow_id,
                     'name' => $log->workflow?->name ?? 'Manual Workflow',
                 ])
                 ->unique('id')
                 ->values()
                 ->toArray();
-
         } catch (\Exception $e) {
-            \Log::error('Error getting workflow log filter DD: ' . $e->getMessage());
+            \Log::error('Error getting workflow log filter DD: '.$e->getMessage());
+
             return [];
         }
     }

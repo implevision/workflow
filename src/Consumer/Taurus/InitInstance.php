@@ -35,13 +35,18 @@ class InitInstance
      * @param  string  $module  The name of the module(with namespace) for which to retrieve the query mapping.
      * @return mixed An associative array representing the GraphQL query mapping for the specified module.
      */
-    public function getGraphQLQueryMappingService($module)
+    public function getGraphQLQueryMappingService($module, $appendPlaceHolders = [])
     {
         $module = $this->getModuleName($module);
         $graphQLQueryMappingClass = "Taurus\\Workflow\\Consumer\\Taurus\\GraphQL\\SchemaFieldAvailableToFetch\\{$module}";
 
         if (class_exists($graphQLQueryMappingClass)) {
-            return new $graphQLQueryMappingClass;
+            $instance = new $graphQLQueryMappingClass;
+            if (! empty($appendPlaceHolders)) {
+                $instance->setAppendedPlaceHolders($appendPlaceHolders);
+            }
+
+            return $instance;
         } else {
             throw new \Exception("Graph QL query mapping class '$graphQLQueryMappingClass' does not exist.");
         }
@@ -78,6 +83,16 @@ class InitInstance
             return new $emailUnsubscribeServiceClass;
         } else {
             throw new \Exception("Email unsubscribe service class '$emailUnsubscribeServiceClass' does not exist.");
+        }
+    }
+    public function getParentClassService()
+    {
+        $parentClassServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\ParentClass\\ParentClassService';
+
+        if (class_exists($parentClassServiceClass)) {
+            return new $parentClassServiceClass;
+        } else {
+            throw new \Exception("Parent class service class '$parentClassServiceClass' does not exist.");
         }
     }
 }

@@ -5,6 +5,14 @@ namespace Taurus\Workflow\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * @property int|null $workflow_id
+ * @property int|null $batch_id
+ * @property string|null $status
+ * @property int|null $total_no_of_records_to_execute
+ * @property int|null $total_no_of_records_executed
+ * @property array|null $response
+ */
 class JobWorkflow extends Model
 {
     use SerializesModels;
@@ -19,13 +27,16 @@ class JobWorkflow extends Model
 
     public const STATUS_FAILED = 'FAILED';
 
+    // tenant_id is for Nova, it is ignored for odyssey
     protected $fillable = [
+        'tenant_id',
         'workflow_id',
         'batch_id',
         'status',
         'total_no_of_records_to_execute',
         'total_no_of_records_executed',
         'response',
+        'reference_id',
     ];
 
     protected $casts = [

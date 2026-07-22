@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Taurus\Workflow\Console\Commands\Seeders\WorkflowSeederFormatter;
 use Taurus\Workflow\Data\WorkflowData;
 use Taurus\Workflow\Http\Requests\WorkflowRequest;
+use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\WorkflowService;
 
 class WorkflowSeeder extends Command
@@ -18,16 +19,16 @@ class WorkflowSeeder extends Command
      *
      * @var string
      */
-    protected $signature = 'taurus:seed-workflow {--workflow=} {--skip-tenant=}';
+    protected $signature = 'taurus:seed-workflow {--workflow=} {--skip-tenant=} {--template-only} {--s3-path=}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Seed all the required details for a workflow to work.';
+    protected $description = 'Seed all the required details for a workflow to work. Use --template-only to seed only the external service templates without creating the workflow.';
 
-    protected $initialFilePath = 'seeders/workflow';
+    protected $initialFilePath = 'seeders/Workflow';
 
     protected $workflowService;
 
@@ -43,6 +44,7 @@ class WorkflowSeeder extends Command
     public function handle()
     {
         $workflow = $this->option('workflow');
+        $templateOnly = $this->option('template-only');
 
         $skipTenants = $this->option('skip-tenant')
             ? array_map('trim', explode(',', $this->option('skip-tenant')))
@@ -54,11 +56,29 @@ class WorkflowSeeder extends Command
             return 0;
         }
 
-        \Log::info("WORKFLOW SEEDER - Starting seeding process for workflow: {$workflow}");
+        \Log::info("WORKFLOW SEEDER - Starting seeding process for workflow: {$workflow}".($templateOnly ? ' (template-only)' : ''));
 
-        $path = database_path("{$this->initialFilePath}/{$workflow}.json");
-        $json = file_get_contents($path);
-        if ($json === false) {
+        $s3Path = $this->option('s3-path');
+
+        if ($s3Path) {
+            \Log::info("WORKFLOW SEEDER - Fetching workflow JSON from S3 path: {$s3Path}");
+            [$bucket, $key] = explode('/', $s3Path, 2);
+            $path = $s3Path;
+            $workflow = basename($key, '.json');
+
+            try {
+                $json = S3::getInfo($bucket, $key);
+            } catch (\Exception $e) {
+                \Log::error("WORKFLOW SEEDER - Failed to fetch file from S3 path {$s3Path} for workflow. Error: ".$e->getMessage());
+
+                return 1;
+            }
+        } else {
+            $path = database_path("{$this->initialFilePath}/{$workflow}.json");
+            $json = file_get_contents($path);
+        }
+
+        if ($json === false || $json === null) {
             \Log::error("WORKFLOW SEEDER - No file contents found in {$path} for workflow.");
 
             return 1;
@@ -68,8 +88,28 @@ class WorkflowSeeder extends Command
 
         if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
             \Log::error("WORKFLOW SEEDER - Invalid JSON in {$path} for workflow. Error: ".json_last_error_msg());
+
+            return 1;
         }
 
+        if (! $templateOnly) {
+            $result = $this->seedWorkflow($data, $workflow);
+            if ($result !== 0) {
+                return $result;
+            }
+        }
+
+        if (empty($data['externalServices'])) {
+            \Log::info("WORKFLOW SEEDER - Finishing seeding process for workflow (without any actions): {$workflow}");
+
+            return 0;
+        }
+
+        return $this->seedActions($data['externalServices'], $workflow, $path, $s3Path);
+    }
+
+    private function seedWorkflow(array $data, string $workflow): int
+    {
         try {
             $validator = Validator::make($data, (new WorkflowRequest)->rules());
             if ($validator->fails()) {
@@ -98,22 +138,22 @@ class WorkflowSeeder extends Command
             return 1;
         }
 
-        if (empty($data['externalServices'])) {
-            \Log::info("WORKFLOW SEEDER - Finishing seeding process for workflow: {$workflow}");
+        return 0;
+    }
 
-            return 1;
-        }
-
+    private function seedActions(array $externalServices, string $workflow, string $path, ?string $s3Path = null): int
+    {
         try {
-            foreach ($data['externalServices'] as $key => $service) {
-                switch ($key) {
-                    case 'email':
-                        $this->insertEmailData($service);
-                        break;
-                    default:
-                        \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path} for workflow.");
-                        break;
+            foreach ($externalServices as $key => $service) {
+                if (\is_int($key)) {
+                    foreach ($service as $nestedKey => $nestedService) {
+                        $this->handleExternalService($nestedKey, $nestedService, $path, $s3Path);
+                    }
+
+                    continue;
                 }
+
+                $this->handleExternalService($key, $service, $path, $s3Path);
             }
         } catch (\Exception $e) {
             \Log::error("WORKFLOW SEEDER - Error while inserting data for workflow: {$workflow}. Error: ".$e->getMessage(), [
@@ -133,10 +173,35 @@ class WorkflowSeeder extends Command
         return 0;
     }
 
-    private function insertEmailData($data)
+    private function handleExternalService(string $key, array $service, string $path, ?string $s3Path = null): void
     {
-        $emailTemplateFilePath = database_path("{$this->initialFilePath}/{$data['filePath']}");
-        $emailTemplateContentAsString = file_get_contents($emailTemplateFilePath);
+        switch ($key) {
+            case 'email':
+            case 'template':
+                $this->insertTemplate($service, $s3Path);
+                break;
+            default:
+                \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path}".($s3Path ? " (S3 path: {$s3Path})" : '').' for workflow.');
+                break;
+        }
+    }
+
+    private function insertTemplate($data, $s3Path = null)
+    {
+        $filePath = "{$this->initialFilePath}/{$data['filePath']}";
+        if (! $s3Path) {
+            $emailTemplateFilePath = database_path($filePath);
+            $emailTemplateContentAsString = file_get_contents($emailTemplateFilePath);
+        } else {
+            [$bucket] = explode('/', $s3Path, 2);
+            \Log::info("WORKFLOW SEEDER - Fetching email template from S3 path: {$bucket}/{$filePath}");
+            try {
+                $emailTemplateContentAsString = S3::getInfo($bucket, $filePath);
+            } catch (\Exception $e) {
+                \Log::error("WORKFLOW SEEDER - Failed to fetch email template from S3 path {$s3Path}. Error: ".$e->getMessage());
+                throw new Exception("Failed to fetch email template from S3 path {$s3Path}. Error: ".$e->getMessage());
+            }
+        }
 
         $client = new Client;
 
@@ -152,7 +217,19 @@ class WorkflowSeeder extends Command
                 'replyTo' => $data['replyTo'] ?? '',
                 'senderName' => $data['senderName'] ?? '',
                 'module' => $data['module'] ?? '',
+                'attachments' => $data['attachments'] ?? [],
+                'templateType' => $data['templateType'] ?? '',
             ];
+
+            if (isset($data['letterEditorMode']) && $data['letterEditorMode']) {
+                $requestBody['letterEditorMode'] = $data['letterEditorMode'] ?? '';
+            }
+            if (! empty($data['pdfPlaceholders'])) {
+                $requestBody['pdfPlaceholders'] = $data['pdfPlaceholders'] ?? [];
+            }
+            if (isset($data['pdfS3Key']) && $data['pdfS3Key']) {
+                $requestBody['pdfS3Key'] = $data['pdfS3Key'] ?? '';
+            }
 
             // create email template in email template service
             $response = $client->request(

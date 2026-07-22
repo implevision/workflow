@@ -98,6 +98,7 @@ class S3
         // Common mapping of extensions to MIME types
         $mimeTypes = [
             'csv' => 'text/csv',
+            'pdf' => 'application/pdf',
             'xls' => 'application/vnd.ms-excel',
             'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ];
@@ -129,11 +130,14 @@ class S3
         try {
             $s3Client = self::initializeS3Client();
 
+            $extension = pathinfo($filePath, PATHINFO_EXTENSION);
+
             $s3Client->putObject([
                 'Bucket' => $bucketName,
                 'Key' => trim($filePath, '/'),
                 'Body' => $fileContent,
                 'ACL' => 'private',
+                'ContentType' => self::getMIMEType($extension),
             ]);
 
             return true;
