@@ -475,6 +475,12 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'parseAgencyManagerEmails',
         ];
 
+        $fieldMapping['AgentDashboardURL'] = [
+            'GraphQLschemaToReplace' => '',
+            'jqFilter' => '',
+            'parseResultCallback' => 'getAgentDashboard',
+        ];
+
         return $fieldMapping;
     }
 
@@ -674,5 +680,10 @@ class TbPersonInfo extends AbstractSchema
         }
 
         return implode(',', array_filter(array_unique($emails)));
+    }
+
+    public function getAgentDashboard(): string
+    {
+        return Helper::createPortalURL('AgentPortal').'/dashboard';
     }
 }
