@@ -4,7 +4,7 @@ namespace Taurus\Workflow\Consumer\Taurus\Email;
 
 use Illuminate\Support\Facades\DB;
 
-class EmailAllowlistService
+class EmailSupressedByConsumerService
 {
     /**
      * Return only the allowed email addresses (those that have NOT unsubscribed).
@@ -12,7 +12,7 @@ class EmailAllowlistService
      * @param  array  $emails  List of recipient email addresses.
      * @return array The allowed (still-subscribed) emails.
      */
-    public function getAllowed(array $emails): array
+    public function applyEmailSupressedByConsumerFilter(array $emails): array
     {
         if (empty($emails)) {
             return $emails;

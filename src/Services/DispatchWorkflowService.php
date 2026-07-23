@@ -593,7 +593,7 @@ class DispatchWorkflowService
                                 $data[$index]['email'] = explode(',', $emailPlaceHolderValue);
                             }
 
-                            $data[$index]['email'] = $this->workflowService->getAllowedEmails(
+                            $data[$index]['email'] = $this->workflowService->applyEmailSupressedByConsumerFilter(
                                 $data[$index]['email']
                             );
                         }

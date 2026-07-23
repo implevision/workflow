@@ -687,7 +687,7 @@ class WorkflowService
         }
     }
 
-    public function getAllowedEmails($emails)
+    public function applyEmailSupressedByConsumerFilter($emails)
     {
         try {
             $consumerService = $this->getConsumerService();
@@ -695,7 +695,7 @@ class WorkflowService
                 return $emails;
             }
 
-            return $consumerService->getEmailAllowlistService()->getAllowed($emails);
+            return $consumerService->getEmailSupressedByConsumerService()->applyEmailSupressedByConsumerFilter($emails);
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 

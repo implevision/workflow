@@ -75,14 +75,14 @@ class InitInstance
         }
     }
 
-    public function getEmailAllowlistService()
+    public function getEmailSupressedByConsumerService()
     {
-        $allowlistServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\Email\\EmailAllowlistService';
+        $supressionServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\Email\\EmailSupressedByConsumerService';
 
-        if (class_exists($allowlistServiceClass)) {
-            return new $allowlistServiceClass;
+        if (class_exists($supressionServiceClass)) {
+            return new $supressionServiceClass;
         } else {
-            throw new \Exception("Email allowlist service class '$allowlistServiceClass' does not exist.");
+            throw new \Exception("Email supressed by consumer service class '$supressionServiceClass' does not exist.");
         }
     }
     public function getParentClassService()
