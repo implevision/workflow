@@ -687,6 +687,22 @@ class WorkflowService
         }
     }
 
+    public function applyEmailSupressedByConsumerFilter($emails)
+    {
+        try {
+            $consumerService = $this->getConsumerService();
+            if ($consumerService instanceof \stdClass) {
+                return $emails;
+            }
+
+            return $consumerService->getEmailSupressedByConsumerService()->applyEmailSupressedByConsumerFilter($emails);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return $emails;
+        }
+    }
+
     private function getConsumerService()
     {
         try {

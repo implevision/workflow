@@ -75,6 +75,16 @@ class InitInstance
         }
     }
 
+    public function getEmailSupressedByConsumerService()
+    {
+        $supressionServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\Email\\EmailSupressedByConsumerService';
+
+        if (class_exists($supressionServiceClass)) {
+            return new $supressionServiceClass;
+        } else {
+            throw new \Exception("Email supressed by consumer service class '$supressionServiceClass' does not exist.");
+        }
+    }
     public function getParentClassService()
     {
         $parentClassServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\ParentClass\\ParentClassService';
