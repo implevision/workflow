@@ -912,6 +912,18 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parseMailingAddress',
         ];
 
+        $fieldMapping['InsuredPropertyPostalCode'] = [
+            'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
+            'jqFilter' => $fieldMapping['InsuredPropertyAddress']['jqFilter'],
+            'parseResultCallback' => 'parsePropertyPostalCode',
+        ];
+
+        $fieldMapping['EffectiveDateLong'] = [
+            'GraphQLschemaToReplace' => $fieldMapping['EffectiveDate']['GraphQLschemaToReplace'],
+            'jqFilter' => $fieldMapping['EffectiveDate']['jqFilter'],
+            'parseResultCallback' => 'formatLongDate',
+        ];
+
         $fieldMapping['PrimaryMortgageeName'] = [
             'GraphQLschemaToReplace' => [
                 'mortgageeInfo' => [
@@ -1221,6 +1233,12 @@ class TbPotransaction extends AbstractSchema
         return $this->parseAddress($addressArr);
     }
 
+    // Bare postal code without the suffix, safe to use in a URL query string.
+    public function parsePropertyPostalCode($addressArr)
+    {
+        return ! empty($addressArr['postalCode']) ? trim($addressArr['postalCode']) : null;
+    }
+
     public function getTodaysDate(): string
     {
         return Helper::getTodaysDate();
@@ -1249,6 +1267,11 @@ class TbPotransaction extends AbstractSchema
     public function formatDateTime($dateToFormat): ?string
     {
         return Helper::formatDateTime($dateToFormat);
+    }
+
+    public function formatLongDate($dateToFormat)
+    {
+        return Helper::formatLongDate($dateToFormat);
     }
 
     public function parseAppCodeNameToDisplayName($appCodeName)
@@ -1481,11 +1504,11 @@ class TbPotransaction extends AbstractSchema
         if (empty($insuredPortal)) {
             $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
 
-            return $holdingCompanyDetail['insured_portal'];
+            return Helper::normalizePortalUrl($holdingCompanyDetail['insured_portal']);
         }
 
         // Otherwise, return insuredPortal
-        return $insuredPortal;
+        return Helper::normalizePortalUrl($insuredPortal);
     }
 
     public function getAgentPortalUrl($insuredPortal)

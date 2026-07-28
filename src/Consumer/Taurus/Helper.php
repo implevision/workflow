@@ -64,6 +64,21 @@ class Helper
         return Carbon::parse($dateToFormat)->format('F j, Y, g:i A');
     }
 
+    public static function formatLongDate($dateToFormat): ?string
+    {
+        if (empty($dateToFormat)) {
+            return null;
+        }
+
+        return Carbon::parse($dateToFormat)->format('F j, Y');
+    }
+
+    // Drops any trailing slash so a path can be appended without doubling it.
+    public static function normalizePortalUrl($portalUrl)
+    {
+        return rtrim(trim((string) $portalUrl), '/');
+    }
+
     public static function createPortalURL($portal)
     {
         $hostURL = Config::get('app.url');
