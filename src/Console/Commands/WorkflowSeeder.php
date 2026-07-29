@@ -145,14 +145,6 @@ class WorkflowSeeder extends Command
     {
         try {
             foreach ($externalServices as $key => $service) {
-                if (\is_int($key)) {
-                    foreach ($service as $nestedKey => $nestedService) {
-                        $this->handleExternalService($nestedKey, $nestedService, $path, $s3Path);
-                    }
-
-                    continue;
-                }
-
                 $this->handleExternalService($key, $service, $path, $s3Path);
             }
         } catch (\Exception $e) {
@@ -178,7 +170,18 @@ class WorkflowSeeder extends Command
         switch ($key) {
             case 'email':
             case 'template':
-                $this->insertTemplate($service, $s3Path);
+                $isSingleTemplate = false;
+                foreach ($service as $key => $data) {
+                    if (\is_int($key)) {
+                        $this->insertTemplate($data, $s3Path);
+                    } else {
+                        $isSingleTemplate = true;
+                    }
+                }
+
+                if ($isSingleTemplate) {
+                    $this->insertTemplate($service, $s3Path);
+                }
                 break;
             default:
                 \Log::error("WORKFLOW SEEDER - No handler found for service type: {$key} in {$path}".($s3Path ? " (S3 path: {$s3Path})" : '').' for workflow.');
@@ -188,6 +191,7 @@ class WorkflowSeeder extends Command
 
     private function insertTemplate($data, $s3Path = null)
     {
+
         $filePath = "{$this->initialFilePath}/{$data['filePath']}";
         if (! $s3Path) {
             $emailTemplateFilePath = database_path($filePath);
