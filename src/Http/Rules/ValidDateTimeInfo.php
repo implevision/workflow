@@ -25,7 +25,7 @@ class ValidDateTimeInfo implements ValidationRule
             if (! $certainDateTime) {
                 $allowedValues = [
                     'executionFrequencyType' => ['DAY', 'MONTH', 'YEAR'],
-                    'executionEventIncident' => ['AFTER', 'BEFORE'],
+                    'executionEventIncident' => ['AFTER', 'BEFORE', 'WITH_IN'],
                     // 'executionEvent' => ['CREATION', 'EXPIRATION'],
                     'recurringFrequency' => ['ONCE', 'MONTH', 'YEAR'],
                 ];
