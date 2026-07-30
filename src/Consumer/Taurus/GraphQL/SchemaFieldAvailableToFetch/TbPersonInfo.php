@@ -481,6 +481,24 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'getAgentDashboard',
         ];
 
+        $fieldMapping['ProducerTitleForAgreement'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'parseProducerTitleForAgreement',
+        ];
+
+        $fieldMapping['AdvantageMgaNameForAgreement'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'parseAdvantageMgaNameForAgreement',
+        ];
+
+        $fieldMapping['AdvantageMgaTitleForAgreement'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'parseAdvantageMgaTitleForAgreement',
+        ];
+
         return $fieldMapping;
     }
 
@@ -685,5 +703,20 @@ class TbPersonInfo extends AbstractSchema
     public function getAgentDashboard(): string
     {
         return Helper::createPortalURL('AgentPortal').'/dashboard';
+    }
+
+    public function parseProducerTitleForAgreement()
+    {
+        return 'Producer';
+    }
+
+    public function parseAdvantageMgaNameForAgreement()
+    {
+        return 'Thomas Garner';
+    }
+
+    public function parseAdvantageMgaTitleForAgreement()
+    {
+        return 'CEO - Taurus Services';
     }
 }
