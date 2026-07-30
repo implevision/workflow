@@ -487,16 +487,16 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'parseProducerTitleForAgreement',
         ];
 
-        $fieldMapping['AdvantageMgaNameForAgreement'] = [
+        $fieldMapping['BusinessEntityNameForAgreement'] = [
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
-            'parseResultCallback' => 'parseAdvantageMgaNameForAgreement',
+            'parseResultCallback' => 'parseBusinessEntityNameForAgreement',
         ];
 
-        $fieldMapping['AdvantageMgaTitleForAgreement'] = [
+        $fieldMapping['BusinessEntityTitleForAgreement'] = [
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
-            'parseResultCallback' => 'parseAdvantageMgaTitleForAgreement',
+            'parseResultCallback' => 'parseBusinessEntityTitleForAgreement',
         ];
 
         return $fieldMapping;
@@ -688,7 +688,10 @@ class TbPersonInfo extends AbstractSchema
 
     public function parseAgentCommissionPercentageForAgreement()
     {
-        return 'Twenty (20%)';
+        return match (getTenant()) {
+            'advantageflood' => 'Twenty (20%)',
+            default => '',
+        };
     }
 
     public function parseAgencyManagerEmails($emails)
@@ -707,16 +710,25 @@ class TbPersonInfo extends AbstractSchema
 
     public function parseProducerTitleForAgreement()
     {
-        return 'Producer';
+        return match (getTenant()) {
+            'advantageflood' => 'Producer',
+            default => '',
+        };
     }
 
-    public function parseAdvantageMgaNameForAgreement()
+    public function parseBusinessEntityNameForAgreement()
     {
-        return 'Thomas Garner';
+        return match (getTenant()) {
+            'advantageflood' => 'Thomas Garner',
+            default => '',
+        };
     }
 
-    public function parseAdvantageMgaTitleForAgreement()
+    public function parseBusinessEntityTitleForAgreement()
     {
-        return 'CEO - Taurus Services';
+        return match (getTenant()) {
+            'advantageflood' => 'CEO - Taurus Services',
+            default => '',
+        };
     }
 }
