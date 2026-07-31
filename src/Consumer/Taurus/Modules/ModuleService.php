@@ -38,6 +38,15 @@ class ModuleService
             $executionEventIncident
         );
 
+        // If the execution event is a relation, extract the relation name and column.
+        if (str_contains($executionEvent, '@')) {
+            $relationName = GraphQLSchemaBuilderService::extractRelationName($executionEvent);
+            $column = GraphQLSchemaBuilderService::extractRelationColumn($executionEvent);
+
+            // Match records whose event date field (within the relation) equals the target date.
+            return GraphQLSchemaBuilderService::getQueryMapping($column, 'EQ', $targetDate, $relationName);
+        }
+
         // Match records whose event date field equals the target date.
         return GraphQLSchemaBuilderService::getQueryMapping($executionEvent, 'EQ', $targetDate);
     }
