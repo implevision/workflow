@@ -220,7 +220,7 @@ class GraphQLSchemaBuilderService
      * @param  string  $relation  The relation string
      * @return string|null The relation name or null if not found
      */
-    private static function extractRelationName(string $relation)
+    public static function extractRelationName(string $relation)
     {
         $relationParts = explode('@', trim($relation), 2);
         $relationName = isset($relationParts[0]) ? $relationParts[0] : null;
@@ -235,7 +235,7 @@ class GraphQLSchemaBuilderService
      * @param  string  $relation  The relation string
      * @return string The relation column or empty string if not found
      */
-    private static function extractRelationColumn(string $relation)
+    public static function extractRelationColumn(string $relation)
     {
         $relationParts = explode('@', trim($relation), 2);
         $relationColumn = isset($relationParts[1]) ? $relationParts[1] : '';
