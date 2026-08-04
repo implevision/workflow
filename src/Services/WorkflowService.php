@@ -112,7 +112,7 @@ class WorkflowService
 
             DB::commit();
 
-            if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow']) && $data['when']['effectiveActionToExecuteWorkflow'] === 'CUSTOM_DATE_AND_TIME') {
+            if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow']) && in_array($data['when']['effectiveActionToExecuteWorkflow'], ['ON_DATE_TIME', 'CUSTOM_DATE_AND_TIME'])) {
                 $workflowId = $workflow->id;
                 $workflows = $this->workflowRepo->getById($workflowId)->toArray();
                 // TODO: This must be implemented consumer wise. Broadcast the WF id and let CONSUMER handle it.
@@ -569,7 +569,7 @@ class WorkflowService
     {
         $moduleService = $this->getModuleService($module);
 
-        if ($moduleService instanceof \stdClass) {
+        if ($moduleService instanceof stdClass) {
             return [];
         }
 
@@ -599,7 +599,7 @@ class WorkflowService
     {
         $moduleService = $this->getModuleService($module);
 
-        if ($moduleService instanceof \stdClass) {
+        if ($moduleService instanceof stdClass) {
             return '';
         }
 
@@ -610,7 +610,7 @@ class WorkflowService
     {
         try {
             $consumerService = $this->getConsumerService();
-            if ($consumerService instanceof \stdClass) {
+            if ($consumerService instanceof stdClass) {
                 return new stdClass;
             }
 
@@ -626,7 +626,7 @@ class WorkflowService
     {
         try {
             $consumerService = $this->getConsumerService();
-            if ($consumerService instanceof \stdClass) {
+            if ($consumerService instanceof stdClass) {
                 return new stdClass;
             }
 
@@ -659,7 +659,7 @@ class WorkflowService
     {
         try {
             $consumerService = $this->getConsumerService();
-            if ($consumerService instanceof \stdClass) {
+            if ($consumerService instanceof stdClass) {
                 return new stdClass;
             }
 
@@ -675,7 +675,7 @@ class WorkflowService
     {
         try {
             $consumerService = $this->getConsumerService();
-            if ($consumerService instanceof \stdClass) {
+            if ($consumerService instanceof stdClass) {
                 return new stdClass;
             }
 
