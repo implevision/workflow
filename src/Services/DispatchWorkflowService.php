@@ -150,7 +150,7 @@ class DispatchWorkflowService
             ! $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['certainDateTime']
         ) {
             try {
-                $graphQLQuery = $this->workflowService->getQueryForEffectiveAction(
+                $effectiveActionQuery = $this->workflowService->getQueryForEffectiveAction(
                     $this->workflowInfo['detail']['module'],
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequency'],
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequencyType'],
@@ -168,8 +168,9 @@ class DispatchWorkflowService
                     $this->workflowInfo['detail']['module'],
                     $this->recordIdentifier
                 );
-                if (count($graphQLQuery)) {
-                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => $queryToAppend];
+                if (count($effectiveActionQuery)) {
+                    $graphQLQuery = $queryToAppend;
+                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$effectiveActionQuery]];
                 } else {
                     $graphQLQuery = $queryToAppend;
                 }
@@ -206,7 +207,11 @@ class DispatchWorkflowService
 
                 if (! empty($conditionsToApply)) {
                     if (count($graphQLQuery)) {
-                        $graphQLQuery['JOIN'] = $conditionsToApply;
+                        if (isset($graphQLQuery['JOIN'])) {
+                            $graphQLQuery['JOIN']['condition'][] = $conditionsToApply;
+                        } else {
+                            $graphQLQuery['JOIN'] = $conditionsToApply;
+                        }
                     } else {
                         $graphQLQuery = $conditionsToApply;
                     }
