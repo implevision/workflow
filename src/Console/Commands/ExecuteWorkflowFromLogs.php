@@ -2,7 +2,6 @@
 
 namespace Taurus\Workflow\Console\Commands;
 
-use Avatar\Infrastructure\Models\Api\v1\TbPotransaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Taurus\Workflow\Models\WorkflowLog;
@@ -47,7 +46,7 @@ class ExecuteWorkflowFromLogs extends Command
         }
 
         if ($offset === 0) {
-            $total = WorkflowLog::where('workflow_id', $workflowId)->count();
+            $total = WorkflowLog::where('workflow_id', $workflowId)->whereNotNull('action_track_id')->count();
 
             $this->info("Total log records for workflow id: $workflowId is $total");
 
@@ -78,16 +77,6 @@ class ExecuteWorkflowFromLogs extends Command
             $recordIdentifier = $log->record_identifier;
 
             $this->info("Dispatching workflow for record identifier: $recordIdentifier");
-
-            // TEMP CODE FOR RENEWAL NOTICE WORKFLOW, NEED TO REMOVE THIS AFTER THE WORKFLOW IS FIXED
-            if ($workflowId == 22 || $workflowId == 21) {
-                $trasactions = TbPotransaction::find($recordIdentifier);
-                if ($trasactions->s_TransactionCycleCode != 'QUOTE') {
-                    $this->info("Skipping workflow dispatch for record identifier: $recordIdentifier as it is not a QUOTE transaction");
-
-                    continue;
-                }
-            }
 
             if (config('app.env') == 'production') {
                 $command = gitCommandToDispatchWorkflow($workflowId, $recordIdentifier);
