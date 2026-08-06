@@ -79,6 +79,6 @@ class WorkflowLog extends Model
 
     public function user()
     {
-        return $this->belongsTo(TbUser::class, 'Admin_ID', 'user_id');
+        return $this->belongsTo(TbUser::class, 'user_id', 'Admin_ID');
     }
 }
