@@ -42,9 +42,44 @@ class WorkflowSeederFormatter
             if (! empty($condition['applyConditionRules'])) {
                 $condition['applyConditionRules']['children'] = $this->processRules($condition['applyConditionRules']['children']);
             }
+
+            if (! empty($condition['instanceActions'])) {
+                $condition['instanceActions'] = $this->processInstanceActions($condition['instanceActions']);
+            }
         }
 
         return $conditions;
+    }
+
+    /**
+     * Resolve placeholders anywhere within each instance action's payload.
+     */
+    private function processInstanceActions(array $instanceActions): array
+    {
+        foreach ($instanceActions as &$action) {
+            if (! empty($action['payload']) && is_array($action['payload'])) {
+                $action['payload'] = $this->resolveValuesRecursively($action['payload']);
+            }
+        }
+
+        return $instanceActions;
+    }
+
+    /**
+     * Recursively walk an array/object structure and resolve any string
+     * value that matches the "{{type@argument}}" placeholder pattern.
+     */
+    private function resolveValuesRecursively(array $data): array
+    {
+        foreach ($data as &$value) {
+            if (is_string($value)) {
+                $value = $this->resolveValue($value);
+            } elseif (is_array($value)) {
+                $value = $this->resolveValuesRecursively($value);
+            }
+        }
+
+        return $data;
     }
 
     /**
