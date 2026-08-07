@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Models;
 
+use Avatar\Infrastructure\Models\Api\v1\TbUser;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -27,12 +28,16 @@ class WorkflowLog extends Model
         'job_workflow_id',
         'action_type',
         'action_track_id',
+        'user_id',
+        'action_config_payload',
         'error',
     ];
 
     protected $casts = [
         'workflow_id' => 'integer',
         'record_identifier' => 'integer',
+        'user_id' => 'integer',
+        'action_config_payload' => 'json',
     ];
 
     /**
@@ -70,5 +75,10 @@ class WorkflowLog extends Model
     public function workflow()
     {
         return $this->belongsTo(Workflow::class, 'workflow_id', 'id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(TbUser::class, 'user_id', 'Admin_ID');
     }
 }

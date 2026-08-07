@@ -778,6 +778,7 @@ class WorkflowService
             }
 
             $query = WorkflowLog::with('workflow:id,name')
+                ->with('user:Admin_ID,s_ScreenName')
                 ->where('module', $moduleClass)
                 ->where('status', WorkflowLog::STATUS_COMPLETED)
                 ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))

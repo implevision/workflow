@@ -215,7 +215,8 @@ function gitCommandToDispatchManualWorkflow(
     string $module,
     int|string $recordIdentifier = 0,
     array $selectedActions = [],
-    array $actionsConfig = []
+    array $actionsConfig = [],
+    int|string|null $userId = null
 ): array {
     $selectedActions = json_encode($selectedActions);
     $actionsConfig = json_encode($actionsConfig);
@@ -233,6 +234,7 @@ function gitCommandToDispatchManualWorkflow(
                     "recordIdentifier=$recordIdentifier",
                     "selectedActions=$selectedActions",
                     "actionsConfig=$actionsConfig",
+                    "userId=$userId",
                 ],
             ],
         ];
@@ -245,6 +247,7 @@ function gitCommandToDispatchManualWorkflow(
             '--recordIdentifier' => $recordIdentifier,
             '--selectedActions' => $selectedActions,
             '--actionsConfig' => $actionsConfig,
+            '--userId' => $userId,
         ],
     ];
 }
