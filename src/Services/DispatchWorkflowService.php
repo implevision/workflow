@@ -142,6 +142,7 @@ class DispatchWorkflowService
         $nextPageCommand = null;
 
         $graphQLQuery = [];
+        $effectiveActionQuery = [];
         // NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
         // Example: After/Before X day(s)/month(s)/year(s) of the event
         if (
@@ -164,15 +165,15 @@ class DispatchWorkflowService
 
         if ($this->recordIdentifier && ! $this->isManuallyInvoked) {
             try {
-                $queryToAppend = $this->workflowService->getQueryForRecordIdentifier(
+                $recordIdentifierQuery = $this->workflowService->getQueryForRecordIdentifier(
                     $this->workflowInfo['detail']['module'],
                     $this->recordIdentifier
                 );
                 if (count($effectiveActionQuery)) {
-                    $graphQLQuery = $queryToAppend;
+                    $graphQLQuery = $recordIdentifierQuery;
                     $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$effectiveActionQuery]];
                 } else {
-                    $graphQLQuery = $queryToAppend;
+                    $graphQLQuery = $recordIdentifierQuery;
                 }
             } catch (\Exception $e) {
                 throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
