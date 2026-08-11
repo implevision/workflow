@@ -32,23 +32,36 @@ class ModuleService
             return [];
         }
 
+        // If the event is a relation ("relation@column"), split it so the query
+        // targets the relation column; otherwise $executionEvent is the column itself.
+        $relationName = null;
+        if (str_contains($executionEvent, '@')) {
+            $relationName = GraphQLSchemaBuilderService::extractRelationName($executionEvent);
+            $executionEvent = GraphQLSchemaBuilderService::extractRelationColumn($executionEvent);
+        }
+
+        // WITH_IN spans a window (everything from `frequency` units ago up to now)
+        // rather than a single day, so it becomes a GTE/LTE range instead of an EQ.
+        if (strtoupper((string) $executionEventIncident) === 'WITH_IN') {
+            [$from, $to] = $this->resolveEventDateRange($executionFrequency, $executionFrequencyType);
+
+            return [
+                'operator' => 'AND',
+                'condition' => [
+                    GraphQLSchemaBuilderService::getQueryMapping($executionEvent, 'GTE', $from, $relationName),
+                    GraphQLSchemaBuilderService::getQueryMapping($executionEvent, 'LTE', $to, $relationName),
+                ],
+            ];
+        }
+
         $targetDate = $this->resolveEventTargetDate(
             $executionFrequency,
             $executionFrequencyType,
             $executionEventIncident
         );
 
-        // If the execution event is a relation, extract the relation name and column.
-        if (str_contains($executionEvent, '@')) {
-            $relationName = GraphQLSchemaBuilderService::extractRelationName($executionEvent);
-            $column = GraphQLSchemaBuilderService::extractRelationColumn($executionEvent);
-
-            // Match records whose event date field (within the relation) equals the target date.
-            return GraphQLSchemaBuilderService::getQueryMapping($column, 'EQ', $targetDate, $relationName);
-        }
-
         // Match records whose event date field equals the target date.
-        return GraphQLSchemaBuilderService::getQueryMapping($executionEvent, 'EQ', $targetDate);
+        return GraphQLSchemaBuilderService::getQueryMapping($executionEvent, 'EQ', $targetDate, $relationName);
     }
 
     /**
@@ -73,6 +86,28 @@ class ModuleService
             (int) $frequency,
             strtolower($frequencyType).'s'
         ))->format('Y-m-d');
+    }
+
+    /**
+     * Resolves the [from, to] window for a WITH_IN incident: everything from
+     * `frequency` units ago up to now. The number of units and the unit both
+     * come from the workflow config, so any value is supported.
+     *
+     * @param  int|string  $frequency  Number of units in the window, from the workflow config
+     * @param  string  $frequencyType  DAY | MONTH | YEAR
+     * @return array{0: string, 1: string} [from, to] as 'Y-m-d H:i:s'
+     */
+    protected function resolveEventDateRange($frequency, $frequencyType): array
+    {
+        $from = Carbon::parse(sprintf(
+            'now -%d %s',
+            (int) $frequency,
+            strtolower($frequencyType).'s'
+        ))->startOfDay();
+
+        $to = Carbon::now()->endOfDay();
+
+        return [$from->format('Y-m-d H:i:s'), $to->format('Y-m-d H:i:s')];
     }
 
     public function getQueryForRecordIdentifier($module, $recordIdentifier)
