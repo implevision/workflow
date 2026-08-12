@@ -339,35 +339,12 @@ class GraphQLSchemaBuilderService
     public function arrayToGraphQLWhereCondition($variable)
     {
         if (array_key_exists('JOIN', $variable)) {
-            // A JOIN may arrive as a group (operator + condition) or as a single flat
-            // rule; normalize to a group so both shapes build the same way.
-            $join = $variable['JOIN'];
-            if (! isset($join['condition'])) {
-                $join = ['operator' => 'AND', 'condition' => [$join]];
-            }
-
-            $joinOperator = strtoupper($join['operator'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
-            $joinConditions = $join['condition'];
+            $joinOperator = $variable['JOIN']['operator'];
+            $joinConditions = $variable['JOIN']['condition'];
             $conditionStrs = [];
             foreach ($joinConditions as $cond) {
                 $conditionStrs[] = $this->formatGraphQLCondition($cond);
             }
-
-            // The base query is not always a flat rule — on a scheduled run it is the
-            // effective-action group, which has no column/operator/value to inline. In
-            // that case nest it alongside the joined rules instead of reading columns
-            // off it.
-            if (! isset($variable['column'])) {
-                $base = $variable;
-                unset($base['JOIN']);
-
-                $joinGroupStr = sprintf('{ %s: [%s] }', $joinOperator, implode(', ', $conditionStrs));
-
-                return empty($base)
-                    ? $joinGroupStr
-                    : sprintf('{ AND: [%s, %s] }', $this->formatGraphQLCondition($base), $joinGroupStr);
-            }
-
             $variablesStr = sprintf(
                 '{ column: %s, operator: %s, value: "%s", %s: [%s] }',
                 $variable['column'],
