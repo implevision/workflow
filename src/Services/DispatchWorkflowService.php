@@ -381,9 +381,7 @@ class DispatchWorkflowService
                     // Handle GraphQL query execution
                     try {
                         // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        if (config('app.env') != 'production') {
-                            \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
-                        }
+                        // \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
                         $graphQLClient = new GraphQLClient($graphQLHeaders);
                         $response = $graphQLClient->query($graphQLRequestPayload);
                         // \Log::info('WORKFLOW - GraphQL Response: ', $response);
