@@ -141,7 +141,7 @@ class DispatchWorkflowService
         $allConditions = $this->workflowInfo['workFlowConditions'];
         $nextPageCommand = null;
 
-        $graphQLQuery = [];
+        $baseQuery = [];
         $effectiveActionQuery = [];
         // NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
         // Example: After/Before X day(s)/month(s)/year(s) of the event
@@ -165,19 +165,21 @@ class DispatchWorkflowService
 
         if ($this->recordIdentifier && ! $this->isManuallyInvoked) {
             try {
-                $recordIdentifierQuery = $this->workflowService->getQueryForRecordIdentifier(
+                $baseQuery = $this->workflowService->getQueryForRecordIdentifier(
                     $this->workflowInfo['detail']['module'],
                     $this->recordIdentifier
                 );
                 if (count($effectiveActionQuery)) {
-                    $graphQLQuery = $recordIdentifierQuery;
-                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$effectiveActionQuery]];
-                } else {
-                    $graphQLQuery = $recordIdentifierQuery;
+                    $baseQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$effectiveActionQuery]];
                 }
             } catch (\Exception $e) {
                 throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
             }
+        } elseif (count($effectiveActionQuery)) {
+            // Scheduled run (no record identifier): the effective-action window is the
+            // only base filter there is, so it still has to reach the query. Without
+            // this the date/event filter was built and then silently dropped.
+            $baseQuery = $effectiveActionQuery;
         }
 
         foreach ($allConditions as $condition) {
@@ -189,6 +191,10 @@ class DispatchWorkflowService
 
             $feedFile = '';
             $data = [];
+            // Each condition builds its own where-clause on top of the base query.
+            // Carrying it over from the previous iteration nested one condition's
+            // rules inside the next one's and produced a malformed structure.
+            $graphQLQuery = $baseQuery;
 
             if ($condition['applyRuleTo'] == 'ALL') {
                 // DO NOTHING
@@ -211,7 +217,11 @@ class DispatchWorkflowService
                         if (isset($graphQLQuery['JOIN'])) {
                             $graphQLQuery['JOIN']['condition'][] = $conditionsToApply;
                         } else {
-                            $graphQLQuery['JOIN'] = $conditionsToApply;
+                            // Wrap in a group so the base query is AND-ed with these rules.
+                            // Assigning the group directly leaked its operator (an OR group
+                            // would have OR-ed the base filter away) and a single flat rule
+                            // left JOIN without a 'condition' key.
+                            $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$conditionsToApply]];
                         }
                     } else {
                         $graphQLQuery = $conditionsToApply;
