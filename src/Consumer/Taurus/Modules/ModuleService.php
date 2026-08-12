@@ -90,9 +90,8 @@ class ModuleService
 
     /**
      * Resolves the [from, to] window for a WITH_IN incident: everything from
-     * `frequency` units ago up to now — the event has already happened within
-     * that window. The number of units and the unit both come from the workflow
-     * config, so any value is supported.
+     * now up to `frequency` units ahead. The number of units and the unit both
+     * come from the workflow config, so any value is supported.
      *
      * @param  int|string  $frequency  Number of units in the window, from the workflow config
      * @param  string  $frequencyType  DAY | MONTH | YEAR
@@ -100,13 +99,13 @@ class ModuleService
      */
     protected function resolveEventDateRange($frequency, $frequencyType): array
     {
-        $from = Carbon::parse(sprintf(
-            'now -%d %s',
+        $from = Carbon::now()->startOfDay();
+
+        $to = Carbon::parse(sprintf(
+            'now +%d %s',
             (int) $frequency,
             strtolower($frequencyType).'s'
-        ))->startOfDay();
-
-        $to = Carbon::now()->endOfDay();
+        ))->endOfDay();
 
         return [$from->format('Y-m-d H:i:s'), $to->format('Y-m-d H:i:s')];
     }
