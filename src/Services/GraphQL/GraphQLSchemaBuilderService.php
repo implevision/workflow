@@ -107,8 +107,45 @@ class GraphQLSchemaBuilderService
 
         $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
 
-        return "query {\n  $queryName(where: ".$variablesStr."){\n".
+        // No usable condition -> query without a where clause instead of emitting
+        // an invalid "where: " argument.
+        $args = $variablesStr === '' ? '' : '(where: '.$variablesStr.')';
+
+        return "query {\n  $queryName".$args."{\n".
             preg_replace('/^/m', '    ', $fields)."\n  }\n}";
+    }
+
+    /**
+     * Generates a paginated GraphQL query (Lighthouse @paginate) from the same
+     * where-condition and schema data the single-record query uses.
+     *
+     * The requested fields land inside `data`, and `paginatorInfo` is always asked
+     * for so the caller can decide whether another page is due.
+     *
+     * @param  array  $data  The data structure built via addField()
+     * @param  string  $queryName  Name of the paginated query, e.g. 'claims'
+     * @param  array  $variable  Where-condition array (may be empty)
+     * @param  int  $first  Records per page
+     * @param  int  $page  Page number, 1-based as expected by @paginate
+     * @return string Complete GraphQL query
+     */
+    public function generatePaginatedGraphQLQuery($data, $queryName, $variable = [], $first = 20, $page = 1)
+    {
+        $fields = $this->arrayToGraphQLFields($data, 0);
+
+        $args = ['first: '.(int) $first, 'page: '.max(1, (int) $page)];
+
+        $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
+        if ($variablesStr !== '') {
+            $args[] = 'where: '.$variablesStr;
+        }
+
+        return "query {\n  $queryName(".implode(', ', $args)."){\n".
+            "    data {\n".
+            preg_replace('/^/m', '      ', $fields)."\n".
+            "    }\n".
+            "    paginatorInfo {\n      currentPage\n      lastPage\n      hasMorePages\n      total\n    }\n".
+            "  }\n}";
     }
 
     /**
@@ -302,6 +339,12 @@ class GraphQLSchemaBuilderService
      */
     private function formatGraphQLCondition(array $cond): string
     {
+        // A JOIN carries extra conditions to merge with the base condition
+        // (e.g. effective-action window + rules configured on the workflow).
+        if (array_key_exists('JOIN', $cond)) {
+            return $this->formatJoinedCondition($cond);
+        }
+
         if (is_array($cond) && isset($cond['operator']) && isset($cond['condition'])) {
             $operator = $cond['operator'] === 'OR' ? 'OR' : 'AND';
             $childStrs = [];
@@ -320,14 +363,64 @@ class GraphQLSchemaBuilderService
                 $cond['operator'],
                 $cond['value']
             );
-        } else {
-            return sprintf(
-                '{ column: %s, operator: %s, value: "%s" }',
-                $cond['column'],
-                $cond['operator'],
-                $cond['value']
-            );
         }
+
+        // Anything without a column is not a usable rule (misconfigured condition).
+        if (! isset($cond['column'])) {
+            return '';
+        }
+
+        return sprintf(
+            '{ column: %s, operator: %s, value: "%s" }',
+            $cond['column'],
+            $cond['operator'] ?? 'EQ',
+            $cond['value'] ?? ''
+        );
+    }
+
+    /**
+     * Merges the base condition with everything held under its 'JOIN' key.
+     *
+     * The base can itself be a single rule (record identifier) or a group
+     * (e.g. the WITH_IN date window), so it is formatted recursively instead of
+     * assuming column/operator/value are present at the top level.
+     *
+     * @param  array  $variable  The condition array containing a 'JOIN' key
+     */
+    private function formatJoinedCondition(array $variable): string
+    {
+        $join = $variable['JOIN'];
+        unset($variable['JOIN']);
+
+        // JOIN may hold either { operator, condition: [...] } or a single condition.
+        if (isset($join['condition']) && is_array($join['condition'])) {
+            $joinOperator = strtoupper($join['operator'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
+            $joinConditions = $join['condition'];
+        } else {
+            $joinOperator = 'AND';
+            $joinConditions = [$join];
+        }
+
+        $conditionStrs = [];
+        if (! empty($variable)) {
+            $conditionStrs[] = $this->formatGraphQLCondition($variable);
+        }
+        foreach ($joinConditions as $cond) {
+            if (is_array($cond)) {
+                $conditionStrs[] = $this->formatGraphQLCondition($cond);
+            }
+        }
+        $conditionStrs = array_values(array_filter($conditionStrs));
+
+        if (empty($conditionStrs)) {
+            return '';
+        }
+
+        if (count($conditionStrs) === 1) {
+            return $conditionStrs[0];
+        }
+
+        return sprintf('{ %s: [%s] }', $joinOperator, implode(', ', $conditionStrs));
     }
 
     /**
@@ -338,25 +431,10 @@ class GraphQLSchemaBuilderService
      */
     public function arrayToGraphQLWhereCondition($variable)
     {
-        if (array_key_exists('JOIN', $variable)) {
-            $joinOperator = $variable['JOIN']['operator'];
-            $joinConditions = $variable['JOIN']['condition'];
-            $conditionStrs = [];
-            foreach ($joinConditions as $cond) {
-                $conditionStrs[] = $this->formatGraphQLCondition($cond);
-            }
-            $variablesStr = sprintf(
-                '{ column: %s, operator: %s, value: "%s", %s: [%s] }',
-                $variable['column'],
-                $variable['operator'],
-                $variable['value'],
-                $joinOperator,
-                implode(', ', $conditionStrs)
-            );
-        } else {
-            $variablesStr = $this->formatGraphQLCondition($variable);
+        if (! is_array($variable) || empty($variable)) {
+            return '';
         }
 
-        return $variablesStr;
+        return $this->formatGraphQLCondition($variable);
     }
 }
