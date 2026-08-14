@@ -399,6 +399,26 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 ],
                 'jqFilter' => '.policyAgentTaskQuery.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.personUniqueId',
             ],
+            'AgencyPhoneNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'tbAccountMaster' => [
+                                'TbPersoninfo' => [
+                                    'TbPersonaddress' => [
+                                        'phoneInfo' => [
+                                            'phoneNumber' => null,
+                                            'phoneTypeCode' => null,
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.policyAgentTaskQuery.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.TbPersonaddress[].phoneInfo[] | select(.phoneTypeCode == "Phone")] | first | .phoneNumber',
+                'parseResultCallback' => 'parsePhoneNumber',
+            ],
             'PotentialDiscountLostIndicator' => [
                 'GraphQLschemaToReplace' => [
                     'agentTask' => [
@@ -1715,5 +1735,14 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         // Default: FLOOD / NFIP products
         return $metadata['completeOnlineCollectionWithDetails']['response']['completeOnlineCollectionWithDetailsResponse']['paygov_tracking_id'] ?? null;
+    }
+
+    public function parsePhoneNumber($phoneNumber)
+    {
+        if ($phoneNumber) {
+            $phoneNumber = Helper::formatPhone($phoneNumber);
+        }
+
+        return $phoneNumber;
     }
 }
