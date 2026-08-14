@@ -83,12 +83,12 @@ function getNoTenantIdentifier()
  */
 function getEventSchedulerGroupNameToExecuteWorkflow()
 {
-    return 'workflow-auto-generated-'.getTenant();
+    return sprintf('workflow-auto-generated-%s', getTenant());
 }
 
 function getEventSchedulerNameToExecuteWorkflow($identifier)
 {
-    return 'workflow-id-'.$identifier;
+    return sprintf('workflow-id-%s-%s', $identifier, getTenant());
 }
 
 function getScheduleGroupTagsToExecuteWorkflow()
