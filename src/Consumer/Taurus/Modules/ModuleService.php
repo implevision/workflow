@@ -74,7 +74,7 @@ class ModuleService
      */
     protected function resolveEventTargetDate($frequency, $frequencyType, $incident): string|array
     {
-        $unit = strtolower($frequencyType) . 's';
+        $unit = strtolower($frequencyType).'s';
 
         if ($incident === 'WITH_IN') {
             return [
@@ -109,7 +109,7 @@ class ModuleService
         $to = Carbon::parse(sprintf(
             'now +%d %s',
             (int) $frequency,
-            strtolower($frequencyType) . 's'
+            strtolower($frequencyType).'s'
         ))->endOfDay();
 
         return [$from->format('Y-m-d H:i:s'), $to->format('Y-m-d H:i:s')];
@@ -151,7 +151,7 @@ class ModuleService
     {
         $module = explode('\\', $module);
         $module = end($module);
-        $moduleClass = app("Taurus\\Workflow\\Consumer\\Taurus\\Modules\\$module" . 'Service');
+        $moduleClass = app("Taurus\\Workflow\\Consumer\\Taurus\\Modules\\$module".'Service');
 
         try {
             class_exists($moduleClass::class) or throw new \Exception("Module class $moduleClass does not exist.");
