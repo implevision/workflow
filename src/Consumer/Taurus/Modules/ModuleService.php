@@ -93,28 +93,6 @@ class ModuleService
         ))->format('Y-m-d');
     }
 
-    /**
-     * Resolves the [from, to] window for a WITH_IN incident: everything from
-     * now up to `frequency` units ahead. The number of units and the unit both
-     * come from the workflow config, so any value is supported.
-     *
-     * @param  int|string  $frequency  Number of units in the window, from the workflow config
-     * @param  string  $frequencyType  DAY | MONTH | YEAR
-     * @return array{0: string, 1: string} [from, to] as 'Y-m-d H:i:s'
-     */
-    protected function resolveEventDateRange($frequency, $frequencyType): array
-    {
-        $from = Carbon::now()->startOfDay();
-
-        $to = Carbon::parse(sprintf(
-            'now +%d %s',
-            (int) $frequency,
-            strtolower($frequencyType).'s'
-        ))->endOfDay();
-
-        return [$from->format('Y-m-d H:i:s'), $to->format('Y-m-d H:i:s')];
-    }
-
     public function getQueryForRecordIdentifier($module, $recordIdentifier)
     {
         $moduleClass = app($module);
