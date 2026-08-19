@@ -178,6 +178,8 @@ class DispatchWorkflowService
             } catch (\Exception $e) {
                 throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
             }
+        } elseif (count($effectiveActionQuery)) {
+            $graphQLQuery = $effectiveActionQuery;
         }
 
         foreach ($allConditions as $condition) {
