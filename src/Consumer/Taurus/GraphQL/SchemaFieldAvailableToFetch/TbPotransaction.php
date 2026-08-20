@@ -4,10 +4,20 @@ namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
 use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Avatar\Infrastructure\Models\Api\v1\TbProduct;
+use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbPotransaction extends AbstractSchema
 {
+    private const ELEVATION_CERTIFICATE_REQUIRED_DOCUMENT_CODES = [
+        'MEDOCUMENT',
+        'EVIDENCE_OF_ELEVATED_ME',
+    ];
+
+    private const SQUARE_FOOTAGE_PROOF_REQUIRED_DOCUMENT_CODES = [
+        'SQFTDOCUMENT',
+    ];
+
     /**
      * @var array
      *
@@ -566,6 +576,20 @@ class TbPotransaction extends AbstractSchema
                 ],
                 'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.totalSquareFootage',
                 'parseResultCallback' => 'formatNumber',
+            ],
+            'ElevationCertificateRequired' => [
+                'GraphQLschemaToReplace' => [
+                    'id' => null,
+                ],
+                'jqFilter' => '.policyQuery.id',
+                'parseResultCallback' => 'parseElevationCertificateRequired',
+            ],
+            'SquareFootageProofRequired' => [
+                'GraphQLschemaToReplace' => [
+                    'id' => null,
+                ],
+                'jqFilter' => '.policyQuery.id',
+                'parseResultCallback' => 'parseSquareFootageProofRequired',
             ],
             'NumberOfFloors' => [
                 'GraphQLschemaToReplace' => [
@@ -1191,6 +1215,41 @@ class TbPotransaction extends AbstractSchema
         $coverageAmount = $this->parsePotentialDiscountLost($transactionId, 'ANNUALCAPDISC');
 
         return $coverageAmount > 0 ? true : false;
+    }
+
+    public function parseElevationCertificateRequired($transactionId): bool
+    {
+        return $this->hasPendingRequiredDocument(
+            $transactionId,
+            self::ELEVATION_CERTIFICATE_REQUIRED_DOCUMENT_CODES
+        );
+    }
+
+    public function parseSquareFootageProofRequired($transactionId): bool
+    {
+        return $this->hasPendingRequiredDocument(
+            $transactionId,
+            self::SQUARE_FOOTAGE_PROOF_REQUIRED_DOCUMENT_CODES
+        );
+    }
+
+    private function hasPendingRequiredDocument($transactionId, array $documentCodes): bool
+    {
+        if (empty($transactionId)) {
+            return false;
+        }
+
+        return DB::table('tb_podocumenttracktrans as pdt')
+            ->join(
+                'tb_prdocumenttrackmasters as pdm',
+                'pdm.n_PrDocumentTrackMaster_PK',
+                '=',
+                'pdt.n_PrDocumentTrackMaster_FK'
+            )
+            ->where('pdt.n_PoTransaction_FK', $transactionId)
+            ->where('pdt.s_IsAttached', 'N')
+            ->whereIn('pdm.s_SourceCode', $documentCodes)
+            ->exists();
     }
 
     public function parseWyoAgencyAgentCode($agentCode)
