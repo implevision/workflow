@@ -52,9 +52,21 @@ class AbstractSchema
         return [];
     }
 
+    /**
+     * Default: every generated query requests `paginatorInfo { hasMorePages }`
+     * alongside `data`, so that flag directly tells us whether to advance to
+     * the next page. Override in module schema classes that need a different
+     * stopping condition.
+     */
     public function getNextPageArgs(array $response, array $currentArgs): ?array
     {
-        return null;
+        $hasMorePages = $response[$this->getQueryName()]['paginatorInfo']['hasMorePages'] ?? false;
+
+        if (! $hasMorePages) {
+            return null;
+        }
+
+        return array_merge($currentArgs, ['page' => ($currentArgs['page'] ?? 0) + 1]);
     }
 
     public function hasCustomRecordExtraction(): bool
@@ -78,6 +90,18 @@ class AbstractSchema
         }
 
         return array_values(array_map($rowMapper, array_filter($items, 'is_array')));
+    }
+
+    protected function wrapFieldMappingSchemaUnderData(array $fieldMapping): array
+    {
+        foreach ($fieldMapping as &$mapping) {
+            if (! empty($mapping['GraphQLschemaToReplace'])) {
+                $mapping['GraphQLschemaToReplace'] = ['data' => $mapping['GraphQLschemaToReplace']];
+            }
+        }
+        unset($mapping);
+
+        return $fieldMapping;
     }
 
     public function fetchAllData($client, $builder, array $schemaData, array $graphQLQuery): array

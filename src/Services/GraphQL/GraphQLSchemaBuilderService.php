@@ -97,17 +97,18 @@ class GraphQLSchemaBuilderService
      * @param  array  $variables  Optional query variables
      * @return string Complete GraphQL query
      */
-    public function generateGraphQLQuery($data, $queryName, $variable = [], $queryArgs = [])
+    public function generateGraphQLQuery($data, $queryName, $variable = [], $queryArgs = [], $page = 0)
     {
         if (! empty($queryArgs)) {
             return $this->generateGraphQLQueryWithNamedArgs($data, $queryName, $queryArgs);
         }
 
-        $fields = $this->arrayToGraphQLFields($data, 0);
+        $fields = $this->arrayToGraphQLFields($data, 0)."\npaginatorInfo {\n  hasMorePages\n}";
 
         $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
+        $page = $page + 1;
 
-        return "query {\n  $queryName(where: ".$variablesStr."){\n".
+        return "query {\n  $queryName(where: ".$variablesStr." page: ".$page."){\n".
             preg_replace('/^/m', '    ', $fields)."\n  }\n}";
     }
 
