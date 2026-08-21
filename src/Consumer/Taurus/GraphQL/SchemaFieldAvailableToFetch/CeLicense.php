@@ -4,7 +4,7 @@ namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
-class CeReview extends AbstractSchema
+class CeLicense extends AbstractSchema
 {
     /**
      * @var array
@@ -23,11 +23,11 @@ class CeReview extends AbstractSchema
     public function __construct()
     {
         $this->fieldMapping = $this->initializeFieldMapping();
-        $this->queryName = 'queryCeReviews';
+        $this->queryName = 'queryCeLicenses';
     }
 
     /**
-     * Retrieves the field mapping with GraphQL schema for the CE review digest.
+     * Retrieves the field mapping with GraphQL schema for the CE license digest.
      *
      * @return array An associative array representing the field mapping.
      */
@@ -37,7 +37,7 @@ class CeReview extends AbstractSchema
     }
 
     /**
-     * Retrieves the query name for the CE review digest.
+     * Retrieves the query name for the CE license digest.
      *
      * @return string The name of the GraphQL query.
      */
@@ -72,23 +72,23 @@ class CeReview extends AbstractSchema
                 $agentMap[$email] = $this->baseAgentRecord($agent);
             }
 
-            $agentMap[$email]['CeReviewListData'] = array_merge(
-                $agentMap[$email]['CeReviewListData'],
-                $this->formatCeReviews($agent['ceReviewList'] ?? [])
+            $agentMap[$email]['CeLicenseListData'] = array_merge(
+                $agentMap[$email]['CeLicenseListData'],
+                $this->formatCeLicenses($agent['ceLicenseList'] ?? [])
             );
         }
 
         return array_values(array_filter($agentMap, function ($agent) {
-            return ! empty($agent['CeReviewListData']);
+            return ! empty($agent['CeLicenseListData']);
         }));
     }
 
     /**
-     * Extracts the flat list of agent groups from the CE review response.
+     * Extracts the flat list of agent groups from the CE license response.
      */
     private function agentsFromResponse(array $response): array
     {
-        return $response['queryCeReviews']['data'] ?? [];
+        return $response['queryCeLicenses']['data'] ?? [];
     }
 
     private function baseAgentRecord(array $agent): array
@@ -107,17 +107,17 @@ class CeReview extends AbstractSchema
             'AgencyFullName' => $agent['agencyFullName'] ?? '',
             'AgencyAccountId' => $agent['agencyAccountId'] ?? '',
             'CurrentYear' => $this->getCurrentYear(),
-            'CeReviewListData' => [],
+            'CeLicenseListData' => [],
         ];
     }
 
     /**
-     * Returns the arguments required by the CE review query, mapped from the
+     * Returns the arguments required by the CE license query, mapped from the
      * workflow's raw dateTimeInfo config (passed via setQueryArgsContext):
      *   frequency        <- executionFrequency
      *   typeOfFrequency  <- executionFrequencyType (HOUR|DAY|WEEK|MONTH|YEAR)
      *   incidentEvent    <- executionEventIncident (AFTER|BEFORE|WITH_IN)
-     *   executionEvent   <- executionEvent (CE_REVIEWS - the review completed date)
+     *   executionEvent   <- executionEvent (CE_LICENSES - the review completed date)
      *
      * The frequency gives one cut off date, incidentEvent picks the side:
      * WITH_IN stays between that date and now, AFTER takes everything from that
@@ -145,15 +145,15 @@ class CeReview extends AbstractSchema
     {
         $agents = $this->agentsFromResponse($response);
 
-        $hasCeReviewData = false;
+        $hasCeLicenseData = false;
         foreach ($agents as $agent) {
-            if (! empty($agent['ceReviewList'])) {
-                $hasCeReviewData = true;
+            if (! empty($agent['ceLicenseList'])) {
+                $hasCeLicenseData = true;
                 break;
             }
         }
 
-        if (! $hasCeReviewData) {
+        if (! $hasCeLicenseData) {
             return null;
         }
 
@@ -161,7 +161,7 @@ class CeReview extends AbstractSchema
     }
 
     /**
-     * Initializes the field mapping with GraphQL schema for the CE review digest.
+     * Initializes the field mapping with GraphQL schema for the CE license digest.
      *
      * KEYS are PLACEHOLDER for the GraphQL schema to be replaced.
      *
@@ -183,7 +183,7 @@ class CeReview extends AbstractSchema
                 'agencyFloodCode' => null,
                 'agencyFullName' => null,
                 'agencyAccountId' => null,
-                'ceReviewList' => [
+                'ceLicenseList' => [
                     [
                         'producerName' => null,
                         'username' => null,
@@ -218,7 +218,7 @@ class CeReview extends AbstractSchema
             'AgencyFloodCode' => ['GraphQLschemaToReplace' => $dataSchema],
             'AgencyFullName' => ['GraphQLschemaToReplace' => $dataSchema],
             'AgencyAccountId' => ['GraphQLschemaToReplace' => $dataSchema],
-            'CeReviewListData' => ['GraphQLschemaToReplace' => $dataSchema],
+            'CeLicenseListData' => ['GraphQLschemaToReplace' => $dataSchema],
             'CurrentYear' => [
                 'GraphQLschemaToReplace' => [],
                 'jqFilter' => '',
@@ -242,7 +242,7 @@ class CeReview extends AbstractSchema
      * consolidated email renders. CeRejectionReason only carries a value on a
      * rejected CE, an approved one leaves it empty.
      */
-    private function formatCeReviews(array $list): array
+    private function formatCeLicenses(array $list): array
     {
         return array_map(function ($item) {
             return [

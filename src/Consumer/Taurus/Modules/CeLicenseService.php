@@ -2,7 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\Modules;
 
-class CeReviewService extends ModuleService
+class CeLicenseService extends ModuleService
 {
     public function getPostFixForTaskDefinition()
     {
