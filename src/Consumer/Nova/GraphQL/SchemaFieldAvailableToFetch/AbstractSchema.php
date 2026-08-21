@@ -53,20 +53,25 @@ class AbstractSchema
     }
 
     /**
-     * Default: every generated query requests `paginatorInfo { hasMorePages }`
-     * alongside `data`, so that flag directly tells us whether to advance to
-     * the next page. Override in module schema classes that need a different
-     * stopping condition.
+     * Nova modules query a single record directly under the query root
+     * (no `{data: [...], paginatorInfo: {...}}` wrapper), so pagination
+     * doesn't apply by default. Override to return true for a module whose
+     * query does return a page of records.
+     */
+    public function supportsPagination(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Nova modules don't support pagination by default (see
+     * supportsPagination()), so their queries never request paginatorInfo —
+     * there's nothing to check it against. Override alongside
+     * supportsPagination() for a module that does paginate.
      */
     public function getNextPageArgs(array $response, array $currentArgs): ?array
     {
-        $hasMorePages = $response[$this->getQueryName()]['paginatorInfo']['hasMorePages'] ?? false;
-
-        if (! $hasMorePages) {
-            return null;
-        }
-
-        return array_merge($currentArgs, ['page' => ($currentArgs['page'] ?? 0) + 1]);
+        return null;
     }
 
     public function hasCustomRecordExtraction(): bool

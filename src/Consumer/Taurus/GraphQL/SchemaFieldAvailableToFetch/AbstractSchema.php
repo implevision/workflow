@@ -83,6 +83,19 @@ class AbstractSchema
     }
 
     /**
+     * Whether this module's query returns a page of records
+     * (`{queryName: {data: [...], paginatorInfo: {...}}}`) rather than a
+     * single record directly under the query root. Controls whether the
+     * generated query requests `paginatorInfo { hasMorePages }` — querying
+     * for a field the underlying GraphQL schema doesn't define would fail.
+     * Override to return false for single-record lookups.
+     */
+    public function supportsPagination(): bool
+    {
+        return true;
+    }
+
+    /**
      * Returns the query args for the next page, or null when there are no more pages.
      *
      * Default: every generated query requests `paginatorInfo { hasMorePages }`

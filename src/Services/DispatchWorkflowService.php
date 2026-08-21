@@ -357,7 +357,7 @@ class DispatchWorkflowService
                         );
 
                         $queryArgs = $moduleClassForGraphQL->getQueryArgs();
-                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery, $queryArgs, $this->page);
+                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery, $queryArgs, $this->page, $moduleClassForGraphQL->supportsPagination());
                     } catch (\Exception $e) {
                         $this->workflowService->addWorkflowLog(
                             $this->workflowId,
@@ -403,7 +403,13 @@ class DispatchWorkflowService
                         }
 
                         $queryName = $moduleClassForGraphQL->getQueryName();
-                        $records = $response[$queryName]['data'] ?? [];
+                        $queryRootNode = $response[$queryName] ?? [];
+
+                        if (is_array($queryRootNode) && array_key_exists('data', $queryRootNode)) {
+                            $records = $queryRootNode['data'] ?? [];
+                        } else {
+                            $records = [$queryRootNode];
+                        }
 
                         $perRecordResponses = array_map(
                             fn ($record) => [$queryName => $record],
@@ -437,7 +443,11 @@ class DispatchWorkflowService
                                             $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback();
                                         }
                                     } else {
-                                        $placeHolderValue = $graphQLSchemaBuilder->extractValue($recordResponse, $jqFilter);
+                                        // `.` marks "the whole record" (no path past the
+                                        // query root) — append nothing, since '.'.$queryName.'.'
+                                        // would be invalid jq (trailing dot, nothing after).
+                                        $effectiveFilter = $jqFilter === '.' ? '.'.$queryName : '.'.$queryName.$jqFilter;
+                                        $placeHolderValue = $graphQLSchemaBuilder->extractValue($recordResponse, $effectiveFilter);
 
                                         if ($placeHolderValue) {
                                             $parsedValue = json_decode($placeHolderValue, true);
