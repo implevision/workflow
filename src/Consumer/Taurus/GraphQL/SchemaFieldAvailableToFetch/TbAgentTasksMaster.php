@@ -373,7 +373,7 @@ class TbAgentTasksMaster extends AbstractSchema
             ],
         ];
 
-        return $this->wrapFieldMappingSchemaUnderData($fieldMapping);
+        return $fieldMapping;
     }
 
     public function formatDate($dateToFormat)

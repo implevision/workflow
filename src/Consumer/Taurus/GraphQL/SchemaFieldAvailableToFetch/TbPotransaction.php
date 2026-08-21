@@ -101,7 +101,7 @@ class TbPotransaction extends AbstractSchema
                     'premiumChange' => null,
                     'policyFees' => null,
                 ],
-                'jqFilter' => '',
+                'jqFilter' => '.',
                 'parseResultCallback' => 'parsePremiumDue',
             ],
             'PolicyFees' => [
@@ -365,7 +365,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '',
+                'jqFilter' => '.',
                 'parseResultCallback' => 'transactionSubTypeScreenNameResolver',
             ],
             'WaitingPeriod' => [
