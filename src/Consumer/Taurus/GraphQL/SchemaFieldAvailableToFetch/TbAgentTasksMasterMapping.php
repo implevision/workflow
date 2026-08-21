@@ -25,8 +25,8 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
     public function __construct()
     {
-        $this->fieldMapping = $this->initializeFieldMapping();
         $this->queryName = 'policyAgentTasksQuery';
+        $this->fieldMapping = $this->initializeFieldMapping();
     }
 
     /**
@@ -69,6 +69,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $queryPath = '.'.$this->queryName;
         $addressStructure = [
             'addressTypeCode' => null,
             'houseNo' => null,
@@ -98,7 +99,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'id' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.id',
+                'jqFilter' => "{$queryPath}.agentTask.id",
             ],
             'TransactionId' => [
                 'GraphQLschemaToReplace' => [
@@ -106,7 +107,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'transactionId' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.transactionId',
+                'jqFilter' => "{$queryPath}.agentTask.transactionId",
             ],
             'MasterId' => [
                 'GraphQLschemaToReplace' => [
@@ -114,7 +115,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'policyId' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyId',
+                'jqFilter' => "{$queryPath}.agentTask.policyId",
             ],
             'AgentId' => [
                 'GraphQLschemaToReplace' => [
@@ -122,7 +123,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'agentId' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.agentId',
+                'jqFilter' => "{$queryPath}.agentTask.agentId",
             ],
             'AgencyId' => [
                 'GraphQLschemaToReplace' => [
@@ -130,7 +131,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'agencyId' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.agencyId',
+                'jqFilter' => "{$queryPath}.agentTask.agencyId",
             ],
             'Note' => [
                 'GraphQLschemaToReplace' => [
@@ -138,7 +139,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'note' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.note',
+                'jqFilter' => "{$queryPath}.agentTask.note",
             ],
             'IsActive' => [
                 'GraphQLschemaToReplace' => [
@@ -146,7 +147,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'isActive' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.isActive',
+                'jqFilter' => "{$queryPath}.agentTask.isActive",
             ],
             'IsDeleted' => [
                 'GraphQLschemaToReplace' => [
@@ -154,7 +155,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'isDeleted' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.isDeleted',
+                'jqFilter' => "{$queryPath}.agentTask.isDeleted",
             ],
             'CompleteStatus' => [
                 'GraphQLschemaToReplace' => [
@@ -162,7 +163,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'completeStatus' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.completeStatus',
+                'jqFilter' => "{$queryPath}.agentTask.completeStatus",
             ],
             'CompleteDate' => [
                 'GraphQLschemaToReplace' => [
@@ -170,7 +171,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'completeDate' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.completeDate',
+                'jqFilter' => "{$queryPath}.agentTask.completeDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'MetaData' => [
@@ -179,7 +180,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.metadata',
+                'jqFilter' => "{$queryPath}.agentTask.metadata",
             ],
             'CreatedBy' => [
                 'GraphQLschemaToReplace' => [
@@ -187,7 +188,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'createdBy' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.createdBy',
+                'jqFilter' => "{$queryPath}.agentTask.createdBy",
             ],
             'CreatedAt' => [
                 'GraphQLschemaToReplace' => [
@@ -195,7 +196,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'createdAt' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.createdAt',
+                'jqFilter' => "{$queryPath}.agentTask.createdAt",
                 'parseResultCallback' => 'formatDateToGMT',
             ],
             'UpdatedBy' => [
@@ -204,7 +205,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'updatedBy' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.updatedBy',
+                'jqFilter' => "{$queryPath}.agentTask.updatedBy",
             ],
             'UpdatedAt' => [
                 'GraphQLschemaToReplace' => [
@@ -212,7 +213,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'updatedAt' => null,
                     ],
                 ],
-                'jqFilter' => '.agentTask.updatedAt',
+                'jqFilter' => "{$queryPath}.agentTask.updatedAt",
                 'parseResultCallback' => 'formatDate',
             ],
             'AssignedAgentEmail' => [
@@ -226,7 +227,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '[.agentTask.agent.emailInfo[0] | select(.isDefault == "Y")]',
+                'jqFilter' => "[{$queryPath}.agentTask.agent.emailInfo[0] | select(.isDefault == \"Y\")]",
                 'parseResultCallback' => 'parseAssignedAgentEmail',
             ],
             'AssAgentEmail' => [
@@ -240,7 +241,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '[.agentTask.agent.emailInfo[0] | select(.isDefault == "Y")]',
+                'jqFilter' => "[{$queryPath}.agentTask.agent.emailInfo[0] | select(.isDefault == \"Y\")]",
                 'parseResultCallback' => 'parseAssignedAgentEmail',
             ],
 
@@ -248,7 +249,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'title' => null,
                 ],
-                'jqFilter' => '[.title]',
+                'jqFilter' => "[{$queryPath}.title]",
             ],
             'isEnabledForWorkflow' => [
                 'GraphQLschemaToReplace' => [
@@ -256,7 +257,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '[.task.metadata]',
+                'jqFilter' => "[{$queryPath}.task.metadata]",
                 'parseResultCallback' => 'parseIsEnabledForWorkflow',
             ],
             'Type' => [
@@ -265,7 +266,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '[.task.metadata]',
+                'jqFilter' => "[{$queryPath}.task.metadata]",
                 'parseResultCallback' => 'parseTaskType',
             ],
             'SubType' => [
@@ -274,7 +275,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '[.task.metadata]',
+                'jqFilter' => "[{$queryPath}.task.metadata]",
                 'parseResultCallback' => 'parseTaskSubType',
             ],
             'Reason' => [
@@ -283,7 +284,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '[.task.metadata]',
+                'jqFilter' => "[{$queryPath}.task.metadata]",
                 'parseResultCallback' => 'parseTaskReason',
             ],
             'ReasonCode' => [
@@ -292,7 +293,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '[.task.metadata]',
+                'jqFilter' => "[{$queryPath}.task.metadata]",
                 'parseResultCallback' => 'parseTaskReasonCode',
             ],
             'Task' => [
@@ -301,7 +302,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '[.task.metadata]',
+                'jqFilter' => "[{$queryPath}.task.metadata]",
                 'parseResultCallback' => 'parseTaskDetails',
             ],
             'DocumentName' => [
@@ -310,7 +311,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '[.task.metadata]',
+                'jqFilter' => "[{$queryPath}.task.metadata]",
                 'parseResultCallback' => 'parseTaskDocumentName',
             ],
             'SourceSystem' => [
@@ -319,7 +320,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '[.task.metadata]',
+                'jqFilter' => "[{$queryPath}.task.metadata]",
                 'parseResultCallback' => 'parseSourceSystem',
             ],
             'DueDate' => [
@@ -328,7 +329,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '[.task.metadata]',
+                'jqFilter' => "[{$queryPath}.task.metadata]",
                 'parseResultCallback' => 'parseDueDate',
             ],
             'PremiumDue' => [
@@ -340,7 +341,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction",
                 'parseResultCallback' => 'parsePremiumDue',
             ],
 
@@ -354,7 +355,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policy.policyNumber',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policy.policyNumber",
             ],
 
             'PolicyNumberWithoutPrefix' => [
@@ -367,7 +368,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policy.policyNumber',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policy.policyNumber",
                 'parseResultCallback' => 'parsePolicyNumberWithoutPrefix',
             ],
 
@@ -383,7 +384,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.fullName',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.fullName",
             ],
             'AgencyCode' => [
                 'GraphQLschemaToReplace' => [
@@ -397,7 +398,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.personUniqueId',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.personUniqueId",
             ],
             'AgencyPhoneNumber' => [
                 'GraphQLschemaToReplace' => [
@@ -416,7 +417,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '[.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.TbPersonaddress[].phoneInfo[] | select(.phoneTypeCode == "Phone")] | first | .phoneNumber',
+                'jqFilter' => "[{$queryPath}.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.TbPersonaddress[].phoneInfo[] | select(.phoneTypeCode == \"Phone\")] | first | .phoneNumber",
                 'parseResultCallback' => 'parsePhoneNumber',
             ],
             'PotentialDiscountLostIndicator' => [
@@ -427,7 +428,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.id',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.id",
                 'parseResultCallback' => 'parsePotentialDiscountLostIndicator',
             ],
             'PremiumCapDiscountAmount' => [
@@ -438,7 +439,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.id',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.id",
                 'parseResultCallback' => 'parsePremiumCapDiscountAmount',
             ],
             'WyoAgencyAgentCode' => [
@@ -453,7 +454,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.TbPersoninfo.additionalInfo.wyoAgencyAgentCode',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.TbPersoninfo.additionalInfo.wyoAgencyAgentCode",
                 'parseResultCallback' => 'parseWyoAgencyAgentCode',
             ],
             'UUID' => [
@@ -480,7 +481,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policy.insuredPersonInfo.fullName',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policy.insuredPersonInfo.fullName",
             ],
 
             'PolicyExpirationDate' => [
@@ -491,7 +492,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.transactionEffectiveToDate',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.transactionEffectiveToDate",
                 'parseResultCallback' => 'formatDate',
             ],
 
@@ -505,7 +506,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policyTermMaster.termStartDate',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policyTermMaster.termStartDate",
                 'parseResultCallback' => 'formatDate',
             ],
 
@@ -519,7 +520,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policyTermMaster.termEndDate',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policyTermMaster.termEndDate",
                 'parseResultCallback' => 'formatDate',
             ],
 
@@ -535,7 +536,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policy.product.productName',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policy.product.productName",
             ],
 
             'TransactionType' => [
@@ -548,7 +549,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policyRiskTransactionType.transactionTypeScreenName',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policyRiskTransactionType.transactionTypeScreenName",
             ],
 
             'TransactionSubType' => [
@@ -572,7 +573,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask',
+                'jqFilter' => "{$queryPath}.agentTask",
                 'parseResultCallback' => 'transactionSubTypeScreenNameResolver',
             ],
 
@@ -587,7 +588,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.policyWaitingPeriod',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.policyWaitingPeriod",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
 
@@ -601,7 +602,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policy.renewalTypeCode',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policy.renewalTypeCode",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
 
@@ -617,7 +618,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policy.accountMaster.billToType',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policy.accountMaster.billToType",
                 'parseResultCallback' => 'parseBillTo',
             ],
             'UnderWriterApplicationStatus' => [
@@ -632,7 +633,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
 
@@ -644,7 +645,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.transactionEffectiveFromDate',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.transactionEffectiveFromDate",
                 'parseResultCallback' => 'formatDate',
             ],
 
@@ -656,7 +657,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.totalPremium',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.totalPremium",
                 'parseResultCallback' => 'formatCurrency',
             ],
 
@@ -670,7 +671,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.replacementCost',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.replacementCost",
                 'parseResultCallback' => 'formatCurrency',
             ],
 
@@ -682,7 +683,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.accountingDate',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.accountingDate",
                 'parseResultCallback' => 'formatDate',
             ],
 
@@ -696,7 +697,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policyTermMaster.termStartDate',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policyTermMaster.termStartDate",
                 'parseResultCallback' => 'formatDate',
             ],
 
@@ -712,7 +713,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policy.insuredPersonInfo.TbPersonaddress[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Location")',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policy.insuredPersonInfo.TbPersonaddress[] | select(.isDefaultAddress == \"Y\" and .addressTypeCode == \"Location\")",
                 'parseResultCallback' => 'parsePropertyAddress',
             ],
 
@@ -731,7 +732,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '[.agentTask.policyTransaction.policy.insuredPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
+                'jqFilter' => "[{$queryPath}.agentTask.policyTransaction.policy.insuredPersonInfo.emailInfo[0] | select(.isDefault == \"Y\")]",
                 'parseResultCallback' => 'parseInsuredPersonEmail',
             ],
 
@@ -750,7 +751,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '[.agentTask.policyTransaction.policy.insuredPersonInfo.phoneInfo[0] | select(.isDefault == "Y")]',
+                'jqFilter' => "[{$queryPath}.agentTask.policyTransaction.policy.insuredPersonInfo.phoneInfo[0] | select(.isDefault == \"Y\")]",
                 'parseResultCallback' => 'parseInsuredPersonPhone',
             ],
 
@@ -764,7 +765,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.isPolicyholderOwnerOrTenant',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.isPolicyholderOwnerOrTenant",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
 
@@ -778,7 +779,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.isRentalProperty',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.isRentalProperty",
                 'parseResultCallback' => 'parseYesNoDisplayName',
             ],
 
@@ -792,7 +793,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.condoOwnership',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.condoOwnership",
                 'parseResultCallback' => 'parseYesNoDisplayName',
             ],
 
@@ -806,7 +807,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.communityNumber',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.communityNumber",
             ],
 
             'PanelNumber' => [
@@ -819,7 +820,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.panelNumber',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.panelNumber",
             ],
             'MapSuffix' => [
                 'GraphQLschemaToReplace' => [
@@ -831,7 +832,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.mapSuffix',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.mapSuffix",
             ],
             'FloodZone' => [
                 'GraphQLschemaToReplace' => [
@@ -843,7 +844,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.floodZone',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.floodZone",
             ],
             'CountyName' => [
                 'GraphQLschemaToReplace' => [
@@ -855,7 +856,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.countyName',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.countyName",
             ],
             'InitialFirmDate' => [
                 'GraphQLschemaToReplace' => [
@@ -867,7 +868,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.initialFirmDate',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.initialFirmDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'CurrentFirmDate' => [
@@ -880,7 +881,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.currentFirmDate',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.currentFirmDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'CurrentBaseFloodElevation' => [
@@ -893,7 +894,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.baseElevation',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.baseElevation",
                 'parseResultCallback' => 'formatNumber',
             ],
             'IsBuildingLocatedInCoastalBarrierResourcesSystemArea' => [
@@ -906,7 +907,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.isCBRSorOPA',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.isCBRSorOPA",
                 'parseResultCallback' => 'parseYesNoDisplayName',
             ],
             'ConstructionDate' => [
@@ -919,7 +920,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.dateOfConstruction',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.dateOfConstruction",
                 'parseResultCallback' => 'formatDate',
             ],
             'OccupancyType' => [
@@ -932,20 +933,20 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.occupancyType',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.occupancyType",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'BuildingDescription' => [
-                'agentTask' => [
-                    'policyTransaction' => [
-                        'GraphQLschemaToReplace' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
                             'riskAdditionalFloodInfo' => [
                                 'buildingUse' => null,
                             ],
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyTransaction.riskAdditionalFloodInfo.buildingUse',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.buildingUse",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'FoundationType' => [
@@ -958,7 +959,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.foundationType',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.foundationType",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'TotalSquareFootage' => [
@@ -971,7 +972,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.totalSquareFootage',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.totalSquareFootage",
                 'parseResultCallback' => 'formatNumber',
             ],
             'NumberOfFloors' => [
@@ -984,7 +985,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.numberOfFloors',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.numberOfFloors",
                 'parseResultCallback' => 'formatNumber',
             ],
 
@@ -998,7 +999,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.elevationCertificate.certificateDate',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.elevationCertificate.certificateDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'DiagramNumber' => [
@@ -1011,7 +1012,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.elevationCertificate.buildingDiagramNoCode',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.elevationCertificate.buildingDiagramNoCode",
             ],
             'TopOfBottomFloorInFeet' => [
                 'GraphQLschemaToReplace' => [
@@ -1023,7 +1024,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.elevationCertificate.topOfBottomFloor',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.elevationCertificate.topOfBottomFloor",
                 'parseResultCallback' => 'formatNumber',
             ],
             'TopOfNextHigherFloorInFeet' => [
@@ -1036,7 +1037,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.elevationCertificate.topOfNextHigherFloor',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.elevationCertificate.topOfNextHigherFloor",
                 'parseResultCallback' => 'formatNumber',
             ],
             'LowestAdjacentGrade' => [
@@ -1049,7 +1050,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.elevationCertificate.lowestAdjacentGrade',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.elevationCertificate.lowestAdjacentGrade",
                 'parseResultCallback' => 'formatNumber',
             ],
             'LoanClosingDate' => [
@@ -1062,7 +1063,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.riskAdditionalFloodInfo.floodLoanClosingDate',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.riskAdditionalFloodInfo.floodLoanClosingDate",
                 'parseResultCallback' => 'formatDate',
             ],
 
@@ -1079,7 +1080,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '{metadata: .agentTask?.policyTransaction?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .agentTask?.policyTransaction?.policy?.id?, productCode: .agentTask?.policyTransaction?.policy?.product?.productCode?}',
+                'jqFilter' => "{metadata: {$queryPath}.agentTask?.policyTransaction?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: {$queryPath}.agentTask?.policyTransaction?.policy?.id?, productCode: {$queryPath}.agentTask?.policyTransaction?.policy?.product?.productCode?}",
                 'parseResultCallback' => 'parsePaymentTransactionNumber',
             ],
             'PaymentReceivedDate' => [
@@ -1095,7 +1096,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '{metadata: .agentTask?.policyTransaction?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .agentTask?.policyTransaction?.policy?.id?, productCode: .agentTask?.policyTransaction?.policy?.product?.productCode?}',
+                'jqFilter' => "{metadata: {$queryPath}.agentTask?.policyTransaction?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: {$queryPath}.agentTask?.policyTransaction?.policy?.id?, productCode: {$queryPath}.agentTask?.policyTransaction?.policy?.product?.productCode?}",
                 'parseResultCallback' => 'parsePaymentReceivedDate',
             ],
 
@@ -1111,7 +1112,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.agentTask.policyTransaction.policy.agentInfo.fullName',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policy.agentInfo.fullName",
             ],
 
             'WYOCompanyName' => [
@@ -1132,7 +1133,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                     ],
 
                 ],
-                'jqFilter' => '.agentTask.policyTransaction',
+                'jqFilter' => "{$queryPath}.agentTask.policyTransaction",
                 'parseResultCallback' => 'parseCompanyName',
             ],
         ];
@@ -1156,13 +1157,13 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 ],
 
             ],
-            'jqFilter' => '.agentTask.policyTransaction',
+            'jqFilter' => "{$queryPath}.agentTask.policyTransaction",
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
             'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
-            'jqFilter' => '.agentTask.policyTransaction.policy.insuredPersonInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => "{$queryPath}.agentTask.policyTransaction.policy.insuredPersonInfo.TbPersonaddress[] | select(.addressTypeCode == \"Mailing\")",
             'parseResultCallback' => 'parseMailingAddress',
         ];
 
@@ -1179,7 +1180,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.agentTask.policyTransaction.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'jqFilter' => "{$queryPath}.agentTask.policyTransaction.mortgageeInfo[] | select(.mortgageeType == \"PRIMARY\")",
             'parseResultCallback' => 'parsePrimaryMortgageeName',
         ];
 
@@ -1194,7 +1195,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.agentTask.policyTransaction.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'jqFilter' => "{$queryPath}.agentTask.policyTransaction.mortgageeInfo[] | select(.mortgageeType == \"PRIMARY\")",
             'parseResultCallback' => 'parseLoanNumber',
         ];
 
@@ -1209,7 +1210,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.agentTask.policyTransaction.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'jqFilter' => "{$queryPath}.agentTask.policyTransaction.mortgageeInfo[] | select(.mortgageeType == \"PRIMARY\")",
             'parseResultCallback' => 'parsePrimaryMortgageeAddress',
         ];
 
@@ -1226,7 +1227,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.agentTask.policyTransaction.additionalInterestInfo[] | select(.partyInterestCode == "ADDITIONALINSURED")',
+            'jqFilter' => "{$queryPath}.agentTask.policyTransaction.additionalInterestInfo[] | select(.partyInterestCode == \"ADDITIONALINSURED\")",
             'parseResultCallback' => 'parseAdditionalInsuredName',
         ];
 
@@ -1246,7 +1247,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.agentTask.policyTransaction?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
+            'jqFilter' => "{$queryPath}.agentTask.policyTransaction?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?",
             'parseResultCallback' => 'getInsuredPortalUrl',
         ];
 
@@ -1266,7 +1267,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.agentTask.policyTransaction?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
+            'jqFilter' => "{$queryPath}.agentTask.policyTransaction?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?",
             'parseResultCallback' => 'getAgentPortalUrl',
         ];
 

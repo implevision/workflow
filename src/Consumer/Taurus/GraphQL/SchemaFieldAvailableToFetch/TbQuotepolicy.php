@@ -20,8 +20,8 @@ class TbQuotepolicy extends AbstractSchema
 
     public function __construct()
     {
-        $this->fieldMapping = $this->initializeFieldMapping();
         $this->queryName = 'quotesQuery';
+        $this->fieldMapping = $this->initializeFieldMapping();
         $this->setHeaders([
             'X-Request-Agent-Portal' => true,
         ]);
@@ -67,12 +67,13 @@ class TbQuotepolicy extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $queryPath = '.'.$this->queryName;
         $fieldMapping = [
             'QuoteNo' => [
                 'GraphQLschemaToReplace' => [
                     'quoteNo' => null,
                 ],
-                'jqFilter' => '.quoteNo',
+                'jqFilter' => "{$queryPath}.quoteNo",
             ],
         ];
 

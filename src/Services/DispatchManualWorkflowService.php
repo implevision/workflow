@@ -216,17 +216,8 @@ class DispatchManualWorkflowService
                 $graphQLClient = new GraphQLClient;
                 $response = $graphQLClient->query($graphQLRequestPayload);
 
-                // Paginated modules wrap records under `data`
-                // (`{queryName: {data: [...], paginatorInfo: {...}}}`); this
-                // path looks up a single record by recordIdentifier, so take
-                // the first item. Non-paginated (e.g. Nova single-record)
-                // modules return the record directly under the query root —
-                // use it as-is. Either way, rebuild the response as
-                // `{queryName: record}`, matching what the (now root-relative,
-                // prefixed with `.queryName` at the call site below) jqFilter
-                // strings expect.
                 $queryRootNode = $response[$queryName] ?? [];
-                $record = (is_array($queryRootNode) && array_key_exists('data', $queryRootNode))
+                $record = $moduleClassForGraphQL->supportsPagination()
                     ? ($queryRootNode['data'][0] ?? [])
                     : $queryRootNode;
                 $response = [$queryName => $record];
@@ -270,11 +261,7 @@ class DispatchManualWorkflowService
                             $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback();
                         }
                     } else {
-                        // `.` marks "the whole record" (no path past the query
-                        // root) — append nothing, since '.'.$queryName.'.' would
-                        // be invalid jq (trailing dot, nothing after).
-                        $effectiveFilter = $jqFilter === '.' ? '.'.$queryName : '.'.$queryName.$jqFilter;
-                        $placeHolderValue = $graphQLSchemaBuilder->extractValue($response, $effectiveFilter);
+                        $placeHolderValue = $graphQLSchemaBuilder->extractValue($response, $jqFilter);
 
                         if ($placeHolderValue) {
                             $parsed = json_decode($placeHolderValue, true);

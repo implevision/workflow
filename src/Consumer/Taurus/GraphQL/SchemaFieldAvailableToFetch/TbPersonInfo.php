@@ -70,6 +70,7 @@ class TbPersonInfo extends AbstractSchema
     private function initializeFieldMapping()
     {
         $appendedPlaceHolders = $this->getAppendedPlaceHolders();
+        $queryPath = '.'.$this->queryName;
 
         $fieldMapping = [
 
@@ -77,49 +78,49 @@ class TbPersonInfo extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'agencyFloodCode' => null,
                 ],
-                'jqFilter' => '.agencyFloodCode',
+                'jqFilter' => "{$queryPath}.agencyFloodCode",
             ],
 
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
                     'agencyName' => null,
                 ],
-                'jqFilter' => '.agencyName',
+                'jqFilter' => "{$queryPath}.agencyName",
             ],
 
             'DBAName' => [
                 'GraphQLschemaToReplace' => [
                     'dbaName' => null,
                 ],
-                'jqFilter' => '.dbaName',
+                'jqFilter' => "{$queryPath}.dbaName",
             ],
 
             'EftPayeesName' => [
                 'GraphQLschemaToReplace' => [
                     'eftPayeesName' => null,
                 ],
-                'jqFilter' => '.eftPayeesName',
+                'jqFilter' => "{$queryPath}.eftPayeesName",
             ],
 
             'AgencyStatus' => [
                 'GraphQLschemaToReplace' => [
                     'agencyStatus' => null,
                 ],
-                'jqFilter' => '.agencyStatus',
+                'jqFilter' => "{$queryPath}.agencyStatus",
             ],
 
             'FeinSsnNo' => [
                 'GraphQLschemaToReplace' => [
                     'feinSsnNo' => null,
                 ],
-                'jqFilter' => '.feinSsnNo',
+                'jqFilter' => "{$queryPath}.feinSsnNo",
             ],
 
             'FullLegalName' => [
                 'GraphQLschemaToReplace' => [
                     'fullName' => null,
                 ],
-                'jqFilter' => '.fullName',
+                'jqFilter' => "{$queryPath}.fullName",
             ],
         ];
 
@@ -131,7 +132,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.brandedCompany[0].company.companyName',
+            'jqFilter' => "{$queryPath}.brandedCompany[0].company.companyName",
         ];
 
         $fieldMapping['ContactName'] = [
@@ -140,7 +141,7 @@ class TbPersonInfo extends AbstractSchema
                     'contactName' => null,
                 ],
             ],
-            'jqFilter' => '.personContacts[0].contactName',
+            'jqFilter' => "{$queryPath}.personContacts[0].contactName",
         ];
 
         $fieldMapping['ContactEmail'] = [
@@ -149,7 +150,7 @@ class TbPersonInfo extends AbstractSchema
                     'contactEmail' => null,
                 ],
             ],
-            'jqFilter' => '.personContacts[0].contactEmail',
+            'jqFilter' => "{$queryPath}.personContacts[0].contactEmail",
         ];
 
         $fieldMapping['ContactPhone'] = [
@@ -158,7 +159,7 @@ class TbPersonInfo extends AbstractSchema
                     'contactPhone' => null,
                 ],
             ],
-            'jqFilter' => '.personContacts[0].contactPhone',
+            'jqFilter' => "{$queryPath}.personContacts[0].contactPhone",
         ];
 
         $fieldMapping['SettlementCode'] = [
@@ -167,7 +168,7 @@ class TbPersonInfo extends AbstractSchema
                     'metadata' => null,
                 ],
             ],
-            'jqFilter' => '.personAddInfos[0].metadata.settlement_code',
+            'jqFilter' => "{$queryPath}.personAddInfos[0].metadata.settlement_code",
         ];
 
         $fieldMapping['TaxType'] = [
@@ -176,7 +177,7 @@ class TbPersonInfo extends AbstractSchema
                     'metadata' => null,
                 ],
             ],
-            'jqFilter' => '.personAddInfos[0].metadata.tax_type',
+            'jqFilter' => "{$queryPath}.personAddInfos[0].metadata.tax_type",
         ];
 
         $fieldMapping['CorpStatus'] = [
@@ -185,7 +186,7 @@ class TbPersonInfo extends AbstractSchema
                     'metadata' => null,
                 ],
             ],
-            'jqFilter' => '.personAddInfos[0].metadata.s_CorpStatus',
+            'jqFilter' => "{$queryPath}.personAddInfos[0].metadata.s_CorpStatus",
         ];
 
         $fieldMapping['UWAssign'] = [
@@ -196,7 +197,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.roles[0].uWAssign.screenName',
+            'jqFilter' => "{$queryPath}.roles[0].uWAssign.screenName",
         ];
 
         $fieldMapping['ServiceRep'] = [
@@ -207,7 +208,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.roles[0].serviceRep.screenName',
+            'jqFilter' => "{$queryPath}.roles[0].serviceRep.screenName",
         ];
 
         $fieldMapping['ManagerName'] = [
@@ -218,7 +219,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.managers[0].managerPerson.firstName',
+            'jqFilter' => "{$queryPath}.managers[0].managerPerson.firstName",
         ];
 
         $fieldMapping['ManagerPhone'] = [
@@ -231,7 +232,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.managers[0].managerPerson.phoneInfo[0].phoneNumber',
+            'jqFilter' => "{$queryPath}.managers[0].managerPerson.phoneInfo[0].phoneNumber",
         ];
 
         $fieldMapping['ManagerEmail'] = [
@@ -244,7 +245,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.managers[0].managerPerson.emailInfo[0].email',
+            'jqFilter' => "{$queryPath}.managers[0].managerPerson.emailInfo[0].email",
         ];
 
         $fieldMapping['LicenseManagers'] = [
@@ -260,7 +261,7 @@ class TbPersonInfo extends AbstractSchema
                     'state' => null,
                 ],
             ],
-            'jqFilter' => '.licenseManagers[]',
+            'jqFilter' => "{$queryPath}.licenseManagers[]",
         ];
 
         $fieldMapping['OriginatingAddress'] = [
@@ -269,7 +270,7 @@ class TbPersonInfo extends AbstractSchema
                     'metadata' => null,
                 ],
             ],
-            'jqFilter' => '.al3Details[0].metadata[0].flood.originating_addr',
+            'jqFilter' => "{$queryPath}.al3Details[0].metadata[0].flood.originating_addr",
         ];
 
         $fieldMapping['LastFourDigitAccountNumber'] = [
@@ -280,7 +281,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.accounts[0].achConfigurations[0].lastFourDigitOfAccountNumber',
+            'jqFilter' => "{$queryPath}.accounts[0].achConfigurations[0].lastFourDigitOfAccountNumber",
         ];
 
         $fieldMapping['TodayDate'] = [
@@ -295,14 +296,14 @@ class TbPersonInfo extends AbstractSchema
                     'agentUrl' => null,
                 ],
             ],
-            'jqFilter' => '.agentInfo.agentUrl',
+            'jqFilter' => "{$queryPath}.agentInfo.agentUrl",
         ];
 
         $fieldMapping['WyoUpn'] = [
             'GraphQLschemaToReplace' => [
                 'wyoUpn' => null,
             ],
-            'jqFilter' => '.wyoUpn',
+            'jqFilter' => "{$queryPath}.wyoUpn",
         ];
 
         $fieldMapping['User'] = [
@@ -317,7 +318,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.userAgents[]',
+            'jqFilter' => "{$queryPath}.userAgents[]",
             'parseResultCallback' => 'parseFirstUser',
         ];
 
@@ -343,25 +344,25 @@ class TbPersonInfo extends AbstractSchema
 
         $fieldMapping['MailingAddress'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.addresses[] | select(.addressTypeCode == "MAILING")',
+            'jqFilter' => "{$queryPath}.addresses[] | select(.addressTypeCode == \"MAILING\")",
             'parseResultCallback' => 'parseFullMailingAddress',
         ];
 
         $fieldMapping['LocationAddress'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.addresses[] | select(.addressTypeCode == "LOCATION")',
+            'jqFilter' => "{$queryPath}.addresses[] | select(.addressTypeCode == \"LOCATION\")",
             'parseResultCallback' => 'parseFullLocationAddress',
         ];
 
         $fieldMapping['MailingAddressLine'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.addresses[] | select(.addressTypeCode == "MAILING")',
+            'jqFilter' => "{$queryPath}.addresses[] | select(.addressTypeCode == \"MAILING\")",
             'parseResultCallback' => 'parseMailingAddressLine',
         ];
 
         $fieldMapping['MailingCityStateZip'] = [
             'GraphQLschemaToReplace' => $mailingAddressStructure,
-            'jqFilter' => '.addresses[] | select(.addressTypeCode == "MAILING")',
+            'jqFilter' => "{$queryPath}.addresses[] | select(.addressTypeCode == \"MAILING\")",
             'parseResultCallback' => 'parseMailingCityStateZip',
         ];
 
@@ -373,7 +374,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
+            'jqFilter' => "{$queryPath}.userAgent.agency.addresses[] | select(.addressTypeCode == \"MAILING\")",
             'parseResultCallback' => 'parseW9FormAddress',
         ];
 
@@ -385,7 +386,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
+            'jqFilter' => "{$queryPath}.userAgent.agency.addresses[] | select(.addressTypeCode == \"MAILING\")",
             'parseResultCallback' => 'parseW9FormCityStateZip',
         ];
 
@@ -397,7 +398,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.userAgent.agency.feinSsnNo',
+            'jqFilter' => "{$queryPath}.userAgent.agency.feinSsnNo",
             'parseResultCallback' => 'parseW9FormFeinSsnNo',
         ];
 
@@ -412,7 +413,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => ".accounts[].agentStatementMaster[] | select((.agentStatementMasterPK|tostring) == ({$targetAgentStatementMasterPK}|tostring))",
+            'jqFilter' => "{$queryPath}.accounts[].agentStatementMaster[] | select((.agentStatementMasterPK|tostring) == ({$targetAgentStatementMasterPK}|tostring))",
             'parseResultCallback' => 'generatePresignedUrlForStatementSheet',
         ];
 
@@ -424,7 +425,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.',
+            'jqFilter' => "{$queryPath}",
             'parseResultCallback' => 'parseCompanyName',
         ];
 
@@ -437,7 +438,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.',
+            'jqFilter' => "{$queryPath}",
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
@@ -449,7 +450,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.userAgent.agency.addresses[] | select(.addressTypeCode == "MAILING")',
+            'jqFilter' => "{$queryPath}.userAgent.agency.addresses[] | select(.addressTypeCode == \"MAILING\")",
             'parseResultCallback' => 'parseFullMailingAddress',
         ];
 
@@ -471,7 +472,7 @@ class TbPersonInfo extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '[.userAgents[] | select(.user.level.userLevelCode == "PRINCIPLE" and (.user.userStatus|tostring) == "111" and .user.email != null) | .user.email]',
+            'jqFilter' => "[{$queryPath}.userAgents[] | select(.user.level.userLevelCode == \"PRINCIPLE\" and (.user.userStatus|tostring) == \"111\" and .user.email != null) | .user.email]",
             'parseResultCallback' => 'parseAgencyManagerEmails',
         ];
 

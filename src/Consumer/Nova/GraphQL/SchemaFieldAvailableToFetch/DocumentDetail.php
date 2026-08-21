@@ -25,50 +25,52 @@ class DocumentDetail extends AbstractSchema
 
     private function initializeFieldMapping(): array
     {
+        $queryPath = '.'.$this->queryName;
+
         return [
             'DocumentId' => [
                 'GraphQLschemaToReplace' => ['id' => null],
-                'jqFilter' => '.id',
+                'jqFilter' => "{$queryPath}.id",
             ],
             'DocName' => [
                 'GraphQLschemaToReplace' => ['docName' => null],
-                'jqFilter' => '.docName',
+                'jqFilter' => "{$queryPath}.docName",
             ],
             'DocGroupType' => [
                 'GraphQLschemaToReplace' => ['groupType' => ['name' => null]],
-                'jqFilter' => '.groupType.name',
+                'jqFilter' => "{$queryPath}.groupType.name",
             ],
             'ReportType' => [
                 'GraphQLschemaToReplace' => ['groupType' => ['odysseyReportType' => null]],
-                'jqFilter' => '.groupType.odysseyReportType',
+                'jqFilter' => "{$queryPath}.groupType.odysseyReportType",
             ],
             'IsApproved' => [
                 'GraphQLschemaToReplace' => ['isApproved' => null],
-                'jqFilter' => '.isApproved',
+                'jqFilter' => "{$queryPath}.isApproved",
             ],
             'SourceId' => [
                 'GraphQLschemaToReplace' => ['sourceId' => null],
-                'jqFilter' => '.sourceId',
+                'jqFilter' => "{$queryPath}.sourceId",
             ],
             'SourceCode' => [
                 'GraphQLschemaToReplace' => ['sourceCode' => null],
-                'jqFilter' => '.sourceCode',
+                'jqFilter' => "{$queryPath}.sourceCode",
             ],
             'AssignmentId' => [
                 'GraphQLschemaToReplace' => ['claim' => ['assignmentId' => null]],
-                'jqFilter' => '.claim.assignmentId',
+                'jqFilter' => "{$queryPath}.claim.assignmentId",
             ],
             'PolicyNo' => [
                 'GraphQLschemaToReplace' => ['claim' => ['policy' => ['policyNumber' => null]]],
-                'jqFilter' => '.claim.policy.policyNumber',
+                'jqFilter' => "{$queryPath}.claim.policy.policyNumber",
             ],
             'DateOfLoss' => [
                 'GraphQLschemaToReplace' => ['claim' => ['dateOfLoss' => null]],
-                'jqFilter' => '.claim.dateOfLoss',
+                'jqFilter' => "{$queryPath}.claim.dateOfLoss",
             ],
             'PolicyNumberWithoutPrefix' => [
                 'GraphQLschemaToReplace' => ['claim' => ['policy' => ['policyNumber' => null]]],
-                'jqFilter' => '.claim.policy.policyNumber',
+                'jqFilter' => "{$queryPath}.claim.policy.policyNumber",
             ],
         ];
     }

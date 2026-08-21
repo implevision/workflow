@@ -404,12 +404,9 @@ class DispatchWorkflowService
 
                         $queryName = $moduleClassForGraphQL->getQueryName();
                         $queryRootNode = $response[$queryName] ?? [];
-
-                        if (is_array($queryRootNode) && array_key_exists('data', $queryRootNode)) {
-                            $records = $queryRootNode['data'] ?? [];
-                        } else {
-                            $records = [$queryRootNode];
-                        }
+                        $records = $moduleClassForGraphQL->supportsPagination()
+                            ? ($queryRootNode['data'] ?? [])
+                            : [$queryRootNode];
 
                         $perRecordResponses = array_map(
                             fn ($record) => [$queryName => $record],
@@ -443,11 +440,7 @@ class DispatchWorkflowService
                                             $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback();
                                         }
                                     } else {
-                                        // `.` marks "the whole record" (no path past the
-                                        // query root) — append nothing, since '.'.$queryName.'.'
-                                        // would be invalid jq (trailing dot, nothing after).
-                                        $effectiveFilter = $jqFilter === '.' ? '.'.$queryName : '.'.$queryName.$jqFilter;
-                                        $placeHolderValue = $graphQLSchemaBuilder->extractValue($recordResponse, $effectiveFilter);
+                                        $placeHolderValue = $graphQLSchemaBuilder->extractValue($recordResponse, $jqFilter);
 
                                         if ($placeHolderValue) {
                                             $parsedValue = json_decode($placeHolderValue, true);
