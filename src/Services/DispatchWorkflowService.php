@@ -461,7 +461,7 @@ class DispatchWorkflowService
 
                                 if ($this->recordIdentifier && ! empty($parsedData) && ! $hasAtLeastOneValue) {
                                     \Log::warning('WORKFLOW -  Data unavailable or all required fields are empty');
-                                    break 3;
+                                    break 2;
                                 }
                                 if ($actionType == 'WEB_HOOK') {
                                     $data = array_merge($data, $this->generatePayloadFromParsedData($parsedData));

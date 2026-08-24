@@ -98,10 +98,11 @@ class AbstractSchema
     /**
      * Returns the query args for the next page, or null when there are no more pages.
      *
-     * Default: every generated query requests `paginatorInfo { hasMorePages }`
-     * alongside `data`, so that flag directly tells us whether to advance to
-     * the next page. Override in module schema classes that need a different
-     * stopping condition (e.g. checking a nested list within each record).
+     * Default: when supportsPagination() is true and the query is generated via
+     * GraphQLSchemaBuilderService::generateGraphQLQuery() (where: ...), the
+     * builder requests `paginatorInfo { hasMorePages }` alongside `data`, so
+     * that flag directly tells us whether to advance to the next page. Override
+     * in module schema classes that need a different stopping condition.
      *
      * @param  array  $response  Raw GraphQL response from the current page
      * @param  array  $currentArgs  Query args used for the current page
