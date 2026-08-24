@@ -109,9 +109,11 @@ class GraphQLSchemaBuilderService
         }
 
         $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
-        $page = $page + 1;
 
-        return "query {\n  $queryName(where: ".$variablesStr." page: ".$page."){\n".
+        $page = $page + 1;
+        $pageArg = $supportsPagination ? ' page: '.$page : '';
+
+        return "query {\n  $queryName(where: ".$variablesStr.$pageArg."){\n".
             preg_replace('/^/m', '    ', $fields)."\n  }\n}";
     }
 
