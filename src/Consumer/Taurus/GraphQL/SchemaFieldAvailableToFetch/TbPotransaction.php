@@ -4,7 +4,6 @@ namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
 use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Avatar\Infrastructure\Models\Api\v1\TbProduct;
-use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbPotransaction extends AbstractSchema
@@ -103,6 +102,15 @@ class TbPotransaction extends AbstractSchema
                 'name' => null,
             ],
             'isDefaultAddress' => null,
+        ];
+
+        $requiredDocumentsStructure = [
+            'requiredDocuments' => [
+                'isAttached' => null,
+                'documentTrackMaster' => [
+                    'sourceCode' => null,
+                ],
+            ],
         ];
 
         $fieldMapping = [
@@ -590,18 +598,12 @@ class TbPotransaction extends AbstractSchema
                 'parseResultCallback' => 'formatNumber',
             ],
             'ElevationCertificateRequired' => [
-                'GraphQLschemaToReplace' => [
-                    'id' => null,
-                ],
-                'jqFilter' => '.policyQuery.id',
-                'parseResultCallback' => 'parseElevationCertificateRequired',
+                'GraphQLschemaToReplace' => $requiredDocumentsStructure,
+                'jqFilter' => $this->outstandingRequiredDocumentFilter(self::ELEVATION_CERTIFICATE_REQUIRED_DOCUMENT_CODES),
             ],
             'SquareFootageProofRequired' => [
-                'GraphQLschemaToReplace' => [
-                    'id' => null,
-                ],
-                'jqFilter' => '.policyQuery.id',
-                'parseResultCallback' => 'parseSquareFootageProofRequired',
+                'GraphQLschemaToReplace' => $requiredDocumentsStructure,
+                'jqFilter' => $this->outstandingRequiredDocumentFilter(self::SQUARE_FOOTAGE_PROOF_REQUIRED_DOCUMENT_CODES),
             ],
             'NumberOfFloors' => [
                 'GraphQLschemaToReplace' => [
@@ -1235,39 +1237,15 @@ class TbPotransaction extends AbstractSchema
         return $coverageAmount > 0 ? true : false;
     }
 
-    public function parseElevationCertificateRequired($transactionId): bool
+    // True when the transaction still has an unattached required document of any of the given source codes.
+    private function outstandingRequiredDocumentFilter(array $documentCodes): string
     {
-        return $this->hasPendingRequiredDocument(
-            $transactionId,
-            self::ELEVATION_CERTIFICATE_REQUIRED_DOCUMENT_CODES
-        );
-    }
+        $codeMatches = implode(' or ', array_map(
+            static fn ($documentCode) => '.documentTrackMaster.sourceCode == "'.$documentCode.'"',
+            $documentCodes
+        ));
 
-    public function parseSquareFootageProofRequired($transactionId): bool
-    {
-        return $this->hasPendingRequiredDocument(
-            $transactionId,
-            self::SQUARE_FOOTAGE_PROOF_REQUIRED_DOCUMENT_CODES
-        );
-    }
-
-    private function hasPendingRequiredDocument($transactionId, array $documentCodes): bool
-    {
-        if (empty($transactionId)) {
-            return false;
-        }
-
-        return DB::table('tb_podocumenttracktrans as pdt')
-            ->join(
-                'tb_prdocumenttrackmasters as pdm',
-                'pdm.n_PrDocumentTrackMaster_PK',
-                '=',
-                'pdt.n_PrDocumentTrackMaster_FK'
-            )
-            ->where('pdt.n_PoTransaction_FK', $transactionId)
-            ->where('pdt.s_IsAttached', 'N')
-            ->whereIn('pdm.s_SourceCode', $documentCodes)
-            ->exists();
+        return '[.policyQuery.requiredDocuments[]? | select(.isAttached == "N" and ('.$codeMatches.'))] | length > 0';
     }
 
     public function parseWyoAgencyAgentCode($agentCode)
