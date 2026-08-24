@@ -10,8 +10,8 @@ use Taurus\Workflow\Consumer\Taurus\Helper;
 class TbPotransaction extends AbstractSchema
 {
     private const ELEVATION_CERTIFICATE_REQUIRED_DOCUMENT_CODES = [
-        'MEDOCUMENT',
-        'EVIDENCE_OF_ELEVATED_ME',
+        'ECDOCUMENT',
+        'ECPHOTOS',
     ];
 
     private const SQUARE_FOOTAGE_PROOF_REQUIRED_DOCUMENT_CODES = [
