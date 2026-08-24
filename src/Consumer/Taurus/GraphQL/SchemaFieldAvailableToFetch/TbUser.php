@@ -22,8 +22,8 @@ class TbUser extends AbstractSchema
 
     public function __construct()
     {
-        $this->fieldMapping = $this->initializeFieldMapping();
         $this->queryName = 'usersQuery';
+        $this->fieldMapping = $this->initializeFieldMapping();
     }
 
     /**
@@ -55,42 +55,44 @@ class TbUser extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $queryPath = '.'.$this->queryName;
+
         $fieldMapping = [
             'UserId' => [
                 'GraphQLschemaToReplace' => [
                     'id' => null,
                 ],
-                'jqFilter' => '.id',
+                'jqFilter' => "{$queryPath}.id",
             ],
             'Username' => [
                 'GraphQLschemaToReplace' => [
                     'username' => null,
                 ],
-                'jqFilter' => '.username',
+                'jqFilter' => "{$queryPath}.username",
             ],
             'UserFirstName' => [
                 'GraphQLschemaToReplace' => [
                     'firstName' => null,
                 ],
-                'jqFilter' => '.firstName',
+                'jqFilter' => "{$queryPath}.firstName",
             ],
             'UserLastName' => [
                 'GraphQLschemaToReplace' => [
                     'lastName' => null,
                 ],
-                'jqFilter' => '.lastName',
+                'jqFilter' => "{$queryPath}.lastName",
             ],
             'Email' => [
                 'GraphQLschemaToReplace' => [
                     'email' => null,
                 ],
-                'jqFilter' => '.email',
+                'jqFilter' => "{$queryPath}.email",
             ],
             'UserFullName' => [
                 'GraphQLschemaToReplace' => [
                     'screenName' => null,
                 ],
-                'jqFilter' => '.screenName',
+                'jqFilter' => "{$queryPath}.screenName",
             ],
         ];
 
