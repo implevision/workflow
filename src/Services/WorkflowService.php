@@ -112,7 +112,7 @@ class WorkflowService
 
             DB::commit();
 
-            if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow']) && $data['when']['effectiveActionToExecuteWorkflow'] === 'CUSTOM_DATE_AND_TIME') {
+            if (! empty($data['when']['customDateTimeInfoToExecuteWorkflow']) && in_array($data['when']['effectiveActionToExecuteWorkflow'], ['ON_DATE_TIME', 'CUSTOM_DATE_AND_TIME'])) {
                 $workflowId = $workflow->id;
                 $workflows = $this->workflowRepo->getById($workflowId)->toArray();
                 // TODO: This must be implemented consumer wise. Broadcast the WF id and let CONSUMER handle it.
@@ -517,6 +517,12 @@ class WorkflowService
 
                             $configureTimeForEventSchedulerToAwakeWorkflowSystem = convertLocalToUTC($executionDateTime, 'm/d/Y H:i:s', config('workflow.timezone'));
                             $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'at('.$configureTimeForEventSchedulerToAwakeWorkflowSystem.')'; // At specific date and time
+                        } elseif (! empty($workflow['date_time_info_to_execute_workflow']['executionEventIncident']) && $workflow['date_time_info_to_execute_workflow']['executionEventIncident'] == 'WITH_IN') {
+                            $baseTimestamp = sprintf('+%s %ss', $workflow['date_time_info_to_execute_workflow']['executionFrequency'], strtolower($workflow['date_time_info_to_execute_workflow']['executionFrequencyType']));
+                            $executionDateTime = strtotime($baseTimestamp);
+
+                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = convertLocalToUTC($executionDateTime, 'm/d/Y 00:00:00', config('workflow.timezone'));
+                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'at('.$configureTimeForEventSchedulerToAwakeWorkflowSystem.')'; // At specific date and time
                         } elseif (! empty($workflow['date_time_info_to_execute_workflow']['recurringFrequency'])) {
                             if ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'WEEK') { // SCHEDULE RECURRING WORKFLOW
                                 $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 ? * MON *)'; // At 00:00 on every Monday
@@ -569,7 +575,7 @@ class WorkflowService
     {
         $moduleService = $this->getModuleService($module);
 
-        if ($moduleService instanceof \stdClass) {
+        if ($moduleService instanceof stdClass) {
             return [];
         }
 
@@ -599,7 +605,7 @@ class WorkflowService
     {
         $moduleService = $this->getModuleService($module);
 
-        if ($moduleService instanceof \stdClass) {
+        if ($moduleService instanceof stdClass) {
             return '';
         }
 
@@ -610,7 +616,7 @@ class WorkflowService
     {
         try {
             $consumerService = $this->getConsumerService();
-            if ($consumerService instanceof \stdClass) {
+            if ($consumerService instanceof stdClass) {
                 return new stdClass;
             }
 
@@ -626,7 +632,7 @@ class WorkflowService
     {
         try {
             $consumerService = $this->getConsumerService();
-            if ($consumerService instanceof \stdClass) {
+            if ($consumerService instanceof stdClass) {
                 return new stdClass;
             }
 
@@ -659,7 +665,7 @@ class WorkflowService
     {
         try {
             $consumerService = $this->getConsumerService();
-            if ($consumerService instanceof \stdClass) {
+            if ($consumerService instanceof stdClass) {
                 return new stdClass;
             }
 
@@ -675,7 +681,7 @@ class WorkflowService
     {
         try {
             $consumerService = $this->getConsumerService();
-            if ($consumerService instanceof \stdClass) {
+            if ($consumerService instanceof stdClass) {
                 return new stdClass;
             }
 
@@ -778,6 +784,7 @@ class WorkflowService
             }
 
             $query = WorkflowLog::with('workflow:id,name')
+                ->with('user:Admin_ID,s_ScreenName')
                 ->where('module', $moduleClass)
                 ->where('status', WorkflowLog::STATUS_COMPLETED)
                 ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))

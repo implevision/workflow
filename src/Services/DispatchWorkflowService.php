@@ -142,6 +142,7 @@ class DispatchWorkflowService
         $nextPageCommand = null;
 
         $graphQLQuery = [];
+        $effectiveActionQuery = [];
         // NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
         // Example: After/Before X day(s)/month(s)/year(s) of the event
         if (
@@ -150,7 +151,7 @@ class DispatchWorkflowService
             ! $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['certainDateTime']
         ) {
             try {
-                $graphQLQuery = $this->workflowService->getQueryForEffectiveAction(
+                $effectiveActionQuery = $this->workflowService->getQueryForEffectiveAction(
                     $this->workflowInfo['detail']['module'],
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequency'],
                     $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequencyType'],
@@ -164,18 +165,21 @@ class DispatchWorkflowService
 
         if ($this->recordIdentifier && ! $this->isManuallyInvoked) {
             try {
-                $queryToAppend = $this->workflowService->getQueryForRecordIdentifier(
+                $recordIdentifierQuery = $this->workflowService->getQueryForRecordIdentifier(
                     $this->workflowInfo['detail']['module'],
                     $this->recordIdentifier
                 );
-                if (count($graphQLQuery)) {
-                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => $queryToAppend];
+                if (count($effectiveActionQuery)) {
+                    $graphQLQuery = $recordIdentifierQuery;
+                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$effectiveActionQuery]];
                 } else {
-                    $graphQLQuery = $queryToAppend;
+                    $graphQLQuery = $recordIdentifierQuery;
                 }
             } catch (\Exception $e) {
                 throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
             }
+        } elseif (count($effectiveActionQuery)) {
+            $graphQLQuery = $effectiveActionQuery;
         }
 
         foreach ($allConditions as $condition) {
@@ -206,7 +210,11 @@ class DispatchWorkflowService
 
                 if (! empty($conditionsToApply)) {
                     if (count($graphQLQuery)) {
-                        $graphQLQuery['JOIN'] = $conditionsToApply;
+                        if (isset($graphQLQuery['JOIN'])) {
+                            $graphQLQuery['JOIN']['condition'][] = $conditionsToApply;
+                        } else {
+                            $graphQLQuery['JOIN'] = $conditionsToApply;
+                        }
                     } else {
                         $graphQLQuery = $conditionsToApply;
                     }
@@ -365,10 +373,10 @@ class DispatchWorkflowService
                     // Handle GraphQL query execution
                     try {
                         // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        // \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
+                        \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
                         $graphQLClient = new GraphQLClient($graphQLHeaders);
                         $response = $graphQLClient->query($graphQLRequestPayload);
-                        // \Log::info('WORKFLOW - GraphQL Response: ', $response);
+                        \Log::info('WORKFLOW - GraphQL Response: ', $response);
                     } catch (\Exception $e) {
                         $this->workflowService->addWorkflowLog(
                             $this->workflowId,

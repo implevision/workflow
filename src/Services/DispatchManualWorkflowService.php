@@ -33,6 +33,8 @@ class DispatchManualWorkflowService
 
     protected WorkflowService $workflowService;
 
+    protected int|string|null $userId;
+
     /**
      * @param  string  $module  Module name (e.g. 'policy')
      * @param  int|string  $recordIdentifier  The record ID to resolve placeholders for
@@ -43,7 +45,8 @@ class DispatchManualWorkflowService
         string $module,
         int|string $recordIdentifier,
         array $selectedActions,
-        array $actionsConfig
+        array $actionsConfig,
+        int|string|null $userId = null
     ) {
         $this->module = $module;
         $this->recordIdentifier = $recordIdentifier;
@@ -51,6 +54,7 @@ class DispatchManualWorkflowService
         $this->actionsConfig = $actionsConfig;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
         $this->workflowService = app(WorkflowService::class);
+        $this->userId = $userId;
     }
 
     /**
@@ -90,6 +94,8 @@ class DispatchManualWorkflowService
                 'module' => $this->module,
                 'status' => WorkflowLog::STATUS_IN_PROGRESS,
                 'action_type' => $actionType,
+                'user_id' => $this->userId,
+                'action_config_payload' => $actionPayload,
             ]);
 
             if (! $actionPayload) {

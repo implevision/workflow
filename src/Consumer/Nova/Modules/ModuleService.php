@@ -22,24 +22,75 @@ class ModuleService
      * @throws \Exception If there is an error during the retrieval process.
      */
     public function getQueryForEffectiveAction(
-        $module,
         $executionFrequency,
         $executionFrequencyType,
         $executionEventIncident,
         $executionEvent
     ) {
-        // 'Now {+/-}{NO_OF_DAYS} {days/months/years}' format
-        $timeStrToParse = sprintf(
-            'Now %s%s %s',
-            $executionEventIncident == 'AFTER' ? '+' : '-',
+        // Without a target date field or a valid window there is nothing to match on.
+        if (empty($executionEvent) || empty($executionFrequency) || empty($executionFrequencyType)) {
+            return [];
+        }
+
+        $targetDate = $this->resolveEventTargetDate(
             $executionFrequency,
-            strtolower($executionFrequencyType).'s',
+            $executionFrequencyType,
+            $executionEventIncident
         );
-        $timeToParse = Carbon::parse($timeStrToParse);
 
-        // $data = $this->getGraphQLQueryMapping($module, $executionEvent, "=", $timeToParse->format('Y-m-d'));
+        // If the execution event is a relation, extract the relation name and column.
+        $relationName = null;
+        $column = $executionEvent;
 
-        return $data;
+        if (str_contains($executionEvent, '@')) {
+            $relationName = GraphQLSchemaBuilderService::extractRelationName($executionEvent);
+            $column = GraphQLSchemaBuilderService::extractRelationColumn($executionEvent);
+        }
+
+        // WITH_IN resolves to a range, so match records whose event date field falls between START_DATE and END_DATE.
+        if (is_array($targetDate)) {
+            $startCondition = GraphQLSchemaBuilderService::getQueryMapping($column, 'GTE', $targetDate['START_DATE'], $relationName);
+            $endCondition = GraphQLSchemaBuilderService::getQueryMapping($column, 'LTE', $targetDate['END_DATE'], $relationName);
+
+            return $startCondition + ['JOIN' => ['operator' => 'AND', 'condition' => [$endCondition]]];
+        }
+
+        // Match records whose event date field (within the relation, if any) equals the target date.
+        return GraphQLSchemaBuilderService::getQueryMapping($column, 'EQ', $targetDate, $relationName);
+    }
+
+    /**
+     * Resolves the date(s) to match against, relative to today.
+     * Reusable by any module that schedules off a "before/after/within an event" window.
+     *
+     *   AFTER   -> today - frequency          (event is in the future)
+     *   BEFORE  -> today + frequency          (event was in the past)
+     *   WITH_IN -> START_DATE = today - frequency, END_DATE = today (event falls within the trailing window)
+     *
+     * @param  int|string  $frequency  Number of units in the window (e.g. 15)
+     * @param  string  $frequencyType  DAY | MONTH | YEAR
+     * @param  string  $incident  AFTER | BEFORE | WITH_IN
+     * @return string|array Target date as 'Y-m-d', or ['START_DATE' => ..., 'END_DATE' => ...] for WITH_IN
+     */
+    protected function resolveEventTargetDate($frequency, $frequencyType, $incident): string|array
+    {
+        $unit = strtolower($frequencyType).'s';
+
+        if ($incident === 'WITH_IN') {
+            return [
+                'START_DATE' => Carbon::parse(sprintf('now -%d %s', (int) $frequency, $unit))->format('Y-m-d'),
+                'END_DATE' => Carbon::now()->format('Y-m-d'),
+            ];
+        }
+
+        $sign = $incident === 'AFTER' ? '-' : '+';
+
+        return Carbon::parse(sprintf(
+            'now %s%d %s',
+            $sign,
+            (int) $frequency,
+            $unit
+        ))->format('Y-m-d');
     }
 
     public function getQueryForRecordIdentifier($module, $recordIdentifier)

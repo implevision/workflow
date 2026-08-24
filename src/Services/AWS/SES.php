@@ -130,8 +130,8 @@ class SES
                     ],
                 ],
                 'BulkEmailEntries' => $bulkEmailEntries,
-               ...($replyTo ? ['ReplyToAddresses' => (array) $replyTo] : []),
-                ...(!empty($tenant) ? ['DefaultEmailTags' => array_filter([
+                ...($replyTo ? ['ReplyToAddresses' => (array) $replyTo] : []),
+                ...(! empty($tenant) ? ['DefaultEmailTags' => array_filter([
                     ['Name' => 'tenant', 'Value' => $tenant],
                     ...($workflowId ? [['Name' => 'workflow_id', 'Value' => (string) $workflowId]] : []),
                 ])] : []),
@@ -283,7 +283,7 @@ class SES
                 ],
                 'FromEmailAddress' => $from,
                 ...($replyTo ? ['ReplyToAddresses' => (array) $replyTo] : []),
-                ...(!empty($tenant) ? ['EmailTags' => array_filter([
+                ...(! empty($tenant) ? ['EmailTags' => array_filter([
                     ['Name' => 'tenant', 'Value' => $tenant],
                     ...($workflowId ? [['Name' => 'workflow_id', 'Value' => (string) $workflowId]] : []),
                 ])] : []),

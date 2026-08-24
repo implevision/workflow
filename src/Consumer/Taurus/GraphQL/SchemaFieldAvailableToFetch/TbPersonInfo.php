@@ -481,6 +481,24 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'getAgentDashboard',
         ];
 
+        $fieldMapping['ProducerTitleForAgreement'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'parseProducerTitleForAgreement',
+        ];
+
+        $fieldMapping['BusinessEntityNameForAgreement'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'parseBusinessEntityNameForAgreement',
+        ];
+
+        $fieldMapping['BusinessEntityTitleForAgreement'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'parseBusinessEntityTitleForAgreement',
+        ];
+
         return $fieldMapping;
     }
 
@@ -670,7 +688,10 @@ class TbPersonInfo extends AbstractSchema
 
     public function parseAgentCommissionPercentageForAgreement()
     {
-        return 'Twenty (20%)';
+        return match (getTenant()) {
+            'advantageflood' => 'Twenty (20%)',
+            default => '',
+        };
     }
 
     public function parseAgencyManagerEmails($emails)
@@ -685,5 +706,29 @@ class TbPersonInfo extends AbstractSchema
     public function getAgentDashboard(): string
     {
         return Helper::createPortalURL('AgentPortal').'/dashboard';
+    }
+
+    public function parseProducerTitleForAgreement()
+    {
+        return match (getTenant()) {
+            'advantageflood' => 'Producer',
+            default => '',
+        };
+    }
+
+    public function parseBusinessEntityNameForAgreement()
+    {
+        return match (getTenant()) {
+            'advantageflood' => 'Thomas Garner',
+            default => '',
+        };
+    }
+
+    public function parseBusinessEntityTitleForAgreement()
+    {
+        return match (getTenant()) {
+            'advantageflood' => 'CEO - Taurus Services',
+            default => '',
+        };
     }
 }

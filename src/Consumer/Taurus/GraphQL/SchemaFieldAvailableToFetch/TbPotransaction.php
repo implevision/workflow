@@ -149,6 +149,22 @@ class TbPotransaction extends AbstractSchema
                 ],
                 'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.personUniqueId',
             ],
+            'AgencyPhoneNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'tbAccountMaster' => [
+                        'TbPersoninfo' => [
+                            'TbPersonaddress' => [
+                                'phoneInfo' => [
+                                    'phoneNumber' => null,
+                                    'phoneTypeCode' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => '[.policyQuery.tbAccountMaster.TbPersoninfo.TbPersonaddress[].phoneInfo[] | select(.phoneTypeCode == "Phone")] | first | .phoneNumber',
+                'parseResultCallback' => 'parsePhoneNumber',
+            ],
             'PotentialDiscountLostIndicator' => [
                 'GraphQLschemaToReplace' => [
                     'id' => null,
@@ -240,12 +256,8 @@ class TbPotransaction extends AbstractSchema
                 'parseResultCallback' => 'formatDate',
             ],
             'TodaysDate' => [
-                'GraphQLschemaToReplace' => [
-                    'policy' => [
-                        'todaysDate' => null,
-                    ],
-                ],
-                'jqFilter' => '.policyQuery.policy.todaysDate',
+                'GraphQLschemaToReplace' => [],
+                'jqFilter' => '',
                 'parseResultCallback' => 'getTodaysDate',
             ],
             'AgentName' => [
@@ -1174,6 +1186,12 @@ class TbPotransaction extends AbstractSchema
             'jqFilter' => ".policyQuery.tbTasks[] | select((.taskId|tostring) == ({$assignedTaskId}|tostring)) | .assignedTo.email",
         ];
 
+        $fieldMapping['CurrentYear'] = [
+            'GraphQLschemaToReplace' => [],
+            'jqFilter' => '',
+            'parseResultCallback' => 'getCurrentYear',
+        ];
+
         return $fieldMapping;
     }
 
@@ -1753,5 +1771,19 @@ class TbPotransaction extends AbstractSchema
                 'DocumentDate' => $uploadDate ? $this->formatDate($uploadDate) : null,
             ];
         });
+    }
+
+    public function parsePhoneNumber($phoneNumber)
+    {
+        if ($phoneNumber) {
+            $phoneNumber = Helper::formatPhone($phoneNumber);
+        }
+
+        return $phoneNumber;
+    }
+
+    public function getCurrentYear()
+    {
+        return date('Y');
     }
 }

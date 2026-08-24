@@ -46,7 +46,7 @@ class ExecuteWorkflowFromLogs extends Command
         }
 
         if ($offset === 0) {
-            $total = WorkflowLog::where('workflow_id', $workflowId)->count();
+            $total = WorkflowLog::where('workflow_id', $workflowId)->whereNotNull('action_track_id')->count();
 
             $this->info("Total log records for workflow id: $workflowId is $total");
 
@@ -61,6 +61,7 @@ class ExecuteWorkflowFromLogs extends Command
 
         $this->info("Executing workflow id: $workflowId at offset: $offset");
         $logs = WorkflowLog::where('workflow_id', $workflowId)
+            ->whereNotNull('action_track_id')
             ->orderByDesc('created_at')
             ->offset($offset)
             ->limit(self::BATCH_SIZE)

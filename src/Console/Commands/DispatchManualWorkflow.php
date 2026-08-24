@@ -39,6 +39,8 @@ class DispatchManualWorkflow extends Command
         $actionsConfig = $this->option('actionsConfig');
         $actionsConfig = $actionsConfig ? json_decode($actionsConfig, true) : [];
 
+        $userId = $this->option('userId') ?? null;
+
         if (! $module) {
             $this->error('The --module option is required.');
 
@@ -58,13 +60,15 @@ class DispatchManualWorkflow extends Command
                 'module' => $module,
                 'recordIdentifier' => $recordIdentifier,
                 'selectedActions' => $selectedActions,
+                'userId' => $userId,
             ]);
 
             $service = new DispatchManualWorkflowService(
                 $module,
                 $recordIdentifier,
                 $selectedActions,
-                $actionsConfig
+                $actionsConfig,
+                $userId
             );
 
             $service->dispatch();
