@@ -8,6 +8,15 @@ use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class TbPotransaction extends AbstractSchema
 {
+    private const ELEVATION_CERTIFICATE_REQUIRED_DOCUMENT_CODES = [
+        'ECDOCUMENT',
+        'ECPHOTOS',
+    ];
+
+    private const SQUARE_FOOTAGE_PROOF_REQUIRED_DOCUMENT_CODES = [
+        'SQFTDOCUMENT',
+    ];
+
     /**
      * @var array
      *
@@ -93,6 +102,15 @@ class TbPotransaction extends AbstractSchema
                 'name' => null,
             ],
             'isDefaultAddress' => null,
+        ];
+
+        $requiredDocumentsStructure = [
+            'requiredDocuments' => [
+                'isAttached' => null,
+                'documentTrackMaster' => [
+                    'sourceCode' => null,
+                ],
+            ],
         ];
 
         $fieldMapping = [
@@ -579,6 +597,14 @@ class TbPotransaction extends AbstractSchema
                 'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.totalSquareFootage',
                 'parseResultCallback' => 'formatNumber',
             ],
+            'ElevationCertificateRequired' => [
+                'GraphQLschemaToReplace' => $requiredDocumentsStructure,
+                'jqFilter' => $this->outstandingRequiredDocumentFilter(self::ELEVATION_CERTIFICATE_REQUIRED_DOCUMENT_CODES),
+            ],
+            'SquareFootageProofRequired' => [
+                'GraphQLschemaToReplace' => $requiredDocumentsStructure,
+                'jqFilter' => $this->outstandingRequiredDocumentFilter(self::SQUARE_FOOTAGE_PROOF_REQUIRED_DOCUMENT_CODES),
+            ],
             'NumberOfFloors' => [
                 'GraphQLschemaToReplace' => [
                     'riskAdditionalFloodInfo' => [
@@ -924,6 +950,18 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'parseMailingAddress',
         ];
 
+        $fieldMapping['InsuredPropertyPostalCode'] = [
+            'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
+            'jqFilter' => $fieldMapping['InsuredPropertyAddress']['jqFilter'],
+            'parseResultCallback' => 'parsePropertyPostalCode',
+        ];
+
+        $fieldMapping['EffectiveDateLong'] = [
+            'GraphQLschemaToReplace' => $fieldMapping['EffectiveDate']['GraphQLschemaToReplace'],
+            'jqFilter' => $fieldMapping['EffectiveDate']['jqFilter'],
+            'parseResultCallback' => 'formatLongDate',
+        ];
+
         $fieldMapping['PrimaryMortgageeName'] = [
             'GraphQLschemaToReplace' => [
                 'mortgageeInfo' => [
@@ -1199,6 +1237,17 @@ class TbPotransaction extends AbstractSchema
         return $coverageAmount > 0 ? true : false;
     }
 
+    // True when the transaction still has an unattached required document of any of the given source codes.
+    private function outstandingRequiredDocumentFilter(array $documentCodes): string
+    {
+        $codeMatches = implode(' or ', array_map(
+            static fn ($documentCode) => '.documentTrackMaster.sourceCode == "'.$documentCode.'"',
+            $documentCodes
+        ));
+
+        return '[.policyQuery.requiredDocuments[]? | select(.isAttached == "N" and ('.$codeMatches.'))] | length > 0';
+    }
+
     public function parseWyoAgencyAgentCode($agentCode)
     {
         return (strlen($agentCode) === 7) ? substr_replace($agentCode, '', 4, 1) : $agentCode;
@@ -1239,6 +1288,12 @@ class TbPotransaction extends AbstractSchema
         return $this->parseAddress($addressArr);
     }
 
+    // Bare postal code without the suffix, safe to use in a URL query string.
+    public function parsePropertyPostalCode($addressArr)
+    {
+        return ! empty($addressArr['postalCode']) ? trim($addressArr['postalCode']) : null;
+    }
+
     public function getTodaysDate(): string
     {
         return Helper::getTodaysDate();
@@ -1267,6 +1322,11 @@ class TbPotransaction extends AbstractSchema
     public function formatDateTime($dateToFormat): ?string
     {
         return Helper::formatDateTime($dateToFormat);
+    }
+
+    public function formatLongDate($dateToFormat)
+    {
+        return Helper::formatLongDate($dateToFormat);
     }
 
     public function parseAppCodeNameToDisplayName($appCodeName)
@@ -1499,11 +1559,11 @@ class TbPotransaction extends AbstractSchema
         if (empty($insuredPortal)) {
             $holdingCompanyDetail = Helper::getHoldingCompanyDetail();
 
-            return $holdingCompanyDetail['insured_portal'];
+            return Helper::normalizePortalUrl($holdingCompanyDetail['insured_portal']);
         }
 
         // Otherwise, return insuredPortal
-        return $insuredPortal;
+        return Helper::normalizePortalUrl($insuredPortal);
     }
 
     public function getAgentPortalUrl($insuredPortal)
