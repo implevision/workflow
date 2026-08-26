@@ -6,7 +6,7 @@ class User extends AbstractSchema
 {
     protected $fieldMapping = [];
 
-    protected $queryName = 'queryUser';
+    protected $queryName = 'user';
 
     public function __construct()
     {
@@ -25,38 +25,40 @@ class User extends AbstractSchema
 
     private function initializeFieldMapping(): array
     {
+        $queryPath = '.'.$this->queryName;
+
         return [
             'Email' => [
                 'GraphQLschemaToReplace' => ['email' => null],
-                'jqFilter' => '.user.email',
+                'jqFilter' => "{$queryPath}.email",
             ],
             'FirstName' => [
                 'GraphQLschemaToReplace' => ['firstName' => null],
-                'jqFilter' => '.user.firstName',
+                'jqFilter' => "{$queryPath}.firstName",
             ],
             'LastName' => [
                 'GraphQLschemaToReplace' => ['lastName' => null],
-                'jqFilter' => '.user.lastName',
+                'jqFilter' => "{$queryPath}.lastName",
             ],
             'FullName' => [
                 'GraphQLschemaToReplace' => ['fullName' => null],
-                'jqFilter' => '.user.fullName',
+                'jqFilter' => "{$queryPath}.fullName",
             ],
             'UserLevel' => [
                 'GraphQLschemaToReplace' => ['level' => null],
-                'jqFilter' => '.user.level',
+                'jqFilter' => "{$queryPath}.level",
             ],
             'Status' => [
                 'GraphQLschemaToReplace' => ['status' => null],
-                'jqFilter' => '.user.status',
+                'jqFilter' => "{$queryPath}.status",
             ],
             'Username' => [
                 'GraphQLschemaToReplace' => ['username' => null],
-                'jqFilter' => '.user.username',
+                'jqFilter' => "{$queryPath}.username",
             ],
             'CompanyLogo' => [
                 'GraphQLschemaToReplace' => ['companyLogo' => null],
-                'jqFilter' => '.user.companyLogo',
+                'jqFilter' => "{$queryPath}.companyLogo",
             ],
         ];
     }

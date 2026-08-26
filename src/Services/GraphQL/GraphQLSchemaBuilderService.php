@@ -94,20 +94,29 @@ class GraphQLSchemaBuilderService
      *
      * @param  array  $data  The data structure
      * @param  string  $queryName  The name of the query
-     * @param  array  $variables  Optional query variables
+     * @param  array  $variable  Optional query variables
+     * @param  array  $queryArgs  Optional named query arguments
+     * @param  int  $page  Optional page number for pagination
+     * @param  bool  $supportsPagination  Whether the query supports pagination
      * @return string Complete GraphQL query
      */
-    public function generateGraphQLQuery($data, $queryName, $variable = [], $queryArgs = [])
+    public function generateGraphQLQuery($data, $queryName, $variable = [], $queryArgs = [], $page = 0, $supportsPagination = true)
     {
         if (! empty($queryArgs)) {
             return $this->generateGraphQLQueryWithNamedArgs($data, $queryName, $queryArgs);
         }
 
         $fields = $this->arrayToGraphQLFields($data, 0);
+        if ($supportsPagination) {
+            $fields .= "\npaginatorInfo {\n  hasMorePages\n}";
+        }
 
         $variablesStr = $this->arrayToGraphQLWhereCondition($variable);
 
-        return "query {\n  $queryName(where: ".$variablesStr."){\n".
+        $page = $page + 1;
+        $pageArg = $supportsPagination ? ' page: '.$page : '';
+
+        return "query {\n  $queryName(where: ".$variablesStr.$pageArg."){\n".
             preg_replace('/^/m', '    ', $fields)."\n  }\n}";
     }
 

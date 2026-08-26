@@ -33,7 +33,7 @@ class TbPotransaction extends AbstractSchema
 
     public function __construct()
     {
-        $this->queryName = 'policyQuery';
+        $this->queryName = 'policiesQuery';
     }
 
     /**
@@ -81,6 +81,7 @@ class TbPotransaction extends AbstractSchema
     private function initializeFieldMapping()
     {
         $appendedPlaceHolders = $this->getAppendedPlaceHolders();
+        $queryPath = '.'.$this->queryName;
 
         $addressStructure = [
             'addressTypeCode' => null,
@@ -119,14 +120,14 @@ class TbPotransaction extends AbstractSchema
                     'premiumChange' => null,
                     'policyFees' => null,
                 ],
-                'jqFilter' => '.policyQuery',
+                'jqFilter' => "{$queryPath}",
                 'parseResultCallback' => 'parsePremiumDue',
             ],
             'PolicyFees' => [
                 'GraphQLschemaToReplace' => [
                     'policyFees' => null,
                 ],
-                'jqFilter' => '.policyQuery.policyFees',
+                'jqFilter' => "{$queryPath}.policyFees",
                 'parseResultCallback' => 'formatCurrency',
             ],
             'PolicyNumber' => [
@@ -135,7 +136,7 @@ class TbPotransaction extends AbstractSchema
                         'policyNumber' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.policyNumber',
+                'jqFilter' => "{$queryPath}.policy.policyNumber",
             ],
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
@@ -145,7 +146,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.fullName',
+                'jqFilter' => "{$queryPath}.tbAccountMaster.TbPersoninfo.fullName",
             ],
             'AgencyCode' => [
                 'GraphQLschemaToReplace' => [
@@ -155,7 +156,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.tbAccountMaster.TbPersoninfo.personUniqueId',
+                'jqFilter' => "{$queryPath}.tbAccountMaster.TbPersoninfo.personUniqueId",
             ],
             'AgencyPhoneNumber' => [
                 'GraphQLschemaToReplace' => [
@@ -170,14 +171,14 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '[.policyQuery.tbAccountMaster.TbPersoninfo.TbPersonaddress[].phoneInfo[] | select(.phoneTypeCode == "Phone")] | first | .phoneNumber',
+                'jqFilter' => "[{$queryPath}.tbAccountMaster.TbPersoninfo.TbPersonaddress[].phoneInfo[] | select(.phoneTypeCode == \"Phone\")] | first | .phoneNumber",
                 'parseResultCallback' => 'parsePhoneNumber',
             ],
             'PotentialDiscountLostIndicator' => [
                 'GraphQLschemaToReplace' => [
                     'id' => null,
                 ],
-                'jqFilter' => '.policyQuery.id',
+                'jqFilter' => "{$queryPath}.id",
                 'parseResultCallback' => 'parsePotentialDiscountLostIndicator',
             ],
             'WyoAgencyAgentCode' => [
@@ -188,7 +189,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.TbPersoninfo.additionalInfo.wyoAgencyAgentCode',
+                'jqFilter' => "{$queryPath}.TbPersoninfo.additionalInfo.wyoAgencyAgentCode",
                 'parseResultCallback' => 'parseWyoAgencyAgentCode',
             ],
             'AttachDecPage' => [
@@ -215,24 +216,24 @@ class TbPotransaction extends AbstractSchema
                 ],
                 // This finds the correct DECLARATION document,
                 // then extracts the first docInfo.docurl value.
-                'jqFilter' => '
+                'jqFilter' => "
                 [
-                      .policyQuery.policy.docuploadinfo[]
+                      {$queryPath}.policy.docuploadinfo[]
                       | select(
-                      .doctypes.docTypeCode == "DECLARATION"
+                      .doctypes.docTypeCode == \"DECLARATION\"
                       and
-                      (.docUploadDocInfoRel[].docUploadReference.tableMasters.tableName == "tb_potransactions")
+                      (.docUploadDocInfoRel[].docUploadReference.tableMasters.tableName == \"tb_potransactions\")
                       )
                       | .docUploadDocInfoRel[]
-                      | .docUploadReference.tableRefId as $tableRefId
+                      | .docUploadReference.tableRefId as \$tableRefId
                       | .docInfo[]
-                      | { 
-                          name: .docName, 
+                      | {
+                          name: .docName,
                           path: .docPath,
-                          tableRefId: $tableRefId
+                          tableRefId: \$tableRefId
                         }
                     ]
-                ',
+                ",
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
             'NameAsOnTitle' => [
@@ -243,7 +244,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.insuredPersonInfo.fullName',
+                'jqFilter' => "{$queryPath}.policy.insuredPersonInfo.fullName",
             ],
             'InsuredPropertyAddress' => [
                 'GraphQLschemaToReplace' => [
@@ -253,14 +254,14 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.insuredPersonInfo.TbPersonaddress[] | select(.isDefaultAddress == "Y" and .addressTypeCode == "Location")',
+                'jqFilter' => "{$queryPath}.policy.insuredPersonInfo.TbPersonaddress[] | select(.isDefaultAddress == \"Y\" and .addressTypeCode == \"Location\")",
                 'parseResultCallback' => 'parsePropertyAddress',
             ],
             'PolicyExpirationDate' => [
                 'GraphQLschemaToReplace' => [
                     'transactionEffectiveToDate' => null,
                 ],
-                'jqFilter' => '.policyQuery.transactionEffectiveToDate',
+                'jqFilter' => "{$queryPath}.transactionEffectiveToDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'TodaysDate' => [
@@ -276,7 +277,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.agentInfo.fullName',
+                'jqFilter' => "{$queryPath}.policy.agentInfo.fullName",
             ],
             'AgentEmail' => [
                 'GraphQLschemaToReplace' => [
@@ -289,7 +290,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '[.policyQuery.policy.agentInfo.emailInfo[0] | select(.isDefault == "Y")]',
+                'jqFilter' => "[{$queryPath}.policy.agentInfo.emailInfo[0] | select(.isDefault == \"Y\")]",
                 'parseResultCallback' => 'parseInsuredPersonEmail',
             ],
             'AgentId' => [
@@ -300,7 +301,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.agentInfo.personUniqueId',
+                'jqFilter' => "{$queryPath}.policy.agentInfo.personUniqueId",
             ],
             'InsuredEmail' => [
                 'GraphQLschemaToReplace' => [
@@ -313,7 +314,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '[.policyQuery.policy.insuredPersonInfo.emailInfo[0] | select(.isDefault == "Y")]',
+                'jqFilter' => "[{$queryPath}.policy.insuredPersonInfo.emailInfo[0] | select(.isDefault == \"Y\")]",
                 'parseResultCallback' => 'parseInsuredPersonEmail',
             ],
             'InsuredPhoneNumber' => [
@@ -327,7 +328,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '[.policyQuery.policy.insuredPersonInfo.phoneInfo[0] | select(.isDefault == "Y")]',
+                'jqFilter' => "[{$queryPath}.policy.insuredPersonInfo.phoneInfo[0] | select(.isDefault == \"Y\")]",
                 'parseResultCallback' => 'parseInsuredPersonPhone',
             ],
             'TermStartDate' => [
@@ -336,7 +337,7 @@ class TbPotransaction extends AbstractSchema
                         'termStartDate' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policyTermMaster.termStartDate',
+                'jqFilter' => "{$queryPath}.policyTermMaster.termStartDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'TermEndDate' => [
@@ -345,7 +346,7 @@ class TbPotransaction extends AbstractSchema
                         'termEndDate' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policyTermMaster.termEndDate',
+                'jqFilter' => "{$queryPath}.policyTermMaster.termEndDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'ProductName' => [
@@ -356,7 +357,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.product.productName',
+                'jqFilter' => "{$queryPath}.policy.product.productName",
             ],
             'TransactionType' => [
                 'GraphQLschemaToReplace' => [
@@ -364,7 +365,7 @@ class TbPotransaction extends AbstractSchema
                         'transactionTypeScreenName' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policyRiskTransactionType.transactionTypeScreenName',
+                'jqFilter' => "{$queryPath}.policyRiskTransactionType.transactionTypeScreenName",
             ],
             'TransactionSubType' => [
                 'GraphQLschemaToReplace' => [
@@ -383,7 +384,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery',
+                'jqFilter' => "{$queryPath}",
                 'parseResultCallback' => 'transactionSubTypeScreenNameResolver',
             ],
             'WaitingPeriod' => [
@@ -392,7 +393,7 @@ class TbPotransaction extends AbstractSchema
                         'policyWaitingPeriod' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.policyWaitingPeriod',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.policyWaitingPeriod",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'RenewalIndicator' => [
@@ -401,7 +402,7 @@ class TbPotransaction extends AbstractSchema
                         'renewalTypeCode' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.renewalTypeCode',
+                'jqFilter' => "{$queryPath}.policy.renewalTypeCode",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'BillTo' => [
@@ -412,7 +413,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.accountMaster.billToType',
+                'jqFilter' => "{$queryPath}.policy.accountMaster.billToType",
                 'parseResultCallback' => 'parseBillTo',
             ],
             'UnderWriterApplicationStatus' => [
@@ -423,21 +424,21 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode',
+                'jqFilter' => "{$queryPath}.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'TransactionEffectiveDate' => [
                 'GraphQLschemaToReplace' => [
                     'transactionEffectiveFromDate' => null,
                 ],
-                'jqFilter' => '.policyQuery.transactionEffectiveFromDate',
+                'jqFilter' => "{$queryPath}.transactionEffectiveFromDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'TotalPremium' => [
                 'GraphQLschemaToReplace' => [
                     'totalPremium' => null,
                 ],
-                'jqFilter' => '.policyQuery.totalPremium',
+                'jqFilter' => "{$queryPath}.totalPremium",
                 'parseResultCallback' => 'formatCurrency',
             ],
             'ReplacementCost' => [
@@ -446,7 +447,7 @@ class TbPotransaction extends AbstractSchema
                         'replacementCost' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.replacementCost',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.replacementCost",
                 'parseResultCallback' => 'formatCurrency',
             ],
             'IsPolicyholderOwnerOrTenant' => [
@@ -455,7 +456,7 @@ class TbPotransaction extends AbstractSchema
                         'isPolicyholderOwnerOrTenant' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.isPolicyholderOwnerOrTenant',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.isPolicyholderOwnerOrTenant",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'IsPolicyRentalProperty' => [
@@ -464,7 +465,7 @@ class TbPotransaction extends AbstractSchema
                         'isRentalProperty' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.isRentalProperty',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.isRentalProperty",
                 'parseResultCallback' => 'parseYesNoDisplayName',
             ],
             'IsPolicyholderCondominiumAssociation' => [
@@ -473,7 +474,7 @@ class TbPotransaction extends AbstractSchema
                         'condoOwnership' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.condoOwnership',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.condoOwnership",
                 'parseResultCallback' => 'parseYesNoDisplayName',
             ],
             'CommunityNumber' => [
@@ -482,7 +483,7 @@ class TbPotransaction extends AbstractSchema
                         'communityNumber' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.communityNumber',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.communityNumber",
             ],
             'PanelNumber' => [
                 'GraphQLschemaToReplace' => [
@@ -490,7 +491,7 @@ class TbPotransaction extends AbstractSchema
                         'panelNumber' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.panelNumber',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.panelNumber",
             ],
             'MapSuffix' => [
                 'GraphQLschemaToReplace' => [
@@ -498,7 +499,7 @@ class TbPotransaction extends AbstractSchema
                         'mapSuffix' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.mapSuffix',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.mapSuffix",
             ],
             'FloodZone' => [
                 'GraphQLschemaToReplace' => [
@@ -506,7 +507,7 @@ class TbPotransaction extends AbstractSchema
                         'floodZone' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.floodZone',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.floodZone",
             ],
             'CountyName' => [
                 'GraphQLschemaToReplace' => [
@@ -514,7 +515,7 @@ class TbPotransaction extends AbstractSchema
                         'countyName' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.countyName',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.countyName",
             ],
             'InitialFirmDate' => [
                 'GraphQLschemaToReplace' => [
@@ -522,7 +523,7 @@ class TbPotransaction extends AbstractSchema
                         'initialFirmDate' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.initialFirmDate',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.initialFirmDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'CurrentFirmDate' => [
@@ -531,7 +532,7 @@ class TbPotransaction extends AbstractSchema
                         'currentFirmDate' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.currentFirmDate',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.currentFirmDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'CurrentBaseFloodElevation' => [
@@ -540,7 +541,7 @@ class TbPotransaction extends AbstractSchema
                         'baseElevation' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.baseElevation',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.baseElevation",
                 'parseResultCallback' => 'formatNumber',
             ],
             'IsBuildingLocatedInCoastalBarrierResourcesSystemArea' => [
@@ -549,7 +550,7 @@ class TbPotransaction extends AbstractSchema
                         'isCBRSorOPA' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.isCBRSorOPA',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.isCBRSorOPA",
                 'parseResultCallback' => 'parseYesNoDisplayName',
             ],
             'ConstructionDate' => [
@@ -558,7 +559,7 @@ class TbPotransaction extends AbstractSchema
                         'dateOfConstruction' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.dateOfConstruction',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.dateOfConstruction",
                 'parseResultCallback' => 'formatDate',
             ],
             'OccupancyType' => [
@@ -567,7 +568,7 @@ class TbPotransaction extends AbstractSchema
                         'occupancyType' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.occupancyType',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.occupancyType",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'BuildingDescription' => [
@@ -576,7 +577,7 @@ class TbPotransaction extends AbstractSchema
                         'buildingUse' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.buildingUse',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.buildingUse",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'FoundationType' => [
@@ -585,7 +586,7 @@ class TbPotransaction extends AbstractSchema
                         'foundationType' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.foundationType',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.foundationType",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
             'TotalSquareFootage' => [
@@ -594,7 +595,7 @@ class TbPotransaction extends AbstractSchema
                         'totalSquareFootage' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.totalSquareFootage',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.totalSquareFootage",
                 'parseResultCallback' => 'formatNumber',
             ],
             'ElevationCertificateRequired' => [
@@ -611,7 +612,7 @@ class TbPotransaction extends AbstractSchema
                         'numberOfFloors' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.numberOfFloors',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.numberOfFloors",
                 'parseResultCallback' => 'formatNumber',
             ],
             'LoanClosingDate' => [
@@ -620,7 +621,7 @@ class TbPotransaction extends AbstractSchema
                         'floodLoanClosingDate' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.riskAdditionalFloodInfo.floodLoanClosingDate',
+                'jqFilter' => "{$queryPath}.riskAdditionalFloodInfo.floodLoanClosingDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'ECCertificateSignatureDate' => [
@@ -629,7 +630,7 @@ class TbPotransaction extends AbstractSchema
                         'certificateDate' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.elevationCertificate.certificateDate',
+                'jqFilter' => "{$queryPath}.elevationCertificate.certificateDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'DiagramNumber' => [
@@ -638,7 +639,7 @@ class TbPotransaction extends AbstractSchema
                         'buildingDiagramNoCode' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.elevationCertificate.buildingDiagramNoCode',
+                'jqFilter' => "{$queryPath}.elevationCertificate.buildingDiagramNoCode",
             ],
             'TopOfBottomFloorInFeet' => [
                 'GraphQLschemaToReplace' => [
@@ -646,7 +647,7 @@ class TbPotransaction extends AbstractSchema
                         'topOfBottomFloor' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.elevationCertificate.topOfBottomFloor',
+                'jqFilter' => "{$queryPath}.elevationCertificate.topOfBottomFloor",
                 'parseResultCallback' => 'formatNumber',
             ],
             'TopOfNextHigherFloorInFeet' => [
@@ -655,7 +656,7 @@ class TbPotransaction extends AbstractSchema
                         'topOfNextHigherFloor' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.elevationCertificate.topOfNextHigherFloor',
+                'jqFilter' => "{$queryPath}.elevationCertificate.topOfNextHigherFloor",
                 'parseResultCallback' => 'formatNumber',
             ],
             'LowestAdjacentGrade' => [
@@ -664,14 +665,14 @@ class TbPotransaction extends AbstractSchema
                         'lowestAdjacentGrade' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.elevationCertificate.lowestAdjacentGrade',
+                'jqFilter' => "{$queryPath}.elevationCertificate.lowestAdjacentGrade",
                 'parseResultCallback' => 'formatNumber',
             ],
             'AccountingDate' => [
                 'GraphQLschemaToReplace' => [
                     'accountingDate' => null,
                 ],
-                'jqFilter' => '.policyQuery.accountingDate',
+                'jqFilter' => "{$queryPath}.accountingDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'EffectiveDate' => [
@@ -680,7 +681,7 @@ class TbPotransaction extends AbstractSchema
                         'termStartDate' => null,
                     ],
                 ],
-                'jqFilter' => '.policyQuery.policyTermMaster.termStartDate',
+                'jqFilter' => "{$queryPath}.policyTermMaster.termStartDate",
                 'parseResultCallback' => 'formatDate',
             ],
             'WYOCompanyName' => [
@@ -696,7 +697,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                     'policyId' => null,
                 ],
-                'jqFilter' => '.policyQuery',
+                'jqFilter' => "{$queryPath}",
                 'parseResultCallback' => 'parseCompanyName',
             ],
             'CompanyEmail' => [
@@ -712,7 +713,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                     'policyId' => null,
                 ],
-                'jqFilter' => '.policyQuery',
+                'jqFilter' => "{$queryPath}",
                 'parseResultCallback' => 'parseCompanyEmail',
             ],
             'CompanyPhone' => [
@@ -728,7 +729,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                     'policyId' => null,
                 ],
-                'jqFilter' => '.policyQuery',
+                'jqFilter' => "{$queryPath}",
                 'parseResultCallback' => 'parseCompanyPhone',
             ],
             'CompanyAddress' => [
@@ -744,7 +745,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                     'policyId' => null,
                 ],
-                'jqFilter' => '.policyQuery',
+                'jqFilter' => "{$queryPath}",
                 'parseResultCallback' => 'parseCompanyAddress',
             ],
             'AttachPaymentReceipt' => [
@@ -771,24 +772,24 @@ class TbPotransaction extends AbstractSchema
                 ],
                 // This finds the correct PAYMENTRECEIPT document,
                 // then extracts the first docInfo.docurl value.
-                'jqFilter' => '
+                'jqFilter' => "
                 [
-                      .policyQuery?.policy?.docuploadinfo[]?
+                      {$queryPath}.policy?.docuploadinfo[]?
                       | select(
-                      .doctypes?.docTypeCode? == "PAYMENTRECEIPT"
+                      .doctypes?.docTypeCode? == \"PAYMENTRECEIPT\"
                       and
-                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
+                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == \"tb_potransactions\")
                       )
                       | .docUploadDocInfoRel[]?
-                      | .docUploadReference?.tableRefId? as $tableRefId
+                      | .docUploadReference?.tableRefId? as \$tableRefId
                       | .docInfo[]?
                       | {
                           name: .docName?,
                           path: .docPath?,
-                          tableRefId: $tableRefId
+                          tableRefId: \$tableRefId
                         }
                     ]
-                ',
+                ",
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
             'AttachRenewalNotice' => [
@@ -813,24 +814,24 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '
+                'jqFilter' => "
                 [
-                      .policyQuery?.policy?.docuploadinfo[]?
+                      {$queryPath}.policy?.docuploadinfo[]?
                       | select(
-                      .doctypes?.docTypeCode? == "RENEWALNOTICE"
+                      .doctypes?.docTypeCode? == \"RENEWALNOTICE\"
                       and
-                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
+                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == \"tb_potransactions\")
                       )
                       | .docUploadDocInfoRel[]?
-                      | .docUploadReference?.tableRefId? as $tableRefId
+                      | .docUploadReference?.tableRefId? as \$tableRefId
                       | .docInfo[]?
                       | {
                           name: .docName?,
                           path: .docPath?,
-                          tableRefId: $tableRefId
+                          tableRefId: \$tableRefId
                         }
                     ]
-                ',
+                ",
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
             'AttachFinalRenewalNotice' => [
@@ -855,24 +856,24 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '
+                'jqFilter' => "
                 [
-                      .policyQuery?.policy?.docuploadinfo[]?
+                      {$queryPath}.policy?.docuploadinfo[]?
                       | select(
-                      .doctypes?.docTypeCode? == "FINALNOTICE"
+                      .doctypes?.docTypeCode? == \"FINALNOTICE\"
                       and
-                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == "tb_potransactions")
+                      (.docUploadDocInfoRel[]?.docUploadReference?.tableMasters?.tableName? == \"tb_potransactions\")
                       )
                       | .docUploadDocInfoRel[]?
-                      | .docUploadReference?.tableRefId? as $tableRefId
+                      | .docUploadReference?.tableRefId? as \$tableRefId
                       | .docInfo[]?
                       | {
                           name: .docName?,
                           path: .docPath?,
-                          tableRefId: $tableRefId
+                          tableRefId: \$tableRefId
                         }
                     ]
-                ',
+                ",
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
             'PaymentTransactionNumber' => [
@@ -887,7 +888,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '{metadata: .policyQuery?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyQuery?.id?, productCode: .policyQuery?.policy?.product?.productCode?}',
+                'jqFilter' => "{metadata: {$queryPath}.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: {$queryPath}.id?, productCode: {$queryPath}.policy?.product?.productCode?}",
                 'parseResultCallback' => 'parsePaymentTransactionNumber',
             ],
             'PaymentReceivedDate' => [
@@ -902,7 +903,7 @@ class TbPotransaction extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => '{metadata: .policyQuery?.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: .policyQuery?.id?, productCode: .policyQuery?.policy?.product?.productCode?}',
+                'jqFilter' => "{metadata: {$queryPath}.policy?.policyAccountingPaymentLog?[-1]?.metadata?, id: {$queryPath}.id?, productCode: {$queryPath}.policy?.product?.productCode?}",
                 'parseResultCallback' => 'parsePaymentReceivedDate',
             ],
 
@@ -910,14 +911,14 @@ class TbPotransaction extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'receiptNumber' => null,
                 ],
-                'jqFilter' => '.policyQuery.receiptNumber',
+                'jqFilter' => "{$queryPath}.receiptNumber",
             ],
 
             'PremiumChange' => [
                 'GraphQLschemaToReplace' => [
                     'premiumChange' => null,
                 ],
-                'jqFilter' => '.policyQuery.premiumChange',
+                'jqFilter' => "{$queryPath}.premiumChange",
                 'parseResultCallback' => 'formatCurrency',
             ],
 
@@ -928,7 +929,7 @@ class TbPotransaction extends AbstractSchema
                         'createdDate' => null,
                     ],
                 ],
-                'jqFilter' => '([.policyQuery?.paymentLogs?[] | select(.status? == "Success")] | last)?.createdDate?',
+                'jqFilter' => "([{$queryPath}.paymentLogs?[] | select(.status? == \"Success\")] | last)?.createdDate?",
                 'parseResultCallback' => 'formatDateTime',
             ],
 
@@ -939,14 +940,14 @@ class TbPotransaction extends AbstractSchema
                         'metadata' => null,
                     ],
                 ],
-                'jqFilter' => '([.policyQuery?.paymentLogs?[] | select(.status? == "Success")] | last)?.metadata?.startOnlineCollection?.request?.startOnlineCollectionRequest?.payment_type?',
+                'jqFilter' => "([{$queryPath}.paymentLogs?[] | select(.status? == \"Success\")] | last)?.metadata?.startOnlineCollection?.request?.startOnlineCollectionRequest?.payment_type?",
                 'parseResultCallback' => 'formatPaymentTypeLabel',
             ],
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
             'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
-            'jqFilter' => '.policyQuery.policy.insuredPersonInfo.TbPersonaddress[] | select(.addressTypeCode == "Mailing")',
+            'jqFilter' => "{$queryPath}.policy.insuredPersonInfo.TbPersonaddress[] | select(.addressTypeCode == \"Mailing\")",
             'parseResultCallback' => 'parseMailingAddress',
         ];
 
@@ -971,7 +972,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.policyQuery.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'jqFilter' => "{$queryPath}.mortgageeInfo[] | select(.mortgageeType == \"PRIMARY\")",
             'parseResultCallback' => 'parsePrimaryMortgageeName',
         ];
 
@@ -982,7 +983,7 @@ class TbPotransaction extends AbstractSchema
                     'loanNumber' => null,
                 ],
             ],
-            'jqFilter' => '.policyQuery.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'jqFilter' => "{$queryPath}.mortgageeInfo[] | select(.mortgageeType == \"PRIMARY\")",
             'parseResultCallback' => 'parseLoanNumber',
         ];
 
@@ -993,7 +994,7 @@ class TbPotransaction extends AbstractSchema
                     'mortgageeAddress' => $addressStructure,
                 ],
             ],
-            'jqFilter' => '.policyQuery.mortgageeInfo[] | select(.mortgageeType == "PRIMARY")',
+            'jqFilter' => "{$queryPath}.mortgageeInfo[] | select(.mortgageeType == \"PRIMARY\")",
             'parseResultCallback' => 'parsePrimaryMortgageeAddress',
         ];
 
@@ -1008,7 +1009,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.policyQuery.mortgageeInfo[]',
+            'jqFilter' => "{$queryPath}.mortgageeInfo[]",
             'parseResultCallback' => 'parseMortgageeInfo',
         ];
 
@@ -1024,7 +1025,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.policyQuery?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
+            'jqFilter' => "{$queryPath}.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?",
             'parseResultCallback' => 'getInsuredPortalUrl',
         ];
 
@@ -1041,7 +1042,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.policyQuery?.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?',
+            'jqFilter' => "{$queryPath}.tbAccountMaster?.TbPersoninfo?.brandedCompany?[0]?.company?.insuredPortal?",
             'parseResultCallback' => 'getAgentPortalUrl',
         ];
 
@@ -1054,7 +1055,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => '.policyQuery.additionalInterestInfo[] | select(.partyInterestCode == "ADDITIONALINSURED")',
+            'jqFilter' => "{$queryPath}.additionalInterestInfo[] | select(.partyInterestCode == \"ADDITIONALINSURED\")",
             'parseResultCallback' => 'parseAdditionalInsuredName',
         ];
 
@@ -1072,7 +1073,7 @@ class TbPotransaction extends AbstractSchema
                 ],
                 'policyId' => null,
             ],
-            'jqFilter' => '.policyQuery',
+            'jqFilter' => "{$queryPath}",
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
@@ -1081,7 +1082,7 @@ class TbPotransaction extends AbstractSchema
                 ...$fieldMapping['TransactionSubType']['GraphQLschemaToReplace'],
                 'transactionReasonCode' => null,
             ],
-            'jqFilter' => '.policyQuery',
+            'jqFilter' => "{$queryPath}",
             'parseResultCallback' => 'parseCancelReason',
         ];
 
@@ -1089,7 +1090,7 @@ class TbPotransaction extends AbstractSchema
             'GraphQLschemaToReplace' => [
                 ...$fieldMapping['PremiumDue']['GraphQLschemaToReplace'],
             ],
-            'jqFilter' => '.policyQuery',
+            'jqFilter' => "{$queryPath}",
             'parseResultCallback' => 'parseCancelRefundAmount',
         ];
 
@@ -1103,8 +1104,8 @@ class TbPotransaction extends AbstractSchema
         $targetPolicyLogId = isset($appendedPlaceHolders['noteId']) ? (int) $appendedPlaceHolders['noteId'] : null;
 
         $policyLogsJqFilter = $targetPolicyLogId !== null
-            ? "[.policyQuery.policyLogs[]? | select((.id|tostring) == ({$targetPolicyLogId}|tostring))]"
-            : '[.policyQuery.policyLogs[]?]';
+            ? "[{$queryPath}.policyLogs[]? | select((.id|tostring) == ({$targetPolicyLogId}|tostring))]"
+            : "[{$queryPath}.policyLogs[]?]";
 
         $fieldMapping['policyNoteList'] = [
             'GraphQLschemaToReplace' => $policyLogsGraphQLSchema,
@@ -1127,8 +1128,8 @@ class TbPotransaction extends AbstractSchema
         ];
 
         $documentListJqFilter = $targetDocUploadId !== null
-            ? "[.policyQuery.policy.docuploadinfo[]? | select((.id|tostring) == ({$targetDocUploadId}|tostring))]"
-            : '[.policyQuery.policy.docuploadinfo[]?]';
+            ? "[{$queryPath}.policy.docuploadinfo[]? | select((.id|tostring) == ({$targetDocUploadId}|tostring))]"
+            : "[{$queryPath}.policy.docuploadinfo[]?]";
 
         $fieldMapping['documentList'] = [
             'GraphQLschemaToReplace' => $documentListGraphQLSchema,
@@ -1150,8 +1151,8 @@ class TbPotransaction extends AbstractSchema
         ];
 
         $taskListJqFilter = $targetTaskId !== null
-            ? "[.policyQuery.agentTasks[]?.taskMapping[]? | select((.id|tostring) == ({$targetTaskId}|tostring))]"
-            : '[.policyQuery.agentTasks[]?.taskMapping[]?]';
+            ? "[{$queryPath}.agentTasks[]?.taskMapping[]? | select((.id|tostring) == ({$targetTaskId}|tostring))]"
+            : "[{$queryPath}.agentTasks[]?.taskMapping[]?]";
 
         $fieldMapping['taskList'] = [
             'GraphQLschemaToReplace' => $agentTasksGraphQLSchema,
@@ -1173,7 +1174,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => ".policyQuery.tbTasks[] | select((.taskId|tostring) == ({$assignedTaskId}|tostring)) | .assignedTo.screenName",
+            'jqFilter' => "{$queryPath}.tbTasks[] | select((.taskId|tostring) == ({$assignedTaskId}|tostring)) | .assignedTo.screenName",
         ];
 
         $fieldMapping['AssigneeEmail'] = [
@@ -1185,7 +1186,7 @@ class TbPotransaction extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => ".policyQuery.tbTasks[] | select((.taskId|tostring) == ({$assignedTaskId}|tostring)) | .assignedTo.email",
+            'jqFilter' => "{$queryPath}.tbTasks[] | select((.taskId|tostring) == ({$assignedTaskId}|tostring)) | .assignedTo.email",
         ];
 
         $fieldMapping['CurrentYear'] = [
@@ -1194,7 +1195,7 @@ class TbPotransaction extends AbstractSchema
             'parseResultCallback' => 'getCurrentYear',
         ];
 
-        return $fieldMapping;
+        return $this->wrapFieldMappingSchemaUnderData($fieldMapping);
     }
 
     public function parsePremiumDue($premiumChangeAndFeesArr)

@@ -25,50 +25,52 @@ class DocumentDetail extends AbstractSchema
 
     private function initializeFieldMapping(): array
     {
+        $queryPath = '.'.$this->queryName;
+
         return [
             'DocumentId' => [
                 'GraphQLschemaToReplace' => ['id' => null],
-                'jqFilter' => '.documentDetail.id',
+                'jqFilter' => "{$queryPath}.id",
             ],
             'DocName' => [
                 'GraphQLschemaToReplace' => ['docName' => null],
-                'jqFilter' => '.documentDetail.docName',
+                'jqFilter' => "{$queryPath}.docName",
             ],
             'DocGroupType' => [
                 'GraphQLschemaToReplace' => ['groupType' => ['name' => null]],
-                'jqFilter' => '.documentDetail.groupType.name',
+                'jqFilter' => "{$queryPath}.groupType.name",
             ],
             'ReportType' => [
                 'GraphQLschemaToReplace' => ['groupType' => ['odysseyReportType' => null]],
-                'jqFilter' => '.documentDetail.groupType.odysseyReportType',
+                'jqFilter' => "{$queryPath}.groupType.odysseyReportType",
             ],
             'IsApproved' => [
                 'GraphQLschemaToReplace' => ['isApproved' => null],
-                'jqFilter' => '.documentDetail.isApproved',
+                'jqFilter' => "{$queryPath}.isApproved",
             ],
             'SourceId' => [
                 'GraphQLschemaToReplace' => ['sourceId' => null],
-                'jqFilter' => '.documentDetail.sourceId',
+                'jqFilter' => "{$queryPath}.sourceId",
             ],
             'SourceCode' => [
                 'GraphQLschemaToReplace' => ['sourceCode' => null],
-                'jqFilter' => '.documentDetail.sourceCode',
+                'jqFilter' => "{$queryPath}.sourceCode",
             ],
             'AssignmentId' => [
                 'GraphQLschemaToReplace' => ['claim' => ['assignmentId' => null]],
-                'jqFilter' => '.documentDetail.claim.assignmentId',
+                'jqFilter' => "{$queryPath}.claim.assignmentId",
             ],
             'PolicyNo' => [
                 'GraphQLschemaToReplace' => ['claim' => ['policy' => ['policyNumber' => null]]],
-                'jqFilter' => '.documentDetail.claim.policy.policyNumber',
+                'jqFilter' => "{$queryPath}.claim.policy.policyNumber",
             ],
             'DateOfLoss' => [
                 'GraphQLschemaToReplace' => ['claim' => ['dateOfLoss' => null]],
-                'jqFilter' => '.documentDetail.claim.dateOfLoss',
+                'jqFilter' => "{$queryPath}.claim.dateOfLoss",
             ],
             'PolicyNumberWithoutPrefix' => [
                 'GraphQLschemaToReplace' => ['claim' => ['policy' => ['policyNumber' => null]]],
-                'jqFilter' => '.documentDetail.claim.policy.policyNumber',
+                'jqFilter' => "{$queryPath}.claim.policy.policyNumber",
             ],
         ];
     }
