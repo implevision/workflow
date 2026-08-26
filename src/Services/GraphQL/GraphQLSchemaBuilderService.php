@@ -94,7 +94,10 @@ class GraphQLSchemaBuilderService
      *
      * @param  array  $data  The data structure
      * @param  string  $queryName  The name of the query
-     * @param  array  $variables  Optional query variables
+     * @param  array  $variable  Optional query variables
+     * @param  array  $queryArgs  Optional named query arguments
+     * @param  int  $page  Optional page number for pagination
+     * @param  bool  $supportsPagination  Whether the query supports pagination
      * @return string Complete GraphQL query
      */
     public function generateGraphQLQuery($data, $queryName, $variable = [], $queryArgs = [], $page = 0, $supportsPagination = true)

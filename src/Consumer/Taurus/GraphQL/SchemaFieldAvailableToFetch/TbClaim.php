@@ -95,7 +95,7 @@ class TbClaim extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'claimId' => null,
                 ],
-                'jqFilter' => "{$queryPath}.ClaimId",
+                'jqFilter' => "{$queryPath}.claimId",
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
