@@ -585,13 +585,13 @@ class TbClaim extends AbstractSchema
                     'postalCode' => null,
                     'postalCodeSuffix' => null,
                     'city' => [
-                        'name' => null
+                        'name' => null,
                     ],
                     'state' => [
-                        'name' => null
+                        'name' => null,
                     ],
                     'country' => [
-                        'name' => null
+                        'name' => null,
                     ],
                 ],
             ],
@@ -671,8 +671,10 @@ class TbClaim extends AbstractSchema
             $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
         }
 
-        $address = array_filter(array_map('trim', $address), function ($item) {
-            return ! empty($item);
+        $address = array_filter(array_map(static function ($item) {
+            return is_string($item) ? trim($item) : '';
+        }, $address), static function ($item) {
+            return $item !== '';
         });
 
         return implode(', ', $address);
