@@ -27,6 +27,7 @@ class TbClaim extends AbstractSchema
     private const TRAN_SUB_TYPE_CLAIM_PAYMENT = [
         'Building' => 'BUILDCLAIMPAYMENT',
         'Content' => 'CONTCLAIMPAYMENT',
+        'ICC' => 'ICCCLAIMPAYMENT',
     ];
 
     /**
@@ -435,11 +436,13 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'parseCoverageDeductibleAmount',
         ];
 
-        $advancePayment = [
+        $paymentStructure = [
             'claimReserve' => [
                 'tranTypeCode' => null,
                 'tranSubTypeCode' => null,
                 'amount' => null,
+                'paymentApproved' => null,
+                'status' => null,
                 'claimReserveDetail' => [
                     'reserveType' => null,
                 ],
@@ -447,7 +450,7 @@ class TbClaim extends AbstractSchema
         ];
 
         $fieldMapping['BuildingAdvancePayment'] = [
-            'GraphQLschemaToReplace' => $advancePayment,
+            'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => sprintf(
                 "[{$queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\")]",
                 self::TRAN_TYPE['LossPayment'],
@@ -458,7 +461,7 @@ class TbClaim extends AbstractSchema
         ];
 
         $fieldMapping['ContentAdvancePayment'] = [
-            'GraphQLschemaToReplace' => $advancePayment,
+            'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => sprintf(
                 "[{$queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\")]",
                 self::TRAN_TYPE['LossPayment'],
@@ -501,7 +504,121 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'sumAmounts',
         ];
 
+        $fieldMapping['BuildingAdvancedPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['BuildingFinalPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['BuildingRapPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['BuildingTotalPayments'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType($queryPath, self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ContentsAdvancedPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ContentsFinalPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ContentsRapPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ContentsTotalPayments'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType($queryPath, self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ICCAdvancedPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ICCFinalPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ICCSupplementalPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ICCTotalPayments'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType($queryPath, self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ClaimantAddress'] = [
+            'GraphQLschemaToReplace' => [
+                'claimCommunication' => [
+                    'addressLine1' => null,
+                    'addressLine2' => null,
+                    'addressLine3' => null,
+                    'postalCode' => null,
+                    'postalCodeSuffix' => null,
+                    'city' => [
+                        'name' => null,
+                    ],
+                    'state' => [
+                        'name' => null,
+                    ],
+                    'country' => [
+                        'name' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => "{$queryPath}.claimCommunication",
+            'parseResultCallback' => 'parseClaimantAddress',
+        ];
+
         return $this->wrapFieldMappingSchemaUnderData($fieldMapping);
+    }
+
+    private function buildApprovedPaymentJqFilter($queryPath, $reserveType, $tranSubTypeCode)
+    {
+        return sprintf(
+            "[{$queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\"))]",
+            self::TRAN_TYPE['LossPayment'],
+            $reserveType,
+            $tranSubTypeCode
+        );
+    }
+
+    private function buildApprovedPaymentJqFilterByTranSubType($queryPath, $tranSubTypeCode)
+    {
+        return sprintf(
+            "[{$queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\"))]",
+            self::TRAN_TYPE['LossPayment'],
+            $tranSubTypeCode
+        );
     }
 
     public function formatDate($dateToFormat)
@@ -530,6 +647,34 @@ class TbClaim extends AbstractSchema
 
         $address = array_filter(array_map('trim', $address), function ($item) {
             return ! empty($item);
+        });
+
+        return implode(', ', $address);
+    }
+
+    public function parseClaimantAddress($addressArr)
+    {
+        if (empty($addressArr)) {
+            return null;
+        }
+
+        $address = [
+            'addressLine1' => $addressArr['addressLine1'] ?? '',
+            'addressLine2' => $addressArr['addressLine2'] ?? '',
+            'addressLine3' => $addressArr['addressLine3'] ?? '',
+            'city' => $addressArr['city']['name'] ?? null,
+            'state' => $addressArr['state']['name'] ?? null,
+            'postalCode' => $addressArr['postalCode'] ?? null,
+        ];
+
+        if (! empty($address['postalCode']) && ! empty($addressArr['postalCodeSuffix'])) {
+            $address['postalCode'] .= ' - '.$addressArr['postalCodeSuffix'];
+        }
+
+        $address = array_filter(array_map(static function ($item) {
+            return is_string($item) ? trim($item) : '';
+        }, $address), static function ($item) {
+            return $item !== '';
         });
 
         return implode(', ', $address);
