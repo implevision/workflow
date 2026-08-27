@@ -20,9 +20,15 @@ class TbUser extends AbstractSchema
      */
     protected $queryName;
 
+    /**
+     * @var string|null The path of the query associated with this class.
+     */
+    protected $queryPath;
+
     public function __construct()
     {
         $this->queryName = 'usersQuery';
+        $this->queryPath = '.'.$this->queryName;
         $this->fieldMapping = $this->initializeFieldMapping();
     }
 
@@ -55,44 +61,42 @@ class TbUser extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
-        $queryPath = '.'.$this->queryName;
-
         $fieldMapping = [
             'UserId' => [
                 'GraphQLschemaToReplace' => [
                     'id' => null,
                 ],
-                'jqFilter' => "{$queryPath}.id",
+                'jqFilter' => "{$this->queryPath}.id",
             ],
             'Username' => [
                 'GraphQLschemaToReplace' => [
                     'username' => null,
                 ],
-                'jqFilter' => "{$queryPath}.username",
+                'jqFilter' => "{$this->queryPath}.username",
             ],
             'UserFirstName' => [
                 'GraphQLschemaToReplace' => [
                     'firstName' => null,
                 ],
-                'jqFilter' => "{$queryPath}.firstName",
+                'jqFilter' => "{$this->queryPath}.firstName",
             ],
             'UserLastName' => [
                 'GraphQLschemaToReplace' => [
                     'lastName' => null,
                 ],
-                'jqFilter' => "{$queryPath}.lastName",
+                'jqFilter' => "{$this->queryPath}.lastName",
             ],
             'Email' => [
                 'GraphQLschemaToReplace' => [
                     'email' => null,
                 ],
-                'jqFilter' => "{$queryPath}.email",
+                'jqFilter' => "{$this->queryPath}.email",
             ],
             'UserFullName' => [
                 'GraphQLschemaToReplace' => [
                     'screenName' => null,
                 ],
-                'jqFilter' => "{$queryPath}.screenName",
+                'jqFilter' => "{$this->queryPath}.screenName",
             ],
         ];
 
