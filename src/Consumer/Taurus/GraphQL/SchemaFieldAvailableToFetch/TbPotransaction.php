@@ -600,11 +600,11 @@ class TbPotransaction extends AbstractSchema
             ],
             'ElevationCertificateRequired' => [
                 'GraphQLschemaToReplace' => $requiredDocumentsStructure,
-                'jqFilter' => $this->outstandingRequiredDocumentFilter(self::ELEVATION_CERTIFICATE_REQUIRED_DOCUMENT_CODES),
+                'jqFilter' => $this->outstandingRequiredDocumentFilter($queryPath, self::ELEVATION_CERTIFICATE_REQUIRED_DOCUMENT_CODES),
             ],
             'SquareFootageProofRequired' => [
                 'GraphQLschemaToReplace' => $requiredDocumentsStructure,
-                'jqFilter' => $this->outstandingRequiredDocumentFilter(self::SQUARE_FOOTAGE_PROOF_REQUIRED_DOCUMENT_CODES),
+                'jqFilter' => $this->outstandingRequiredDocumentFilter($queryPath, self::SQUARE_FOOTAGE_PROOF_REQUIRED_DOCUMENT_CODES),
             ],
             'NumberOfFloors' => [
                 'GraphQLschemaToReplace' => [
@@ -1239,14 +1239,14 @@ class TbPotransaction extends AbstractSchema
     }
 
     // True when the transaction still has an unattached required document of any of the given source codes.
-    private function outstandingRequiredDocumentFilter(array $documentCodes): string
+    private function outstandingRequiredDocumentFilter(string $queryPath, array $documentCodes): string
     {
         $codeMatches = implode(' or ', array_map(
             static fn ($documentCode) => '.documentTrackMaster.sourceCode == "'.$documentCode.'"',
             $documentCodes
         ));
 
-        return '[.policyQuery.requiredDocuments[]? | select(.isAttached == "N" and ('.$codeMatches.'))] | length > 0';
+        return "[{$queryPath}.requiredDocuments[]? | select(.isAttached == \"N\" and ({$codeMatches}))] | length > 0";
     }
 
     public function parseWyoAgencyAgentCode($agentCode)
