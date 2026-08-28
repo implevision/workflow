@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Services;
 use Illuminate\Support\Facades\Storage;
 use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
+use Taurus\Workflow\Repositories\Eloquent\WorkflowRepository;
 use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
@@ -50,6 +51,8 @@ class DispatchWorkflowService
 
     protected $referenceId;
 
+    protected $workflowRepo;
+
     /**
      * DispatchWorkflowService constructor.
      *
@@ -61,6 +64,7 @@ class DispatchWorkflowService
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
         $this->workflowService = app(WorkflowService::class);
+        $this->workflowRepo = app(WorkflowRepository::class);
         $this->recordIdentifier = $recordIdentifier;
         $this->data = $data;
         $this->appendPlaceHolders = $appendPlaceHolders;
@@ -99,14 +103,21 @@ class DispatchWorkflowService
      * executing the workflow logic, and handling any exceptions that may
      * arise during the dispatching process.
      *
-     * @return void
      *
      * @throws WorkflowException If there is an error during the dispatching process.
      */
-    public function dispatch()
+    public function dispatch(): bool
     {
         if (! $this->workflowId || ! is_array($this->workflowInfo)) {
             return false;
+        }
+
+        if (
+            ! empty($this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'])
+            && $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'] == 'WITH_IN'
+        ) {
+            $workflow = $this->workflowRepo->getById($this->workflowId)->toArray();
+            $this->workflowService->scheduleWorkflows([$workflow]);
         }
 
         if ($this->workflowInfo['detail']['isActive'] == false) {

@@ -116,4 +116,37 @@ class EventBridgeScheduler
             throw new \Exception($e->getAwsErrorMessage());
         }
     }
+
+    public static function updateSchedule($scheduleName, $scheduleExpression, $target = [], $groupName = 'default', $flexibleTimeWindow = 'OFF')
+    {
+        try {
+            $awsConfig = self::getAwsConfig();
+            $schedulerClient = new SchedulerClient($awsConfig);
+
+            try {
+                $params = [
+                    'Name' => $scheduleName,
+                    'ScheduleExpression' => $scheduleExpression,
+                    'GroupName' => $groupName,
+                    'FlexibleTimeWindow' => [
+                        'Mode' => $flexibleTimeWindow,
+                    ],
+                ];
+
+                if (count($target)) {
+                    $params['Target'] = [
+                        'Arn' => $target['arn'] ?? null,
+                        'RoleArn' => $target['roleArn'] ?? null,
+                        'Input' => $target['input'] ?? null,
+                    ];
+                }
+
+                return $schedulerClient->updateSchedule($params);
+            } catch (AwsException $e) {
+                throw new \Exception('Error updating schedule: '.$e->getMessage());
+            }
+        } catch (AwsException $e) {
+            throw new \Exception($e->getAwsErrorMessage());
+        }
+    }
 }
