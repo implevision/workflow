@@ -44,9 +44,15 @@ class TbClaim extends AbstractSchema
      */
     protected $queryName;
 
+    /**
+     * @var string|null The path of the query associated with this class.
+     */
+    protected $queryPath;
+
     public function __construct()
     {
         $this->queryName = 'claimsQuery';
+        $this->queryPath = '.'.$this->queryName;
         $this->fieldMapping = $this->initializeFieldMapping();
     }
 
@@ -90,45 +96,44 @@ class TbClaim extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
-        $queryPath = '.'.$this->queryName;
         $fieldMapping = [
             'ClaimId' => [
                 'GraphQLschemaToReplace' => [
                     'claimId' => null,
                 ],
-                'jqFilter' => "{$queryPath}.claimId",
+                'jqFilter' => "{$this->queryPath}.claimId",
             ],
             'PolicyNumber' => [
                 'GraphQLschemaToReplace' => [
                     'riskId' => null,
                 ],
-                'jqFilter' => "{$queryPath}.riskId",
+                'jqFilter' => "{$this->queryPath}.riskId",
             ],
             'ReferenceNo' => [
                 'GraphQLschemaToReplace' => [
                     'referenceNo' => null,
                 ],
-                'jqFilter' => "{$queryPath}.referenceNo",
+                'jqFilter' => "{$this->queryPath}.referenceNo",
                 'parseResultCallback' => 'parseReferenceNo',
             ],
             'PolicyId' => [
                 'GraphQLschemaToReplace' => [
                     'policyId' => null,
                 ],
-                'jqFilter' => "{$queryPath}.policyId",
+                'jqFilter' => "{$this->queryPath}.policyId",
             ],
             'DateOfLoss' => [
                 'GraphQLschemaToReplace' => [
                     'dateOfLoss' => null,
                 ],
-                'jqFilter' => "{$queryPath}.dateOfLoss",
+                'jqFilter' => "{$this->queryPath}.dateOfLoss",
                 'parseResultCallback' => 'formatDate',
             ],
             'InsuredName' => [
                 'GraphQLschemaToReplace' => [
                     'insuredName' => null,
                 ],
-                'jqFilter' => "{$queryPath}.insuredName",
+                'jqFilter' => "{$this->queryPath}.insuredName",
             ],
             'ClaimantEmail' => [
                 'GraphQLschemaToReplace' => [
@@ -138,14 +143,14 @@ class TbClaim extends AbstractSchema
                         'secondaryEmail' => null,
                     ],
                 ],
-                'jqFilter' => "{$queryPath}.claimCommunication",
+                'jqFilter' => "{$this->queryPath}.claimCommunication",
                 'parseResultCallback' => 'parseClaimCommunication',
             ],
             'ClaimCreatedDate' => [
                 'GraphQLschemaToReplace' => [
                     'createdAt' => null,
                 ],
-                'jqFilter' => "{$queryPath}.createdAt",
+                'jqFilter' => "{$this->queryPath}.createdAt",
                 'parseResultCallback' => 'formatDate',
             ],
         ];
@@ -176,13 +181,13 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => "{$queryPath}.insuredPerson.TbPersonaddress[] | select(.isDefaultAddress == \"Y\" and .addressTypeCode == \"Location\")",
+            'jqFilter' => "{$this->queryPath}.insuredPerson.TbPersonaddress[] | select(.isDefaultAddress == \"Y\" and .addressTypeCode == \"Location\")",
             'parseResultCallback' => 'parsePropertyAddress',
         ];
 
         $fieldMapping['InsuredMailingAddress'] = [
             'GraphQLschemaToReplace' => $fieldMapping['InsuredPropertyAddress']['GraphQLschemaToReplace'],
-            'jqFilter' => "{$queryPath}.insuredPerson.TbPersonaddress[] | select(.addressTypeCode == \"Mailing\")",
+            'jqFilter' => "{$this->queryPath}.insuredPerson.TbPersonaddress[] | select(.addressTypeCode == \"Mailing\")",
             'parseResultCallback' => 'parseMailingAddress',
         ];
 
@@ -194,7 +199,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => "[{$queryPath}.adjustingFirm[].personInfo.fullName]",
+            'jqFilter' => "[{$this->queryPath}.adjustingFirm[].personInfo.fullName]",
             'parseResultCallback' => 'parseAdjustingFirmName',
         ];
 
@@ -226,7 +231,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => "[{$queryPath}.adjustingFirm[].personInfo.TbPersonaddress[] | select(.addressTypeCode == \"Mailing\")]",
+            'jqFilter' => "[{$this->queryPath}.adjustingFirm[].personInfo.TbPersonaddress[] | select(.addressTypeCode == \"Mailing\")]",
             'parseResultCallback' => 'parseAdjustingFirmAddress',
         ];
 
@@ -241,7 +246,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => "[{$queryPath}.adjustingFirm[].personInfo.emailInfo[0] | select(.isDefault == \"Y\")]",
+            'jqFilter' => "[{$this->queryPath}.adjustingFirm[].personInfo.emailInfo[0] | select(.isDefault == \"Y\")]",
             'parseResultCallback' => 'parseAdjustingFirmEmail',
         ];
 
@@ -256,7 +261,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => "[{$queryPath}.adjustingFirm[].personInfo.phoneInfo[0] | select(.isDefault == \"Y\")]",
+            'jqFilter' => "[{$this->queryPath}.adjustingFirm[].personInfo.phoneInfo[0] | select(.isDefault == \"Y\")]",
             'parseResultCallback' => 'parseAdjustingFirmPhone',
         ];
 
@@ -266,7 +271,7 @@ class TbClaim extends AbstractSchema
                     'screenName' => null,
                 ],
             ],
-            'jqFilter' => "{$queryPath}.serviceRepresentative.screenName",
+            'jqFilter' => "{$this->queryPath}.serviceRepresentative.screenName",
         ];
 
         $fieldMapping['ExaminerEmail'] = [
@@ -279,7 +284,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => "[{$queryPath}.serviceRepresentative.TbPersonInfo.emailInfo[]]",
+            'jqFilter' => "[{$this->queryPath}.serviceRepresentative.TbPersonInfo.emailInfo[]]",
             'parseResultCallback' => 'parseExaminerEmail',
         ];
 
@@ -295,7 +300,7 @@ class TbClaim extends AbstractSchema
                 ],
                 'policyId' => null,
             ],
-            'jqFilter' => "{$queryPath}",
+            'jqFilter' => "{$this->queryPath}",
             'parseResultCallback' => 'resolveCompanyLogoUrl',
         ];
 
@@ -310,7 +315,7 @@ class TbClaim extends AbstractSchema
                 ],
                 'policyId' => null,
             ],
-            'jqFilter' => "{$queryPath}",
+            'jqFilter' => "{$this->queryPath}",
             'parseResultCallback' => 'parseCompanyName',
         ];
 
@@ -331,7 +336,7 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => "[{$queryPath}.adjuster.TbPersonInfo.emailInfo[0] | select(.isDefault == \"Y\")]",
+            'jqFilter' => "[{$this->queryPath}.adjuster.TbPersonInfo.emailInfo[0] | select(.isDefault == \"Y\")]",
             'parseResultCallback' => 'parseAdjustingFirmEmail',
         ];
 
@@ -355,7 +360,7 @@ class TbClaim extends AbstractSchema
             ],
             'jqFilter' => "
                 [
-                    {$queryPath}.docuploadinfo[]
+                    {$this->queryPath}.docuploadinfo[]
                     | select(.doctypes.docTypeCode == \"ASSIGNMENTS\")
                     | .uploadDate as \$uploadDate
                     | .docUploadDocInfoRel[]
@@ -378,7 +383,7 @@ class TbClaim extends AbstractSchema
                     'screenName' => null,
                 ],
             ],
-            'jqFilter' => "{$queryPath}.adjuster.screenName",
+            'jqFilter' => "{$this->queryPath}.adjuster.screenName",
         ];
 
         $fieldMapping['CurrentYear'] = [
@@ -398,7 +403,7 @@ class TbClaim extends AbstractSchema
                 ],
                 'policyId' => null,
             ],
-            'jqFilter' => "{$queryPath}",
+            'jqFilter' => "{$this->queryPath}",
             'parseResultCallback' => 'parseCompanyPhoneNumber',
         ];
 
@@ -421,7 +426,7 @@ class TbClaim extends AbstractSchema
         $fieldMapping['BuildingCoverageDeductibleAmount'] = [
             'GraphQLschemaToReplace' => $deductibles,
             'jqFilter' => sprintf(
-                "[{$queryPath}.transaction.coverageDetails[] | select(.coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageDesc == \"%s\")]",
+                "[{$this->queryPath}.transaction.coverageDetails[] | select(.coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageDesc == \"%s\")]",
                 self::COVERAGE_DESC['Building']
             ),
             'parseResultCallback' => 'parseCoverageDeductibleAmount',
@@ -430,7 +435,7 @@ class TbClaim extends AbstractSchema
         $fieldMapping['ContentsCoverageDeductibleAmount'] = [
             'GraphQLschemaToReplace' => $deductibles,
             'jqFilter' => sprintf(
-                "[{$queryPath}.transaction.coverageDetails[] | select(.coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageDesc == \"%s\")]",
+                "[{$this->queryPath}.transaction.coverageDetails[] | select(.coverageSchedules.policyCoverageMaster.policyCoverageCoverages.coverageDesc == \"%s\")]",
                 self::COVERAGE_DESC['Content']
             ),
             'parseResultCallback' => 'parseCoverageDeductibleAmount',
@@ -452,7 +457,7 @@ class TbClaim extends AbstractSchema
         $fieldMapping['BuildingAdvancePayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => sprintf(
-                "[{$queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\")]",
+                "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\")]",
                 self::TRAN_TYPE['LossPayment'],
                 self::RESERVE_TYPE['Advance'],
                 self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']
@@ -463,7 +468,7 @@ class TbClaim extends AbstractSchema
         $fieldMapping['ContentAdvancePayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => sprintf(
-                "[{$queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\")]",
+                "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\")]",
                 self::TRAN_TYPE['LossPayment'],
                 self::RESERVE_TYPE['Advance'],
                 self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']
@@ -487,7 +492,7 @@ class TbClaim extends AbstractSchema
         $fieldMapping['BuildingPayment'] = [
             'GraphQLschemaToReplace' => $payment,
             'jqFilter' => sprintf(
-                "[{$queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimCoverageTrans.tbCvgpccoverage.coverageDesc == \"%s\") | .claimCoverageTrans]",
+                "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimCoverageTrans.tbCvgpccoverage.coverageDesc == \"%s\") | .claimCoverageTrans]",
                 self::TRAN_TYPE['LossPayment'],
                 self::COVERAGE_DESC['Building']
             ),
@@ -497,7 +502,7 @@ class TbClaim extends AbstractSchema
         $fieldMapping['ContentPayment'] = [
             'GraphQLschemaToReplace' => $payment,
             'jqFilter' => sprintf(
-                "[{$queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimCoverageTrans.tbCvgpccoverage.coverageDesc == \"%s\") | .claimCoverageTrans]",
+                "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimCoverageTrans.tbCvgpccoverage.coverageDesc == \"%s\") | .claimCoverageTrans]",
                 self::TRAN_TYPE['LossPayment'],
                 self::COVERAGE_DESC['Content']
             ),
@@ -506,73 +511,73 @@ class TbClaim extends AbstractSchema
 
         $fieldMapping['BuildingAdvancedPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['BuildingFinalPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['BuildingRapPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['BuildingTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType($queryPath, self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['ContentsAdvancedPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['ContentsFinalPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['ContentsRapPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['ContentsTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType($queryPath, self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['ICCAdvancedPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['ICCFinalPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['ICCSupplementalPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter($queryPath, self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
         $fieldMapping['ICCTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType($queryPath, self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
@@ -595,27 +600,27 @@ class TbClaim extends AbstractSchema
                     ],
                 ],
             ],
-            'jqFilter' => "{$queryPath}.claimCommunication",
+            'jqFilter' => "{$this->queryPath}.claimCommunication",
             'parseResultCallback' => 'parseClaimantAddress',
         ];
 
         return $this->wrapFieldMappingSchemaUnderData($fieldMapping);
     }
 
-    private function buildApprovedPaymentJqFilter($queryPath, $reserveType, $tranSubTypeCode)
+    private function buildApprovedPaymentJqFilter($reserveType, $tranSubTypeCode)
     {
         return sprintf(
-            "[{$queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\"))]",
+            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\"))]",
             self::TRAN_TYPE['LossPayment'],
             $reserveType,
             $tranSubTypeCode
         );
     }
 
-    private function buildApprovedPaymentJqFilterByTranSubType($queryPath, $tranSubTypeCode)
+    private function buildApprovedPaymentJqFilterByTranSubType($tranSubTypeCode)
     {
         return sprintf(
-            "[{$queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\"))]",
+            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\"))]",
             self::TRAN_TYPE['LossPayment'],
             $tranSubTypeCode
         );

@@ -8,8 +8,11 @@ class User extends AbstractSchema
 
     protected $queryName = 'user';
 
+    protected $queryPath;
+
     public function __construct()
     {
+        $this->queryPath = '.'.$this->queryName;
         $this->fieldMapping = $this->initializeFieldMapping();
     }
 
@@ -25,40 +28,38 @@ class User extends AbstractSchema
 
     private function initializeFieldMapping(): array
     {
-        $queryPath = '.'.$this->queryName;
-
         return [
             'Email' => [
                 'GraphQLschemaToReplace' => ['email' => null],
-                'jqFilter' => "{$queryPath}.email",
+                'jqFilter' => "{$this->queryPath}.email",
             ],
             'FirstName' => [
                 'GraphQLschemaToReplace' => ['firstName' => null],
-                'jqFilter' => "{$queryPath}.firstName",
+                'jqFilter' => "{$this->queryPath}.firstName",
             ],
             'LastName' => [
                 'GraphQLschemaToReplace' => ['lastName' => null],
-                'jqFilter' => "{$queryPath}.lastName",
+                'jqFilter' => "{$this->queryPath}.lastName",
             ],
             'FullName' => [
                 'GraphQLschemaToReplace' => ['fullName' => null],
-                'jqFilter' => "{$queryPath}.fullName",
+                'jqFilter' => "{$this->queryPath}.fullName",
             ],
             'UserLevel' => [
                 'GraphQLschemaToReplace' => ['level' => null],
-                'jqFilter' => "{$queryPath}.level",
+                'jqFilter' => "{$this->queryPath}.level",
             ],
             'Status' => [
                 'GraphQLschemaToReplace' => ['status' => null],
-                'jqFilter' => "{$queryPath}.status",
+                'jqFilter' => "{$this->queryPath}.status",
             ],
             'Username' => [
                 'GraphQLschemaToReplace' => ['username' => null],
-                'jqFilter' => "{$queryPath}.username",
+                'jqFilter' => "{$this->queryPath}.username",
             ],
             'CompanyLogo' => [
                 'GraphQLschemaToReplace' => ['companyLogo' => null],
-                'jqFilter' => "{$queryPath}.companyLogo",
+                'jqFilter' => "{$this->queryPath}.companyLogo",
             ],
         ];
     }
