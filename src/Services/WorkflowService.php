@@ -693,6 +693,77 @@ class WorkflowService
         }
     }
 
+    public function applyEmailSupressedByConsumerFilter($emails)
+    {
+        try {
+            $consumerService = $this->getConsumerService();
+            if ($consumerService instanceof \stdClass) {
+                return $emails;
+            }
+
+            return $consumerService->getEmailSupressedByConsumerService()->applyEmailSupressedByConsumerFilter($emails);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return $emails;
+        }
+    }
+
+    /**
+     * Remove recipients whose MFA email verification has fully expired.
+     * Valid users and users still within the grace period are kept.
+     *
+     * @param  array  $emails  Recipient email addresses.
+     * @return array The emails still allowed to receive workflow email.
+     */
+    public function applyMfaEmailVerificationFilter($emails)
+    {
+        try {
+            $consumerService = $this->getConsumerService();
+            if ($consumerService instanceof \stdClass) {
+                return $emails;
+            }
+
+            $mfaService = $consumerService->getMfaEmailVerificationService();
+
+            \Log::info('WORKFLOW - MFA email verification filter started for recipient(s): '.implode(',', (array) $emails));
+
+            $allowed = array_values(array_filter(
+                (array) $emails,
+                function ($email) use ($mfaService) {
+                    $result = $mfaService->isMFAEmailVerificationValid($email);
+
+                    // Could not resolve status → do not block sending.
+                    if (empty($result['status'])) {
+                        \Log::info('WORKFLOW - MFA check could not resolve status, allowing email: '.$email, $result);
+
+                        return true;
+                    }
+
+                    // Keep valid users and those still within the grace period.
+                    $keep = ! empty($result['valid']) || ! empty($result['showWarningMessage']);
+
+                    \Log::info('WORKFLOW - MFA check for '.$email.' => '.($keep ? 'KEEP' : 'SKIP (expired)'), [
+                        'valid' => $result['valid'] ?? null,
+                        'showWarningMessage' => $result['showWarningMessage'] ?? null,
+                        'daysRemaining' => $result['daysRemaining'] ?? null,
+                    ]);
+
+                    return $keep;
+                }
+            ));
+
+            $removedCount = count((array) $emails) - count($allowed);
+            \Log::info('WORKFLOW - MFA email verification filter finished. Kept '.count($allowed).', skipped '.$removedCount.'.');
+
+            return $allowed;
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return $emails;
+        }
+    }
+
     private function getConsumerService()
     {
         try {
