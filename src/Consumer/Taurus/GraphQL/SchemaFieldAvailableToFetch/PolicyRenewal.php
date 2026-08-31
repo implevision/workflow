@@ -177,6 +177,7 @@ class PolicyRenewal extends AbstractSchema
                         'policyNo' => null,
                         'insuredName' => null,
                         'termEndDate' => null,
+                        'termStartDate' => null,
                         'premiumAmount' => null,
                         'paymentAmt' => null,
                     ],
