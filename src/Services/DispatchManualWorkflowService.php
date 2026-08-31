@@ -202,7 +202,10 @@ class DispatchManualWorkflowService
                 $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery(
                     $schemaData,
                     $queryName,
-                    $graphQLQuery
+                    $graphQLQuery,
+                    [],
+                    0,
+                    $moduleClassForGraphQL->supportsPagination()
                 );
 
                 if (config('app.env') != 'production') {
@@ -212,6 +215,12 @@ class DispatchManualWorkflowService
                 }
                 $graphQLClient = new GraphQLClient;
                 $response = $graphQLClient->query($graphQLRequestPayload);
+
+                $queryRootNode = $response[$queryName] ?? [];
+                $record = $moduleClassForGraphQL->supportsPagination()
+                    ? ($queryRootNode['data'][0] ?? [])
+                    : $queryRootNode;
+                $response = [$queryName => $record];
             } catch (\Exception $e) {
                 $this->workflowService->addWorkflowLog(
                     0,

@@ -6,10 +6,13 @@ class Inspection extends AbstractSchema
 {
     protected $fieldMapping = [];
 
-    protected $queryName = 'queryInspection';
+    protected $queryName = 'inspection';
+
+    protected $queryPath;
 
     public function __construct()
     {
+        $this->queryPath = '.'.$this->queryName;
         $this->fieldMapping = $this->initializeFieldMapping();
     }
 
@@ -28,31 +31,31 @@ class Inspection extends AbstractSchema
         return [
             'AssignmentId' => [
                 'GraphQLschemaToReplace' => ['claim' => ['assignmentId' => null]],
-                'jqFilter' => '.inspection.claim.assignmentId',
+                'jqFilter' => "{$this->queryPath}.claim.assignmentId",
             ],
             'PolicyNo' => [
                 'GraphQLschemaToReplace' => ['claim' => ['policy' => ['policyNumber' => null]]],
-                'jqFilter' => '.inspection.claim.policy.policyNumber',
+                'jqFilter' => "{$this->queryPath}.claim.policy.policyNumber",
             ],
             'DateOfLoss' => [
                 'GraphQLschemaToReplace' => ['claim' => ['dateOfLoss' => null]],
-                'jqFilter' => '.inspection.claim.dateOfLoss',
+                'jqFilter' => "{$this->queryPath}.claim.dateOfLoss",
             ],
             'AdjusterName' => [
                 'GraphQLschemaToReplace' => ['inspector' => ['fullName' => null]],
-                'jqFilter' => '.inspection.inspector.fullName',
+                'jqFilter' => "{$this->queryPath}.inspector.fullName",
             ],
             'AdjusterPhone' => [
                 'GraphQLschemaToReplace' => ['inspector' => ['phoneInfo' => ['sPhoneNumber' => null]]],
-                'jqFilter' => '.inspection.inspector.phoneInfo.sPhoneNumber',
+                'jqFilter' => "{$this->queryPath}.inspector.phoneInfo.sPhoneNumber",
             ],
             'AdjusterEmail' => [
                 'GraphQLschemaToReplace' => ['inspector' => ['email' => null]],
-                'jqFilter' => '.inspection.inspector.email',
+                'jqFilter' => "{$this->queryPath}.inspector.email",
             ],
             'AdjusterFCN' => [
                 'GraphQLschemaToReplace' => ['inspector' => ['fcnDocument' => ['sDocumentNumber' => null]]],
-                'jqFilter' => '.inspection.inspector.fcnDocument.sDocumentNumber',
+                'jqFilter' => "{$this->queryPath}.inspector.fcnDocument.sDocumentNumber",
             ],
         ];
     }

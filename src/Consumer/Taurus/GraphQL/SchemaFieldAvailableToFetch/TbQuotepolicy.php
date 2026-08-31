@@ -18,20 +18,26 @@ class TbQuotepolicy extends AbstractSchema
      */
     protected $queryName;
 
+    /**
+     * @var string|null The path of the query associated with this class.
+     */
+    protected $queryPath;
+
     public function __construct()
     {
+        $this->queryName = 'quotesQuery';
+        $this->queryPath = '.'.$this->queryName;
         $this->fieldMapping = $this->initializeFieldMapping();
-        $this->queryName = 'quoteQuery';
         $this->setHeaders([
             'X-Request-Agent-Portal' => true,
         ]);
     }
 
     /**
-     * Retrieves the field mapping with GraphQL schema for the TbClaim.
+     * Retrieves the field mapping with GraphQL schema for the TbQuotepolicy.
      *
      * This method returns an associative array that maps the fields
-     * of the TbClaim to their corresponding values or attributes.
+     * of the TbQuotepolicy to their corresponding values or attributes.
      *
      * @return array An associative array representing the field mapping.
      */
@@ -41,12 +47,12 @@ class TbQuotepolicy extends AbstractSchema
     }
 
     /**
-     * Retrieves the query name for the TbClaim.
+     * Retrieves the query name for the TbQuotepolicy.
      *
      * This method returns the name of the GraphQL query that can be used
-     * to fetch data related to the TbClaim.
+     * to fetch data related to the TbQuotepolicy.
      *
-     * @return string The name of the GraphQL query for TbClaim.
+     * @return string The name of the GraphQL query for TbQuotepolicy.
      */
     public function getQueryName()
     {
@@ -54,7 +60,7 @@ class TbQuotepolicy extends AbstractSchema
     }
 
     /**
-     * Initializes the field mapping with GraphQL schema for the TbClaim class.
+     * Initializes the field mapping with GraphQL schema for the TbQuotepolicy class.
      *
      * This method sets up the mapping of fields that can be fetched
      * from the GraphQL schema. It is called during the initialization
@@ -72,10 +78,10 @@ class TbQuotepolicy extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'quoteNo' => null,
                 ],
-                'jqFilter' => '.quoteQuery.quoteNo',
+                'jqFilter' => "{$this->queryPath}.quoteNo",
             ],
         ];
 
-        return $fieldMapping;
+        return $this->wrapFieldMappingSchemaUnderData($fieldMapping);
     }
 }

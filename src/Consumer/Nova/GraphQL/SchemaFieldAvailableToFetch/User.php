@@ -6,10 +6,13 @@ class User extends AbstractSchema
 {
     protected $fieldMapping = [];
 
-    protected $queryName = 'queryUser';
+    protected $queryName = 'user';
+
+    protected $queryPath;
 
     public function __construct()
     {
+        $this->queryPath = '.'.$this->queryName;
         $this->fieldMapping = $this->initializeFieldMapping();
     }
 
@@ -28,35 +31,35 @@ class User extends AbstractSchema
         return [
             'Email' => [
                 'GraphQLschemaToReplace' => ['email' => null],
-                'jqFilter' => '.user.email',
+                'jqFilter' => "{$this->queryPath}.email",
             ],
             'FirstName' => [
                 'GraphQLschemaToReplace' => ['firstName' => null],
-                'jqFilter' => '.user.firstName',
+                'jqFilter' => "{$this->queryPath}.firstName",
             ],
             'LastName' => [
                 'GraphQLschemaToReplace' => ['lastName' => null],
-                'jqFilter' => '.user.lastName',
+                'jqFilter' => "{$this->queryPath}.lastName",
             ],
             'FullName' => [
                 'GraphQLschemaToReplace' => ['fullName' => null],
-                'jqFilter' => '.user.fullName',
+                'jqFilter' => "{$this->queryPath}.fullName",
             ],
             'UserLevel' => [
                 'GraphQLschemaToReplace' => ['level' => null],
-                'jqFilter' => '.user.level',
+                'jqFilter' => "{$this->queryPath}.level",
             ],
             'Status' => [
                 'GraphQLschemaToReplace' => ['status' => null],
-                'jqFilter' => '.user.status',
+                'jqFilter' => "{$this->queryPath}.status",
             ],
             'Username' => [
                 'GraphQLschemaToReplace' => ['username' => null],
-                'jqFilter' => '.user.username',
+                'jqFilter' => "{$this->queryPath}.username",
             ],
             'CompanyLogo' => [
                 'GraphQLschemaToReplace' => ['companyLogo' => null],
-                'jqFilter' => '.user.companyLogo',
+                'jqFilter' => "{$this->queryPath}.companyLogo",
             ],
         ];
     }

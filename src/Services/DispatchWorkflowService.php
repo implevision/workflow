@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Services;
 use Illuminate\Support\Facades\Storage;
 use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
+use Taurus\Workflow\Repositories\Eloquent\WorkflowRepository;
 use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
@@ -50,6 +51,8 @@ class DispatchWorkflowService
 
     protected $referenceId;
 
+    protected $workflowRepo;
+
     /**
      * DispatchWorkflowService constructor.
      *
@@ -61,6 +64,7 @@ class DispatchWorkflowService
         $this->workflowId = $workflowId;
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
         $this->workflowService = app(WorkflowService::class);
+        $this->workflowRepo = app(WorkflowRepository::class);
         $this->recordIdentifier = $recordIdentifier;
         $this->data = $data;
         $this->appendPlaceHolders = $appendPlaceHolders;
@@ -99,14 +103,21 @@ class DispatchWorkflowService
      * executing the workflow logic, and handling any exceptions that may
      * arise during the dispatching process.
      *
-     * @return void
      *
      * @throws WorkflowException If there is an error during the dispatching process.
      */
-    public function dispatch()
+    public function dispatch(): bool
     {
         if (! $this->workflowId || ! is_array($this->workflowInfo)) {
             return false;
+        }
+
+        if (
+            ! empty($this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'])
+            && $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'] == 'WITH_IN'
+        ) {
+            $workflow = $this->workflowRepo->getById($this->workflowId)->toArray();
+            $this->workflowService->scheduleWorkflows([$workflow]);
         }
 
         if ($this->workflowInfo['detail']['isActive'] == false) {
@@ -178,6 +189,8 @@ class DispatchWorkflowService
             } catch (\Exception $e) {
                 throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
             }
+        } elseif (count($effectiveActionQuery)) {
+            $graphQLQuery = $effectiveActionQuery;
         }
 
         foreach ($allConditions as $condition) {
@@ -355,7 +368,7 @@ class DispatchWorkflowService
                         );
 
                         $queryArgs = $moduleClassForGraphQL->getQueryArgs();
-                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery, $queryArgs);
+                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery, $queryArgs, $this->page, $moduleClassForGraphQL->supportsPagination());
                     } catch (\Exception $e) {
                         $this->workflowService->addWorkflowLog(
                             $this->workflowId,
@@ -371,10 +384,10 @@ class DispatchWorkflowService
                     // Handle GraphQL query execution
                     try {
                         // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        // \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
+                        \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
                         $graphQLClient = new GraphQLClient($graphQLHeaders);
                         $response = $graphQLClient->query($graphQLRequestPayload);
-                        // \Log::info('WORKFLOW - GraphQL Response: ', $response);
+                        \Log::info('WORKFLOW - GraphQL Response: ', $response);
                     } catch (\Exception $e) {
                         $this->workflowService->addWorkflowLog(
                             $this->workflowId,
@@ -399,60 +412,74 @@ class DispatchWorkflowService
 
                             continue;
                         }
-                        $parsedData = [];
+
+                        $queryName = $moduleClassForGraphQL->getQueryName();
+                        $queryRootNode = $response[$queryName] ?? [];
+                        $records = $moduleClassForGraphQL->supportsPagination()
+                            ? ($queryRootNode['data'] ?? [])
+                            : [$queryRootNode];
+
+                        $perRecordResponses = array_map(
+                            fn ($record) => [$queryName => $record],
+                            $records
+                        );
 
                         try {
-                            foreach ($listOfRequiredData as $placeHolder) {
-                                if (! array_key_exists($placeHolder, $fieldMapping)) {
-                                    $this->workflowService->addWorkflowLog(
-                                        $this->workflowId,
-                                        $jobWorkflowId,
-                                        'FIELD_MAPPING_ISSUE',
-                                        'Field mapping not found for placeholder: '.$placeHolder
-                                    );
-                                    \Log::error('WORKFLOW - Field mapping not found for placeholder: '.$placeHolder);
-                                    $parsedData[$placeHolder] = '';
+                            foreach ($perRecordResponses as $recordResponse) {
+                                $parsedData = [];
 
-                                    continue;
-                                }
+                                foreach ($listOfRequiredData as $placeHolder) {
+                                    if (! array_key_exists($placeHolder, $fieldMapping)) {
+                                        $this->workflowService->addWorkflowLog(
+                                            $this->workflowId,
+                                            $jobWorkflowId,
+                                            'FIELD_MAPPING_ISSUE',
+                                            'Field mapping not found for placeholder: '.$placeHolder
+                                        );
+                                        \Log::error('WORKFLOW - Field mapping not found for placeholder: '.$placeHolder);
+                                        $parsedData[$placeHolder] = '';
 
-                                $jqFilter = $fieldMapping[$placeHolder]['jqFilter'];
-                                $parseResultCallback = ! empty($fieldMapping[$placeHolder]['parseResultCallback']) ? $fieldMapping[$placeHolder]['parseResultCallback'] : null;
-
-                                $placeHolderValue = '';
-                                if (! $jqFilter && $parseResultCallback) {
-                                    if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
-                                        $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback();
+                                        continue;
                                     }
-                                } else {
-                                    $placeHolderValue = $graphQLSchemaBuilder->extractValue($response, $jqFilter);
 
-                                    if ($placeHolderValue) {
-                                        $parsedValue = json_decode($placeHolderValue, true);
-                                        $placeHolderValue = json_last_error() === JSON_ERROR_NONE ? $parsedValue : $placeHolderValue;
+                                    $jqFilter = $fieldMapping[$placeHolder]['jqFilter'];
+                                    $parseResultCallback = ! empty($fieldMapping[$placeHolder]['parseResultCallback']) ? $fieldMapping[$placeHolder]['parseResultCallback'] : null;
 
-                                        if ($parseResultCallback) {
-                                            if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
-                                                $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback($placeHolderValue);
+                                    $placeHolderValue = '';
+                                    if (! $jqFilter && $parseResultCallback) {
+                                        if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
+                                            $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback();
+                                        }
+                                    } else {
+                                        $placeHolderValue = $graphQLSchemaBuilder->extractValue($recordResponse, $jqFilter);
+
+                                        if ($placeHolderValue) {
+                                            $parsedValue = json_decode($placeHolderValue, true);
+                                            $placeHolderValue = json_last_error() === JSON_ERROR_NONE ? $parsedValue : $placeHolderValue;
+
+                                            if ($parseResultCallback) {
+                                                if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
+                                                    $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback($placeHolderValue);
+                                                }
                                             }
                                         }
                                     }
+                                    $parsedData[$placeHolder] = $placeHolderValue;
                                 }
-                                $parsedData[$placeHolder] = $placeHolderValue;
-                            }
 
-                            $parsedData = array_merge($parsedData, $placeHolderWithValues);
-                            $hasAtLeastOneValue = ! empty(array_filter($parsedData, fn ($v) => $v !== null && $v !== '' && $v !== false && $v !== 'null'));
+                                $parsedData = array_merge($parsedData, $placeHolderWithValues);
+                                $hasAtLeastOneValue = ! empty(array_filter($parsedData, fn ($v) => $v !== null && $v !== '' && $v !== false && $v !== 'null'));
 
-                            if ($this->recordIdentifier && ! empty($parsedData) && ! $hasAtLeastOneValue) {
-                                \Log::warning('WORKFLOW -  Data unavailable or all required fields are empty');
-                                break 2;
-                            }
-                            if ($actionType == 'WEB_HOOK') {
-                                $data = $this->generatePayloadFromParsedData($parsedData);
-                            } else {
-                                // SET DATA FOR ACTION
-                                $data[] = $parsedData;
+                                if ($this->recordIdentifier && ! empty($parsedData) && ! $hasAtLeastOneValue) {
+                                    \Log::warning('WORKFLOW -  Data unavailable or all required fields are empty');
+                                    break 2;
+                                }
+                                if ($actionType == 'WEB_HOOK') {
+                                    $data = array_merge($data, $this->generatePayloadFromParsedData($parsedData));
+                                } else {
+                                    // SET DATA FOR ACTION
+                                    $data[] = $parsedData;
+                                }
                             }
                         } catch (\Exception $e) {
                             $this->workflowService->addWorkflowLog(

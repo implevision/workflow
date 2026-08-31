@@ -83,8 +83,26 @@ class AbstractSchema
     }
 
     /**
-     * Override in paginated module schema classes to return the query args for the next page.
-     * Return null when there are no more pages (default — no pagination).
+     * Whether this module's query returns a page of records
+     * (`{queryName: {data: [...], paginatorInfo: {...}}}`) rather than a
+     * single record directly under the query root. Controls whether the
+     * generated query requests `paginatorInfo { hasMorePages }` — querying
+     * for a field the underlying GraphQL schema doesn't define would fail.
+     * Override to return false for single-record lookups.
+     */
+    public function supportsPagination(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Returns the query args for the next page, or null when there are no more pages.
+     *
+     * Default: when supportsPagination() is true and the query is generated via
+     * GraphQLSchemaBuilderService::generateGraphQLQuery() (where: ...), the
+     * builder requests `paginatorInfo { hasMorePages }` alongside `data`, so
+     * that flag directly tells us whether to advance to the next page. Override
+     * in module schema classes that need a different stopping condition.
      *
      * @param  array  $response  Raw GraphQL response from the current page
      * @param  array  $currentArgs  Query args used for the current page
@@ -92,7 +110,13 @@ class AbstractSchema
      */
     public function getNextPageArgs(array $response, array $currentArgs): ?array
     {
-        return null;
+        $hasMorePages = $response[$this->getQueryName()]['paginatorInfo']['hasMorePages'] ?? false;
+
+        if (! $hasMorePages) {
+            return null;
+        }
+
+        return array_merge($currentArgs, ['page' => ($currentArgs['page'] ?? 0) + 1]);
     }
 
     /**
@@ -137,6 +161,27 @@ class AbstractSchema
         }
 
         return array_values(array_map($rowMapper, array_filter($items, 'is_array')));
+    }
+
+    /**
+     * The query root wraps records under `data` now (`{queryName: {data: [...]}}`),
+     * so every non-empty GraphQLschemaToReplace fragment needs to be nested
+     * under a `data` key too. Call this at the end of initializeFieldMapping()
+     * instead of nesting `data` by hand in every field.
+     *
+     * @param  array  $fieldMapping  Field mapping keyed by placeholder
+     * @return array The same mapping with each non-empty GraphQLschemaToReplace wrapped under `data`
+     */
+    protected function wrapFieldMappingSchemaUnderData(array $fieldMapping): array
+    {
+        foreach ($fieldMapping as &$mapping) {
+            if (! empty($mapping['GraphQLschemaToReplace'])) {
+                $mapping['GraphQLschemaToReplace'] = ['data' => $mapping['GraphQLschemaToReplace']];
+            }
+        }
+        unset($mapping);
+
+        return $fieldMapping;
     }
 
     /**
