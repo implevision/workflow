@@ -473,6 +473,32 @@ class WorkflowService
         }
     }
 
+    public function updateScheduleToExecuteWorkflow($groupName, $workflowId, $module, $scheduleExpression)
+    {
+        // TODO: pass record identifier if any
+        $commandToRunWorkflow = getCliCommandToDispatchWorkflow($workflowId);
+
+        $getServicePostFixForModule = $this->getServicePostFixForModule($module);
+
+        try {
+            $target = [
+                'arn' => config('workflow.aws_lambda_function_arn_to_invoke_workflow'),
+                'roleArn' => config('workflow.aws_iam_role_arn_to_invoke_lambda_from_event_bridge'),
+                'input' => json_encode([
+                    'task_definition' => config('workflow.task_definition_prefix').$getServicePostFixForModule,
+                    'command' => explode(' ', $commandToRunWorkflow),
+                ]),
+            ];
+            $scheduleGroupName = getEventSchedulerNameToExecuteWorkflow($workflowId);
+
+            return EventBridgeScheduler::updateSchedule($scheduleGroupName, $scheduleExpression, $target, $groupName);
+        } catch (\Throwable $e) {
+            \Log::error('Error updating schedule: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
     public function scheduleWorkflows($workflows)
     {
         foreach ($workflows as $workflow) {
@@ -505,49 +531,49 @@ class WorkflowService
                     );
                 }
 
-                if (! $workflow['aws_event_bridge_arn']) {
-                    if ($workflow['effective_action_to_execute_workflow'] == 'ON_DATE_TIME') {
-                        // RUNNING WORKFLOW AT PARTICULAR TIME
-                        if (! empty($workflow['date_time_info_to_execute_workflow']['executionEffectiveDate'])) {
-                            $executionDateTime = sprintf(
-                                '%s %s:00',
-                                $workflow['date_time_info_to_execute_workflow']['executionEffectiveDate'],
-                                $workflow['date_time_info_to_execute_workflow']['executionEffectiveTime']
-                            );
-
-                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = convertLocalToUTC($executionDateTime, 'm/d/Y H:i:s', config('workflow.timezone'));
-                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'at('.$configureTimeForEventSchedulerToAwakeWorkflowSystem.')'; // At specific date and time
-                        } elseif (! empty($workflow['date_time_info_to_execute_workflow']['executionEventIncident']) && $workflow['date_time_info_to_execute_workflow']['executionEventIncident'] == 'WITH_IN') {
-                            $baseTimestamp = sprintf('+%s %ss', $workflow['date_time_info_to_execute_workflow']['executionFrequency'], strtolower($workflow['date_time_info_to_execute_workflow']['executionFrequencyType']));
-                            $executionDateTime = strtotime($baseTimestamp);
-
-                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = convertLocalToUTC($executionDateTime, 'm/d/Y 00:00:00', config('workflow.timezone'));
-                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'at('.$configureTimeForEventSchedulerToAwakeWorkflowSystem.')'; // At specific date and time
-                        } elseif (! empty($workflow['date_time_info_to_execute_workflow']['recurringFrequency'])) {
-                            if ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'WEEK') { // SCHEDULE RECURRING WORKFLOW
-                                $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 ? * MON *)'; // At 00:00 on every Monday
-                            } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'MONTH') {
-                                $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 1 * ? *)'; // At 00:00 on the first day of every month
-                            } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'YEAR') {
-                                $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 1 1 ? *)'; // At 00:00 on the first day of January every year
-                            } else {
-                                $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 12 * * ? *)'; // At 00:00 every day
-                            }
-                        }
-                    } elseif ($workflow['effective_action_to_execute_workflow'] == 'CUSTOM_DATE_AND_TIME') {
-                        $cronJobArray = $workflow['custom_date_time_info_to_execute_workflow'];
-                        $configureTimeForEventSchedulerToAwakeWorkflowSystem = sprintf(
-                            'cron(%s %s %s %s %s %s)',
-                            $cronJobArray['cronMinutes'],
-                            $cronJobArray['cronHours'],
-                            $cronJobArray['cronDayOfMonth'],
-                            $cronJobArray['cronMonth'],
-                            $cronJobArray['cronDayOfWeek'],
-                            $cronJobArray['cronYear']
+                if ($workflow['effective_action_to_execute_workflow'] == 'ON_DATE_TIME') {
+                    // RUNNING WORKFLOW AT PARTICULAR TIME
+                    if (! empty($workflow['date_time_info_to_execute_workflow']['executionEffectiveDate'])) {
+                        $executionDateTime = sprintf(
+                            '%s %s:00',
+                            $workflow['date_time_info_to_execute_workflow']['executionEffectiveDate'],
+                            $workflow['date_time_info_to_execute_workflow']['executionEffectiveTime']
                         );
-                    }
 
-                    // SCHEDULE IN EVENT BRIDGE ONLY ONCE
+                        $configureTimeForEventSchedulerToAwakeWorkflowSystem = convertLocalToUTC($executionDateTime, 'm/d/Y H:i:s', config('workflow.timezone'));
+                        $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'at('.$configureTimeForEventSchedulerToAwakeWorkflowSystem.')'; // At specific date and time
+                    } elseif (! empty($workflow['date_time_info_to_execute_workflow']['executionEventIncident']) && $workflow['date_time_info_to_execute_workflow']['executionEventIncident'] == 'WITH_IN') {
+                        $baseTimestamp = sprintf('+%s %ss', $workflow['date_time_info_to_execute_workflow']['executionFrequency'], strtolower($workflow['date_time_info_to_execute_workflow']['executionFrequencyType']));
+                        $executionDateTime = strtotime($baseTimestamp);
+
+                        $configureTimeForEventSchedulerToAwakeWorkflowSystem = convertLocalToUTC($executionDateTime, 'm/d/Y 00:00:00', config('workflow.timezone'));
+                        $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'at('.$configureTimeForEventSchedulerToAwakeWorkflowSystem.')'; // At specific date and time
+                    } elseif (! empty($workflow['date_time_info_to_execute_workflow']['recurringFrequency'])) {
+                        if ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'WEEK') { // SCHEDULE RECURRING WORKFLOW
+                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 ? * MON *)'; // At 00:00 on every Monday
+                        } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'MONTH') {
+                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 1 * ? *)'; // At 00:00 on the first day of every month
+                        } elseif ($workflow['date_time_info_to_execute_workflow']['recurringFrequency'] == 'YEAR') {
+                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 0 1 1 ? *)'; // At 00:00 on the first day of January every year
+                        } else {
+                            $configureTimeForEventSchedulerToAwakeWorkflowSystem = 'cron(0 12 * * ? *)'; // At 00:00 every day
+                        }
+                    }
+                } elseif ($workflow['effective_action_to_execute_workflow'] == 'CUSTOM_DATE_AND_TIME') {
+                    $cronJobArray = $workflow['custom_date_time_info_to_execute_workflow'];
+                    $configureTimeForEventSchedulerToAwakeWorkflowSystem = sprintf(
+                        'cron(%s %s %s %s %s %s)',
+                        $cronJobArray['cronMinutes'],
+                        $cronJobArray['cronHours'],
+                        $cronJobArray['cronDayOfMonth'],
+                        $cronJobArray['cronMonth'],
+                        $cronJobArray['cronDayOfWeek'],
+                        $cronJobArray['cronYear']
+                    );
+                }
+
+                if (! $workflow['aws_event_bridge_arn']) {
+                    // CREATE NEW SCHEDULE IN EVENT BRIDGE
                     $scheduleObj = $this->createScheduleToExecuteWorkflow($groupName, $workflow['id'], $workflow['module'], $configureTimeForEventSchedulerToAwakeWorkflowSystem);
 
                     if ($scheduleObj) {
@@ -555,6 +581,10 @@ class WorkflowService
                             'aws_event_bridge_arn' => $scheduleObj['ScheduleArn'] ?? null,
                         ]);
                     }
+                } else {
+                    // UPDATE EXISTING SCHEDULE IN EVENT BRIDGE
+                    $this->updateScheduleToExecuteWorkflow($groupName, $workflow['id'], $workflow['module'], $configureTimeForEventSchedulerToAwakeWorkflowSystem);
+                    \Log::info('Schedule updated successfully for workflow: '.$workflow['id']);
                 }
             }
         }
