@@ -57,6 +57,13 @@ class Inspection extends AbstractSchema
                 'GraphQLschemaToReplace' => ['inspector' => ['fcnDocument' => ['sDocumentNumber' => null]]],
                 'jqFilter' => "{$this->queryPath}.inspector.fcnDocument.sDocumentNumber",
             ],
+            // Tenant-level branding, not per-record: no GraphQLschemaToReplace key (so
+            // nothing is added to the query) and an empty jqFilter, which routes to
+            // AbstractSchema::resolveCompanyLogo().
+            'CompanyLogo' => [
+                'jqFilter' => '',
+                'parseResultCallback' => 'resolveCompanyLogo',
+            ],
         ];
     }
 }

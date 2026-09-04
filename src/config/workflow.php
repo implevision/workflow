@@ -43,6 +43,15 @@ return [
 
     'sender_email_address' => env('WORKFLOW_SENDER_EMAIL_ADDRESS'),
 
+    /*
+    | URL template the {{CompanyLogo}} placeholder resolves to. Supports a
+    | {tenant} token, e.g. "https://api.example.com/company-logo/{tenant}".
+    | The consumer owns the endpoint; it must be publicly fetchable and must
+    | not expire, so never a presigned S3 URL.
+    | See AbstractSchema::resolveCompanyLogo().
+    */
+    'company_logo_url' => env('WORKFLOW_COMPANY_LOGO_URL'),
+
     'current_consumer' => env('WORKFLOW_CURRENT_CONSUMER', 'taurus'),
 
     'bucket_to_save_email_letters' => env('WORKFLOW_BUCKET_TO_SAVE_EMAIL_LETTERS'),
