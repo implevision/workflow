@@ -422,7 +422,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                         ],
                     ],
                 ],
-                'jqFilter' => "[{$this->queryPath}.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.TbPersonaddress[]?.phoneInfo[]? | select(.phoneTypeCode == \"Phone\")] | first | .phoneNumber",
+                'jqFilter' => "[{$this->queryPath}.agentTask.policyTransaction.tbAccountMaster.TbPersoninfo.TbPersonaddress[].phoneInfo[] | select(.phoneTypeCode == \"Phone\")] | first | .phoneNumber",
                 'parseResultCallback' => 'parsePhoneNumber',
             ],
             'PotentialDiscountLostIndicator' => [
