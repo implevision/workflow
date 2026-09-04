@@ -79,6 +79,31 @@ function getNoTenantIdentifier()
 }
 
 /**
+ * Resolve the {{CompanyLogo}} placeholder to a fetchable image URL.
+ *
+ * Lives here rather than on a schema class because consumers supply placeholder
+ * values from two places: a model observer building the entity payload, and a
+ * GraphQL field mapping. Both need the same answer.
+ *
+ * Consumers set WORKFLOW_COMPANY_LOGO_URL with an optional {tenant} token, e.g.
+ * "https://services.example.com/backend/company-logo/{tenant}", and own the
+ * endpoint itself, since only the consumer knows where its branding lives.
+ *
+ * Never point this at a presigned S3 URL: those expire, and a logo embedded in
+ * a sent email must keep resolving long after the send.
+ */
+function getWorkflowCompanyLogoUrl(): string
+{
+    $template = config('workflow.company_logo_url');
+
+    if (! $template) {
+        return '';
+    }
+
+    return str_replace('{tenant}', (string) getTenant(), $template);
+}
+
+/**
  * Get the event scheduler group name.
  */
 function getEventSchedulerGroupNameToExecuteWorkflow()

@@ -115,30 +115,15 @@ class AbstractSchema
     }
 
     /**
-     * Resolve the {{CompanyLogo}} placeholder to a fetchable image URL.
+     * Resolve the {{CompanyLogo}} placeholder. See getWorkflowCompanyLogoUrl().
      *
-     * Declared here rather than per-consumer because every consumer needs the
-     * same thing: a URL a mail client can fetch, forever. Consumers configure
-     * WORKFLOW_COMPANY_LOGO_URL with an optional {tenant} token, e.g.
-     * "https://api.example.com/company-logo/{tenant}"; the consumer owns the
-     * endpoint, since only it knows where its branding lives.
-     *
-     * Do not point this at a presigned S3 URL — those expire, and a logo baked
-     * into a sent email must keep resolving long after the send.
-     *
-     * Wire it up in a field mapping with no jqFilter, which routes the
-     * placeholder to this callback instead of the GraphQL response:
+     * Wire it up with an empty jqFilter, which routes the placeholder to this
+     * callback instead of the GraphQL response:
      *
      *   'CompanyLogo' => ['jqFilter' => '', 'parseResultCallback' => 'resolveCompanyLogo'],
      */
     public function resolveCompanyLogo(): string
     {
-        $template = config('workflow.company_logo_url');
-
-        if (! $template) {
-            return '';
-        }
-
-        return str_replace('{tenant}', (string) getTenant(), $template);
+        return getWorkflowCompanyLogoUrl();
     }
 }
