@@ -103,34 +103,17 @@ class Helper
     {
         $parsedUrl = parse_url($url);
 
-        if ($parsedUrl === false || ! isset($parsedUrl['host'])) {
+        if ($parsedUrl === false || !isset($parsedUrl['host'])) {
             return false;
         }
 
-        $host = $parsedUrl['host'];
-        $hostArr = explode('.', $host);
-        if (count($hostArr) < 2) {
-            return false; // Not a valid domain
+        $hostParts = explode('.', $parsedUrl['host']);
+
+        if (count($hostParts) < 2) {
+            return false;
         }
 
-        $domain = implode('.', array_slice($hostArr, -2));
-
-        // Use regex to extract the domain pattern
-        if (preg_match('/([^.]*\.)?'.$domain.'$/', $host, $matches)) {
-            if (empty($matches[1])) {
-                return $domain;
-            } else {
-                return rtrim($matches[1], '.').".{$domain}";
-            }
-        }
-
-        // Fallback for non-odysseynext domains
-        $hostParts = explode('.', $host);
-        if (count($hostParts) >= 2) {
-            return implode('.', array_slice($hostParts, -2));
-        }
-
-        return false;
+        return implode('.', array_slice($hostParts, -2));
     }
 
     public static function formatPhone($phoneNumber, $country = 'US')
