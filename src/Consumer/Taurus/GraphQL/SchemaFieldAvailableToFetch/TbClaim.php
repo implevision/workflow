@@ -265,6 +265,25 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'parseAdjustingFirmPhone',
         ];
 
+        $fieldMapping['AgencyPhoneNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'agency' => [
+                    'phoneInfo' => [
+                        'phoneNumber' => null,
+                        'phoneTypeCode' => null,
+                    ],
+                    'TbPersonaddress' => [
+                        'phoneInfo' => [
+                            'phoneNumber' => null,
+                            'phoneTypeCode' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => "[{$this->queryPath}.agency.phoneInfo[]?, {$this->queryPath}.agency.TbPersonaddress[]?.phoneInfo[]?] | map(select(.phoneTypeCode == \"Phone\")) | first | .phoneNumber",
+            'parseResultCallback' => 'parsePhoneNumber',
+        ];
+
         $fieldMapping['ExaminerName'] = [
             'GraphQLschemaToReplace' => [
                 'serviceRepresentative' => [
@@ -708,6 +727,11 @@ class TbClaim extends AbstractSchema
     public function parseAdjustingFirmEmail($emailArr)
     {
         return is_array($emailArr) && count($emailArr) ? (last($emailArr)['email'] ?? null) : null;
+    }
+
+    public function parsePhoneNumber($phoneNumber)
+    {
+        return $phoneNumber ? Helper::formatPhone($phoneNumber) : $phoneNumber;
     }
 
     public function parseAdjustingFirmPhone($phoneArr)
