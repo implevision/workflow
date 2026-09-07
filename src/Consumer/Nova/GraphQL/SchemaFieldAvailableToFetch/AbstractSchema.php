@@ -113,17 +113,4 @@ class AbstractSchema
     {
         return [];
     }
-
-    /**
-     * Resolve the {{CompanyLogo}} placeholder. See getWorkflowCompanyLogoUrl().
-     *
-     * Wire it up with an empty jqFilter, which routes the placeholder to this
-     * callback instead of the GraphQL response:
-     *
-     *   'CompanyLogo' => ['jqFilter' => '', 'parseResultCallback' => 'resolveCompanyLogo'],
-     */
-    public function resolveCompanyLogo(): string
-    {
-        return getWorkflowCompanyLogoUrl();
-    }
 }

@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Nova\GraphQL\SchemaFieldAvailableToFetch;
 
+use Taurus\Workflow\Consumer\Nova\Helper;
+
 class Inspection extends AbstractSchema
 {
     protected $fieldMapping = [];
@@ -57,13 +59,19 @@ class Inspection extends AbstractSchema
                 'GraphQLschemaToReplace' => ['inspector' => ['fcnDocument' => ['sDocumentNumber' => null]]],
                 'jqFilter' => "{$this->queryPath}.inspector.fcnDocument.sDocumentNumber",
             ],
-            // Tenant-level branding, not per-record: no GraphQLschemaToReplace key (so
-            // nothing is added to the query) and an empty jqFilter, which routes to
-            // AbstractSchema::resolveCompanyLogo().
+            // Tenant-level branding, not per-record: no GraphQLschemaToReplace key
+            // (so nothing is added to the query) and an empty jqFilter, which routes
+            // to resolveCompanyLogo() below instead of the GraphQL response.
             'CompanyLogo' => [
+                'GraphQLschemaToReplace' => [],
                 'jqFilter' => '',
                 'parseResultCallback' => 'resolveCompanyLogo',
             ],
         ];
+    }
+
+    public function resolveCompanyLogo(): string
+    {
+        return Helper::parseCompanyLogo();
     }
 }
