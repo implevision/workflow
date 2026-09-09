@@ -532,7 +532,7 @@ class TbClaim extends AbstractSchema
 
         $fieldMapping['BuildingTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'jqFilter' => $this->buildPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
@@ -558,7 +558,7 @@ class TbClaim extends AbstractSchema
 
         $fieldMapping['ContentsTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'jqFilter' => $this->buildPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
@@ -584,7 +584,7 @@ class TbClaim extends AbstractSchema
 
         $fieldMapping['ICCTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'jqFilter' => $this->buildPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
@@ -626,7 +626,7 @@ class TbClaim extends AbstractSchema
     }
     */
 
-    private function buildApprovedPaymentJqFilterByTranSubType($tranSubTypeCode)
+    private function buildPaymentJqFilterByTranSubType($tranSubTypeCode)
     {
         return sprintf(
             "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\")]",
