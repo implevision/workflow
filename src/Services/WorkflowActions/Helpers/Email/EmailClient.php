@@ -137,18 +137,38 @@ class EmailClient
     }
 
     /**
-     * Extract all payload keys that start with "attachment" (case-insensitive)
-     * and return them as an array.
+     * Extract all payload keys that start with "attach" (case-insensitive) and
+     * return them as an array, honouring the template's attachment selection.
+     *
+     * On the GraphQL path a key only reaches the payload if it was ticked on the
+     * template -- the selection becomes a required placeholder, so unselected
+     * attachments are never fetched. On the entity-payload path the producer fills
+     * the payload directly and the placeholder list is never consulted, so without
+     * this filter every attach* key would be sent regardless of the selection.
+     *
+     * A null selection means the template has no attachments field at all (older
+     * templates), in which case nothing is filtered and behaviour is unchanged.
      */
     public function extractAttachments(array $payload): array
     {
+        $selected = $this->payload['selectedAttachments'] ?? null;
+        $selected = is_array($selected) ? array_map('strtolower', $selected) : null;
+
         $attachments = [];
 
         foreach ($payload as $key => $value) {
-            // Case-insensitive check for keys starting with "attachment"
-            if (preg_match('/^attach/i', $key)) {
-                $attachments[$key] = array_pop($value);
+            // Case-insensitive check for keys starting with "attach"
+            if (! preg_match('/^attach/i', $key)) {
+                continue;
             }
+
+            if ($selected !== null && ! in_array(strtolower($key), $selected, true)) {
+                \Log::info('WORKFLOW - Attachment not selected on the template, skipping: '.$key);
+
+                continue;
+            }
+
+            $attachments[$key] = array_pop($value);
         }
 
         return array_values($attachments);

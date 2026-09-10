@@ -52,6 +52,12 @@ class PrepareEmailData
             'actionPayload' => $this->payload['actionPayload'] ?? [],
             'tenant' => getTenant(),
             'configurationSetName' => config('workflow.ses_configuration_set', ''),
+            // Attachment keys ticked on the template in the email builder. Passed
+            // through so EmailClient::extractAttachments() can honour the selection
+            // on the entity-payload path, where the placeholder list -- and therefore
+            // the selection -- would otherwise never be consulted. Null means the
+            // template predates the field; see extractAttachments() for that case.
+            'selectedAttachments' => $this->emailInformation['attachments'] ?? null,
             // PDF letter template fields
             'letterEditorMode' => $this->emailInformation['letterEditorMode'] ?? null,
             'pdfS3Key' => $this->emailInformation['pdfS3Key'] ?? null,
