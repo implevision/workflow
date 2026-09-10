@@ -67,11 +67,52 @@ class Inspection extends AbstractSchema
                 'jqFilter' => '',
                 'parseResultCallback' => 'resolveCompanyLogo',
             ],
+            // Email attachment, same shape as TbPotransaction's AttachDecPage /
+            // AttachRenewalNotice: an "Attach"-prefixed key whose callback returns a
+            // list of ['name' => ..., 'path' => ...]. EmailClient::extractAttachments()
+            // picks the key up by prefix and SES::processAttachment() reads `path` with
+            // file_get_contents(), which is why it is a presigned URL.
+            //
+            // Unlike the Taurus ones there is no document to select out of the GraphQL
+            // response -- the form is generated on the fly -- so this takes the empty
+            // jqFilter route and the callback builds the PDF itself.
+            'AttachAssignmentForm' => [
+                'GraphQLschemaToReplace' => [],
+                'jqFilter' => '',
+                'parseResultCallback' => 'generateClaimAssignmentForm',
+            ],
         ];
     }
 
     public function resolveCompanyLogo(): string
     {
         return Helper::parseCompanyLogo();
+    }
+
+    /**
+     * Render the Claim Assignment Form for the record this workflow is running
+     * for and return it as an attachment.
+     *
+     * @return array<int, array{name: string, path: string}>
+     */
+    public function generateClaimAssignmentForm(): array
+    {
+        $recordIdentifier = getRecordIdentifierForRunningWorkflow();
+
+        if (! $recordIdentifier) {
+            return [];
+        }
+
+        $inspection = \App\Models\Inspection::find($recordIdentifier);
+
+        if (! $inspection) {
+            \Log::warning('WORKFLOW - No inspection found for the assignment form', [
+                'recordIdentifier' => $recordIdentifier,
+            ]);
+
+            return [];
+        }
+
+        return app(\App\Services\ClaimAssignmentFormService::class)->buildAttachment($inspection);
     }
 }
