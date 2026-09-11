@@ -84,8 +84,20 @@ class Inspection extends AbstractSchema
         ];
     }
 
+    /**
+     * Nova owns where its branding lives, so ask it rather than deciding here.
+     * That keeps this path and the one in InspectionWorkflowObserver on the same
+     * answer: a direct URL into the public images bucket when the tenant's logo
+     * has been uploaded there, and the /company-logo/{tenant} proxy route
+     * otherwise. Helper::parseCompanyLogo() only knows about the second, so
+     * calling it directly would hand the GraphQL path a needlessly indirect URL.
+     */
     public function resolveCompanyLogo(): string
     {
+        if (class_exists(\App\Support\CompanyLogo::class)) {
+            return \App\Support\CompanyLogo::url();
+        }
+
         return Helper::parseCompanyLogo();
     }
 

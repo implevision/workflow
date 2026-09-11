@@ -48,7 +48,7 @@ return [
     | {tenant} token, e.g. "https://api.example.com/company-logo/{tenant}".
     | The consumer owns the endpoint; it must be publicly fetchable and must
     | not expire, so never a presigned S3 URL.
-    | See AbstractSchema::resolveCompanyLogo().
+    | See Consumer\Nova\Helper::parseCompanyLogo().
     */
     'company_logo_url' => env('WORKFLOW_COMPANY_LOGO_URL'),
 
