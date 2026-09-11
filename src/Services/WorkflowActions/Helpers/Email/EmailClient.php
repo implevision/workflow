@@ -140,14 +140,12 @@ class EmailClient
      * Extract all payload keys that start with "attach" (case-insensitive) and
      * return them as an array, honouring the template's attachment selection.
      *
-     * On the GraphQL path a key only reaches the payload if it was ticked on the
-     * template -- the selection becomes a required placeholder, so unselected
-     * attachments are never fetched. On the entity-payload path the producer fills
-     * the payload directly and the placeholder list is never consulted, so without
-     * this filter every attach* key would be sent regardless of the selection.
+     * The GraphQL path already enforces the selection -- an unticked attachment
+     * never becomes a required placeholder, so it is never fetched. The
+     * entity-payload path fills the payload directly and never consults the
+     * placeholder list, so it needs this filter.
      *
-     * A null selection means the template has no attachments field at all (older
-     * templates), in which case nothing is filtered and behaviour is unchanged.
+     * A null selection (template has no attachments field) filters nothing.
      */
     public function extractAttachments(array $payload): array
     {

@@ -44,11 +44,9 @@ return [
     'sender_email_address' => env('WORKFLOW_SENDER_EMAIL_ADDRESS'),
 
     /*
-    | URL template the {{CompanyLogo}} placeholder resolves to. Supports a
-    | {tenant} token, e.g. "https://api.example.com/company-logo/{tenant}".
-    | The consumer owns the endpoint; it must be publicly fetchable and must
-    | not expire, so never a presigned S3 URL.
-    | See Consumer\Nova\Helper::parseCompanyLogo().
+    | URL template for {{CompanyLogo}}, with an optional {tenant} token, e.g.
+    | "https://api.example.com/company-logo/{tenant}". Must be publicly
+    | fetchable and must not expire. See Consumer\Nova\Helper.
     */
     'company_logo_url' => env('WORKFLOW_COMPANY_LOGO_URL'),
 

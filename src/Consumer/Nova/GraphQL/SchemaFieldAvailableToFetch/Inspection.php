@@ -59,23 +59,15 @@ class Inspection extends AbstractSchema
                 'GraphQLschemaToReplace' => ['inspector' => ['fcnDocument' => ['sDocumentNumber' => null]]],
                 'jqFilter' => "{$this->queryPath}.inspector.fcnDocument.sDocumentNumber",
             ],
-            // Tenant-level branding, not per-record: no GraphQLschemaToReplace key
-            // (so nothing is added to the query) and an empty jqFilter, which routes
-            // to resolveCompanyLogo() below instead of the GraphQL response.
+            // Tenant-level branding, not per-record. An empty jqFilter routes to the
+            // callback instead of the GraphQL response.
             'CompanyLogo' => [
                 'GraphQLschemaToReplace' => [],
                 'jqFilter' => '',
                 'parseResultCallback' => 'resolveCompanyLogo',
             ],
-            // Email attachment, same shape as TbPotransaction's AttachDecPage /
-            // AttachRenewalNotice: an "Attach"-prefixed key whose callback returns a
-            // list of ['name' => ..., 'path' => ...]. EmailClient::extractAttachments()
-            // picks the key up by prefix and SES::processAttachment() reads `path` with
-            // file_get_contents(), which is why it is a presigned URL.
-            //
-            // Unlike the Taurus ones there is no document to select out of the GraphQL
-            // response -- the form is generated on the fly -- so this takes the empty
-            // jqFilter route and the callback builds the PDF itself.
+            // The "Attach" prefix is what marks this as an email attachment:
+            // EmailClient::extractAttachments() collects keys matching /^attach/i.
             'AttachAssignmentForm' => [
                 'GraphQLschemaToReplace' => [],
                 'jqFilter' => '',
@@ -85,12 +77,8 @@ class Inspection extends AbstractSchema
     }
 
     /**
-     * Nova owns where its branding lives, so ask it rather than deciding here.
-     * That keeps this path and the one in InspectionWorkflowObserver on the same
-     * answer: a direct URL into the public images bucket when the tenant's logo
-     * has been uploaded there, and the /company-logo/{tenant} proxy route
-     * otherwise. Helper::parseCompanyLogo() only knows about the second, so
-     * calling it directly would hand the GraphQL path a needlessly indirect URL.
+     * Ask nova where its branding lives, so this path and the observer agree.
+     * Falls back to the env-driven URL when the consumer predates that class.
      */
     public function resolveCompanyLogo(): string
     {
@@ -102,8 +90,10 @@ class Inspection extends AbstractSchema
     }
 
     /**
-     * Render the Claim Assignment Form for the record this workflow is running
-     * for and return it as an attachment.
+     * Render the Claim Assignment Form for the record under workflow.
+     *
+     * `path` must be readable by file_get_contents(), which is how
+     * SES::processAttachment() loads it — hence a presigned URL, not an S3 key.
      *
      * @return array<int, array{name: string, path: string}>
      */
