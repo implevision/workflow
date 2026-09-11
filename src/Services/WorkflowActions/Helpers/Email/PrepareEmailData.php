@@ -52,6 +52,9 @@ class PrepareEmailData
             'actionPayload' => $this->payload['actionPayload'] ?? [],
             'tenant' => getTenant(),
             'configurationSetName' => config('workflow.ses_configuration_set', ''),
+            // Attachment keys ticked on the template, for
+            // EmailClient::extractAttachments(). Null = template has no such field.
+            'selectedAttachments' => $this->emailInformation['attachments'] ?? null,
             // PDF letter template fields
             'letterEditorMode' => $this->emailInformation['letterEditorMode'] ?? null,
             'pdfS3Key' => $this->emailInformation['pdfS3Key'] ?? null,

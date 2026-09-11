@@ -43,6 +43,13 @@ return [
 
     'sender_email_address' => env('WORKFLOW_SENDER_EMAIL_ADDRESS'),
 
+    /*
+    | URL template for {{CompanyLogo}}, with an optional {tenant} token, e.g.
+    | "https://api.example.com/company-logo/{tenant}". Must be publicly
+    | fetchable and must not expire. See Consumer\Nova\Helper.
+    */
+    'company_logo_url' => env('WORKFLOW_COMPANY_LOGO_URL'),
+
     'current_consumer' => env('WORKFLOW_CURRENT_CONSUMER', 'taurus'),
 
     'bucket_to_save_email_letters' => env('WORKFLOW_BUCKET_TO_SAVE_EMAIL_LETTERS'),
