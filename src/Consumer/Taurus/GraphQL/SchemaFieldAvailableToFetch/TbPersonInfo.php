@@ -240,6 +240,23 @@ class TbPersonInfo extends AbstractSchema
             'jqFilter' => "{$this->queryPath}.managers[0].managerPerson.phoneInfo[0].phoneNumber",
         ];
 
+        $fieldMapping['AgencyPhoneNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'phoneInfo' => [
+                    'phoneNumber' => null,
+                    'phoneTypeCode' => null,
+                ],
+                'addresses' => [
+                    'phoneInfo' => [
+                        'phoneNumber' => null,
+                        'phoneTypeCode' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => "[{$this->queryPath}.phoneInfo[]?, {$this->queryPath}.addresses[]?.phoneInfo[]?] | map(select(.phoneTypeCode == \"Phone\")) | first | .phoneNumber",
+            'parseResultCallback' => 'parsePhoneNumber',
+        ];
+
         $fieldMapping['ManagerEmail'] = [
             'GraphQLschemaToReplace' => [
                 'managers' => [
@@ -736,5 +753,10 @@ class TbPersonInfo extends AbstractSchema
             'advantageflood' => 'CEO - Taurus Services',
             default => '',
         };
+    }
+
+    public function parsePhoneNumber($phoneNumber)
+    {
+        return $phoneNumber ? Helper::formatPhone($phoneNumber) : $phoneNumber;
     }
 }
