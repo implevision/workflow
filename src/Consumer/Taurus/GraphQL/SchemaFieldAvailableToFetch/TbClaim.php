@@ -650,7 +650,7 @@ class TbClaim extends AbstractSchema
     private function buildApprovedPaymentJqFilter($reserveType, $tranSubTypeCode)
     {
         return sprintf(
-            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and .status == null)]",
+            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\"))]",
             self::TRAN_TYPE['LossPayment'],
             $reserveType,
             $tranSubTypeCode
@@ -660,7 +660,7 @@ class TbClaim extends AbstractSchema
     private function buildApprovedPaymentJqFilterForSupplementalType($tranSubTypeCode)
     {
         return sprintf(
-            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and .status == null and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\")]",
+            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\") and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\")]",
             self::TRAN_TYPE['LossPayment'],
             $tranSubTypeCode,
             self::RESERVE_TYPE['Advance'],
