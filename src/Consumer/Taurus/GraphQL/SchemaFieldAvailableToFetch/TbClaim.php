@@ -449,6 +449,7 @@ class TbClaim extends AbstractSchema
                 'amount' => null,
                 'paymentApproved' => null,
                 'status' => null,
+                'approvedDate' => null,
                 'claimReserveDetail' => [
                     'reserveType' => null,
                 ],
@@ -510,25 +511,41 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'sumAmounts',
         ];
 
-        /*
-        $fieldMapping['BuildingAdvancedPayment'] = [
+        $fieldMapping['BuildingAdvancedPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
-        $fieldMapping['BuildingFinalPayment'] = [
+        $fieldMapping['BuildingFinalPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
-        $fieldMapping['BuildingRapPayment'] = [
+        $fieldMapping['BuildingRapPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilterForSupplementalType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
             'parseResultCallback' => 'sumAmounts',
         ];
-        */
+
+        $fieldMapping['BuildingAdvancedMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['BuildingFinalMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['BuildingRapMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilterForSupplementalType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
 
         $fieldMapping['BuildingTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
@@ -536,25 +553,41 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'sumAmounts',
         ];
 
-        /*
-        $fieldMapping['ContentsAdvancedPayment'] = [
+        $fieldMapping['ContentsAdvancedPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
-        $fieldMapping['ContentsFinalPayment'] = [
+        $fieldMapping['ContentsFinalPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
-        $fieldMapping['ContentsRapPayment'] = [
+        $fieldMapping['ContentsRapPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilterForSupplementalType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
             'parseResultCallback' => 'sumAmounts',
         ];
-        */
+
+        $fieldMapping['ContentsAdvancedMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ContentsFinalMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
+
+        $fieldMapping['ContentsRapMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilterForSupplementalType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumAmounts',
+        ];
 
         $fieldMapping['ContentsTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
@@ -577,7 +610,7 @@ class TbClaim extends AbstractSchema
 
         $fieldMapping['ICCSupplementalPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'jqFilter' => $this->buildApprovedPaymentJqFilterForSupplementalType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
             'parseResultCallback' => 'sumAmounts',
         ];
         */
@@ -614,17 +647,27 @@ class TbClaim extends AbstractSchema
         return $this->wrapFieldMappingSchemaUnderData($fieldMapping);
     }
 
-    /*
     private function buildApprovedPaymentJqFilter($reserveType, $tranSubTypeCode)
     {
         return sprintf(
-            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\"))]",
+            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and .status == null)]",
             self::TRAN_TYPE['LossPayment'],
             $reserveType,
             $tranSubTypeCode
         );
     }
-    */
+
+    private function buildApprovedPaymentJqFilterForSupplementalType($tranSubTypeCode)
+    {
+        return sprintf(
+            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and .status == null and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\")]",
+            self::TRAN_TYPE['LossPayment'],
+            $tranSubTypeCode,
+            self::RESERVE_TYPE['Advance'],
+            self::RESERVE_TYPE['Final'],
+            self::RESERVE_TYPE['Recovery']
+        );
+    }
 
     private function buildPaymentJqFilterByTranSubType($tranSubTypeCode)
     {
@@ -632,6 +675,28 @@ class TbClaim extends AbstractSchema
             "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\")]",
             self::TRAN_TYPE['LossPayment'],
             $tranSubTypeCode
+        );
+    }
+
+    private function buildMostRecentPaymentJqFilter($reserveType, $tranSubTypeCode)
+    {
+        return sprintf(
+            "[[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and .status == null)] | max_by(.approvedDate)]",
+            self::TRAN_TYPE['LossPayment'],
+            $reserveType,
+            $tranSubTypeCode
+        );
+    }
+
+    private function buildMostRecentPaymentJqFilterForSupplementalType($tranSubTypeCode)
+    {
+        return sprintf(
+            "[[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and .status == null and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\")] | max_by(.approvedDate)]",
+            self::TRAN_TYPE['LossPayment'],
+            $tranSubTypeCode,
+            self::RESERVE_TYPE['Advance'],
+            self::RESERVE_TYPE['Final'],
+            self::RESERVE_TYPE['Recovery']
         );
     }
 
