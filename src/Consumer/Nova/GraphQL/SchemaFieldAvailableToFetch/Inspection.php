@@ -26,6 +26,10 @@ class Inspection extends AbstractSchema
         return $this->queryName;
     }
 
+    // No getHeaders() override: nova's inspection query is unguarded, same as
+    // Taurus's endpoint, so the default (no headers) from AbstractSchema applies.
+    // Confirmed with the workflow team.
+
     private function initializeFieldMapping(): array
     {
         return [
