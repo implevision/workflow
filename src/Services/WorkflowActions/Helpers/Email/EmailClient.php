@@ -137,17 +137,32 @@ class EmailClient
     }
 
     /**
-     * Extract all payload keys that start with "attachment" (case-insensitive)
-     * and return them as an array.
+     * Extract all payload keys that start with "attach" (case-insensitive) and
+     * return them as an array.
+     *
+     * A key is present here whenever an Attach* placeholder was requested, even
+     * when its callback legitimately found nothing to attach and returned an
+     * empty list -- e.g. generateClaimAssignmentForm() when the record has no
+     * matching form. array_pop() on that empty list returns null, and null was
+     * previously kept as a real entry (array_values() only reindexes, it does
+     * not drop it), so SES::processAttachment() received a [null] list and
+     * crashed on $file['path']. Skipping a null result here is what makes an
+     * empty attachment mean "no attachment" instead of "one broken attachment".
      */
     public function extractAttachments(array $payload): array
     {
         $attachments = [];
 
         foreach ($payload as $key => $value) {
-            // Case-insensitive check for keys starting with "attachment"
-            if (preg_match('/^attach/i', $key)) {
-                $attachments[$key] = array_pop($value);
+            // Case-insensitive check for keys starting with "attach"
+            if (! preg_match('/^attach/i', $key)) {
+                continue;
+            }
+
+            $popped = array_pop($value);
+
+            if ($popped !== null) {
+                $attachments[$key] = $popped;
             }
         }
 
