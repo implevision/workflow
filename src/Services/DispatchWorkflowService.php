@@ -224,7 +224,7 @@ class DispatchWorkflowService
                         if (isset($graphQLQuery['JOIN'])) {
                             $graphQLQuery['JOIN']['condition'][] = $conditionsToApply;
                         } else {
-                            $graphQLQuery['JOIN'] = $conditionsToApply;
+                            $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$conditionsToApply]];
                         }
                     } else {
                         $graphQLQuery = $conditionsToApply;

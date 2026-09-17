@@ -348,11 +348,16 @@ class GraphQLSchemaBuilderService
     public function arrayToGraphQLWhereCondition($variable)
     {
         if (array_key_exists('JOIN', $variable)) {
-            $joinOperator = $variable['JOIN']['operator'];
-            $joinConditions = $variable['JOIN']['condition'];
+            $joinOperator = $variable['JOIN']['operator'] ?? 'AND';
+            $joinConditions = $variable['JOIN']['condition'] ?? [];
+            if (! is_array($joinConditions)) {
+                $joinConditions = [];
+            }
             $conditionStrs = [];
             foreach ($joinConditions as $cond) {
-                $conditionStrs[] = $this->formatGraphQLCondition($cond);
+                if (is_array($cond)) {
+                    $conditionStrs[] = $this->formatGraphQLCondition($cond);
+                }
             }
             $variablesStr = sprintf(
                 '{ column: %s, operator: %s, value: "%s", %s: [%s] }',
