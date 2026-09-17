@@ -21,6 +21,10 @@ class GraphQLSchemaBuilderService
 
     public function addKeys($target, $source)
     {
+        if (! is_array($source)) {
+            return $target;
+        }
+
         foreach ($source as $key => $value) {
             // If key doesn't exist in target, add it
             if (! array_key_exists($key, $target)) {
@@ -311,11 +315,13 @@ class GraphQLSchemaBuilderService
      */
     private function formatGraphQLCondition(array $cond): string
     {
-        if (is_array($cond) && isset($cond['operator']) && isset($cond['condition'])) {
+        if (is_array($cond) && isset($cond['operator']) && isset($cond['condition']) && is_array($cond['condition'])) {
             $operator = $cond['operator'] === 'OR' ? 'OR' : 'AND';
             $childStrs = [];
             foreach ($cond['condition'] as $child) {
-                $childStrs[] = $this->formatGraphQLCondition($child);
+                if (is_array($child)) {
+                    $childStrs[] = $this->formatGraphQLCondition($child);
+                }
             }
 
             return sprintf('{ %s: [%s] }', $operator, implode(', ', $childStrs));
