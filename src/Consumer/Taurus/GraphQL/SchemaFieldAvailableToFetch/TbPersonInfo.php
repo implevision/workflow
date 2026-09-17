@@ -89,8 +89,16 @@ class TbPersonInfo extends AbstractSchema
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
                     'agencyName' => null,
+                    'entityType' => null,
+                    'userAgent' => [
+                        'agency' => [
+                            'agencyName' => null,
+                            'entityType' => null,
+                        ],
+                    ],
                 ],
-                'jqFilter' => "{$this->queryPath}.agencyName",
+                'jqFilter' => "{$this->queryPath}",
+                'parseResultCallback' => 'parseAgencyName',
             ],
 
             'DBAName' => [
@@ -703,6 +711,19 @@ class TbPersonInfo extends AbstractSchema
     public function parseCompanyName($response)
     {
         return $this->resolveCompanyDetail($response, 'companyName', 'wyo');
+    }
+
+    public function parseAgencyName($response)
+    {
+        if (($response['entityType'] ?? null) === 'ORGANISATION') {
+            return $response['agencyName'] ?? null;
+        }
+
+        if (($response['userAgent']['agency']['entityType'] ?? null) === 'ORGANISATION') {
+            return $response['userAgent']['agency']['agencyName'] ?? null;
+        }
+
+        return null;
     }
 
     private function resolveCompanyDetail($response, string $companyKey, string $holdingKey): string
