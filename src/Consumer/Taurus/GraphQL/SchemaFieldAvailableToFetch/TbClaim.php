@@ -21,7 +21,6 @@ class TbClaim extends AbstractSchema
     private const RESERVE_TYPE = [
         'Advance' => 'A',
         'Final' => 'F',
-        'Supplemental' => '',
         'Recovery' => 'R',
     ];
 
