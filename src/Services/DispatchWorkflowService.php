@@ -223,7 +223,12 @@ class DispatchWorkflowService
                     if (count($graphQLQuery)) {
                         if (isset($graphQLQuery['JOIN'])) {
                             $graphQLQuery['JOIN']['condition'][] = $conditionsToApply;
+                        } elseif (isset($conditionsToApply['condition']) && is_array($conditionsToApply['condition'])) {
+                            // Already a proper group shape (e.g. buildWhereConditionFromGroup's "group" case) - keep as-is.
+                            $graphQLQuery['JOIN'] = $conditionsToApply;
                         } else {
+                            // Flat single-rule shape (no 'condition' key) - wrap so later appends/consumers
+                            // can always rely on $graphQLQuery['JOIN']['condition'] being an array.
                             $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$conditionsToApply]];
                         }
                     } else {
