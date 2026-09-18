@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Nova\GraphQL\SchemaFieldAvailableToFetch;
 
+use Taurus\Workflow\Consumer\Nova\Helper;
+
 class Inspection extends AbstractSchema
 {
     protected $fieldMapping = [];
@@ -29,6 +31,105 @@ class Inspection extends AbstractSchema
     // No getHeaders() override: nova's inspection query is unguarded, same as
     // Taurus's endpoint, so the default (no headers) from AbstractSchema applies.
     // Confirmed with the workflow team.
+
+    /**
+     * Everything the Claim Assignment Form PDF needs, in one place. Fetched
+     * alongside the record (not queried separately in nova-back) so the field
+     * mapping stays the single source of truth for "where does this data come
+     * from", same as every other placeholder here.
+     */
+    private const ASSIGNMENT_FORM_SCHEMA = [
+        'claim' => [
+            'assignmentId' => null,
+            'dateOfAssignment' => null,
+            'dateOfLoss' => null,
+            'carrier' => ['name' => null],
+            'policy' => [
+                'policyNumber' => null,
+                'effectiveDate' => null,
+                'expirationDate' => null,
+                'insured' => [
+                    'primaryFullName' => null,
+                    'secondFullName' => null,
+                    'contacts' => [
+                        'contactName' => null,
+                        'homePhone' => null,
+                        'cellPhone' => null,
+                        'businessPhone' => null,
+                        'emailAddress' => null,
+                    ],
+                    'mailingAddress' => [
+                        'addressLine1' => null,
+                        'addressLine2' => null,
+                        'city' => null,
+                        'state' => null,
+                        'postalCode' => null,
+                        'postalCodeSuffix' => null,
+                    ],
+                    'propertyAddress' => [
+                        'addressLine1' => null,
+                        'addressLine2' => null,
+                        'city' => null,
+                        'state' => null,
+                        'postalCode' => null,
+                        'postalCodeSuffix' => null,
+                    ],
+                ],
+                'coverages' => [
+                    'coverageTypeName' => null,
+                    'coverageAmount' => null,
+                    'deductibleAmount' => null,
+                ],
+                'mortgagees' => [
+                    'bankPosition' => null,
+                    'bankName' => null,
+                ],
+                'priorLosses' => [
+                    'lossDate' => null,
+                    'amount' => null,
+                    'adjuster' => null,
+                ],
+                'insuranceAgencies' => [
+                    'agencyName' => null,
+                    'businessPhone' => null,
+                ],
+                'policyAttributesMap' => [
+                    'floodProgramType' => null,
+                    'sfipPolicyType' => null,
+                    'buildingOccupancyType' => null,
+                    'buildingType' => null,
+                    'occupancyType' => null,
+                    'foundationType' => null,
+                    'constructionType' => null,
+                    'firstFloorHeightFt' => null,
+                    'firstFloorHeightIn' => null,
+                    'floorsInBuilding' => null,
+                    'floodOpenings' => null,
+                    'floodProofed' => null,
+                    'floodZone' => null,
+                    'lowestMachineryEquipment' => null,
+                    'floorNumber' => null,
+                    'firmDate' => null,
+                    'firmStatus' => null,
+                    'dateOfConstruction' => null,
+                    'lowestFloorElevation' => null,
+                    'baseFloodElevation' => null,
+                    'isElevated' => null,
+                    'replacementValue' => null,
+                    'primaryResidence' => null,
+                    'communityId' => null,
+                    'panelNumber' => null,
+                    'panelSuffix' => null,
+                ],
+            ],
+        ],
+        'inspector' => [
+            'fullName' => null,
+            'email' => null,
+            'phoneInfo' => ['sPhoneNumber' => null],
+            'fcnDocument' => ['sDocumentNumber' => null],
+        ],
+    ];
 
     private function initializeFieldMapping(): array
     {
@@ -91,11 +192,13 @@ class Inspection extends AbstractSchema
             ],
             // The "Attach" prefix is what marks this as an email attachment:
             // EmailClient::extractAttachments() collects keys matching /^attach/i.
-            // No document to select out of the GraphQL response -- the form is
-            // generated on the fly -- so this also takes the empty-jqFilter route.
+            // Fetches the whole record (ASSIGNMENT_FORM_SCHEMA) in one shot, so
+            // generateClaimAssignmentForm() below never has to query nova-back's
+            // database itself -- this field mapping is the single source of truth
+            // for what data the form needs and where it comes from.
             'AttachAssignmentForm' => [
-                'GraphQLschemaToReplace' => [],
-                'jqFilter' => '',
+                'GraphQLschemaToReplace' => self::ASSIGNMENT_FORM_SCHEMA,
+                'jqFilter' => "{$this->queryPath}",
                 'parseResultCallback' => 'generateClaimAssignmentForm',
             ],
             // The remaining entries exist only so the webhook action (the other
@@ -142,50 +245,292 @@ class Inspection extends AbstractSchema
         return '';
     }
 
+    /** How long the presigned URL handed to SES stays valid. Minutes. */
+    private const ATTACHMENT_URL_TTL_MINUTES = 60;
+
+    private const ATTACHMENT_VIEW = 'pdf.claim-assignment-form';
+
     /**
-     * Render the Claim Assignment Form for the record under workflow.
+     * Render the Claim Assignment Form for the record under workflow and store
+     * it on S3. $record is the already-fetched, already-decoded GraphQL
+     * response for this inspection (shape: ASSIGNMENT_FORM_SCHEMA).
+     *
+     * Renders and uploads here rather than delegating to a nova-back service:
+     * this package already reaches Laravel's facades directly for everything
+     * else (see Consumer\Taurus\Helper), so there is one less place a reader
+     * has to follow to see the whole picture.
+     *
+     * Never throws: a failure here must not block the assignment or stop the
+     * email going out, so problems are logged and an empty list is returned,
+     * which EmailClient::extractAttachments() treats as "no attachment".
      *
      * `path` must be readable by file_get_contents(), which is how
      * SES::processAttachment() loads it -- hence a presigned URL, not an S3 key.
      *
      * @return array<int, array{name: string, path: string}>
      */
-    public function generateClaimAssignmentForm(): array
+    public function generateClaimAssignmentForm(array $record): array
     {
-        $recordIdentifier = getRecordIdentifierForRunningWorkflow();
+        try {
+            $data = $this->buildAssignmentFormData($record);
 
-        if (! $recordIdentifier) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(self::ATTACHMENT_VIEW, $data)
+                ->setPaper('letter', 'portrait')
+                ->setOptions(['isRemoteEnabled' => true]);
+
+            $assignmentId = $data['assignmentId'] ?: (string) \Illuminate\Support\Str::uuid();
+            $fileName = 'Claim_Assignment_Form_'.\Illuminate\Support\Str::slug($assignmentId, '_').'.pdf';
+            $path = tenant('id').'/'.now()->format('Y').'/'.now()->format('m').'/'.now()->format('d')
+                .'/OTHER/claim-assignment-forms/'.$fileName;
+
+            $uploaded = \Illuminate\Support\Facades\Storage::disk('s3')->put($path, $pdf->output(), 'private');
+
+            if (! $uploaded) {
+                \Log::error('NOVA_ASSIGNMENT_FORM: S3 upload failed', ['path' => $path]);
+
+                return [];
+            }
+
+            $url = \Illuminate\Support\Facades\Storage::disk('s3')->temporaryUrl(
+                $path,
+                now()->addMinutes(self::ATTACHMENT_URL_TTL_MINUTES)
+            );
+
+            if (! $url) {
+                \Log::warning('NOVA_ASSIGNMENT_FORM: could not presign the stored PDF', ['path' => $path]);
+
+                return [];
+            }
+
+            \Log::info('NOVA_ASSIGNMENT_FORM: attachment ready', ['path' => $path]);
+
+            return [['name' => $fileName, 'path' => $url]];
+        } catch (\Throwable $e) {
+            \Log::error('NOVA_ASSIGNMENT_FORM: failed to build the form', ['error' => $e->getMessage()]);
+
             return [];
         }
+    }
 
-        if (! class_exists(\App\Services\ClaimAssignmentFormService::class)) {
-            return [];
+    /**
+     * Reshapes the GraphQL record into the flat, pre-formatted array the PDF
+     * view expects. Mirrors what nova-back's ClaimAssignmentFormService used to
+     * assemble via Eloquent -- same fields, same fallbacks, same layout choices.
+     */
+    private function buildAssignmentFormData(array $record): array
+    {
+        $claim = $record['claim'] ?? [];
+        $policy = $claim['policy'] ?? [];
+        $insured = $policy['insured'][0] ?? [];
+        $inspector = $record['inspector'] ?? [];
+        $agency = $policy['insuranceAgencies'][0] ?? [];
+        $priorLoss = $policy['priorLosses'][0] ?? [];
+        $attr = $policy['policyAttributesMap'] ?? [];
+
+        // contacts is a list: the first row is the primary contact and the
+        // second, when present, is the secondary contact.
+        $contacts = $insured['contacts'] ?? [];
+        $contact = $contacts[0] ?? [];
+        $contact2 = $contacts[1] ?? [];
+
+        // Carrier = insurer named in the header; holding company = the adjusting
+        // firm. Not the same organisation, and the form shows both. Same raw
+        // query Taurus's own Helper::getHoldingCompanyDetail() uses.
+        $holdingCompany = \DB::table('tb_holdingcompanies')->first();
+
+        return [
+            'carrierName' => $claim['carrier']['name'] ?? '',
+            'companyLogo' => $this->resolveCompanyLogo(),
+
+            'adjustingFirm' => $holdingCompany?->s_HoldingCompanyName ?: ($claim['carrier']['name'] ?? 'N/A'),
+            'adjustingFirmPhone' => $holdingCompany?->phone_no ?: 'N/A',
+
+            'dateAssigned' => Helper::formatDate($claim['dateOfAssignment'] ?? null) ?: 'N/A',
+            'lossDate' => Helper::formatDate($claim['dateOfLoss'] ?? null) ?: 'N/A',
+            'policyNumber' => $policy['policyNumber'] ?? '',
+            'assignmentId' => $claim['assignmentId'] ?? '',
+            'policyPeriod' => $this->formatPeriod($policy['effectiveDate'] ?? null, $policy['expirationDate'] ?? null),
+            // Transaction indicator (e.g. "ENDORSE"). No nova equivalent.
+            'edn' => 'N/A',
+
+            'insuredName' => $insured['primaryFullName'] ?? '',
+            'additionalInsured' => $insured['secondFullName'] ?: 'N/A',
+            'propertyAddress' => $this->formatAddress($insured['propertyAddress'] ?? null),
+            'mailingAddress' => $this->formatAddress($insured['mailingAddress'] ?? null),
+
+            'contactName' => ($contact['contactName'] ?? '') ?: 'N/A',
+            'contactRelationship' => 'N/A',
+            'contactHomePhone' => ($contact['homePhone'] ?? '') ?: 'N/A',
+            'contactCellPhone' => ($contact['cellPhone'] ?? '') ?: 'N/A',
+            'contactOtherPhone' => ($contact['businessPhone'] ?? '') ?: 'N/A',
+            'contactEmail' => ($contact['emailAddress'] ?? '') ?: 'N/A',
+
+            'contact2Name' => ($contact2['contactName'] ?? '') ?: 'N/A',
+            'contact2Relationship' => 'N/A',
+            'contact2HomePhone' => ($contact2['homePhone'] ?? '') ?: 'N/A',
+            'contact2CellPhone' => ($contact2['cellPhone'] ?? '') ?: 'N/A',
+            'contact2OtherPhone' => ($contact2['businessPhone'] ?? '') ?: 'N/A',
+            'contact2Email' => ($contact2['emailAddress'] ?? '') ?: 'N/A',
+
+            // Two independent columns, matching the reference form's own order.
+            // 'N/A' entries have no source in nova and are kept as visible gaps.
+            'buildingLeft' => [
+                'Rate Method' => ($attr['floodProgramType'] ?? '') ?: 'N/A',
+                'Policy Form' => ($attr['sfipPolicyType'] ?? '') ?: 'N/A',
+                'Number Of Units' => 'N/A',
+                'Occupancy' => ($attr['buildingOccupancyType'] ?? '') ?: 'N/A',
+                'Building Type' => ($attr['buildingType'] ?? '') ?: 'N/A',
+                'Primary/Secondary' => $this->primarySecondary($attr['primaryResidence'] ?? null),
+                'Tenant Indicator' => $this->tenantIndicator($attr['occupancyType'] ?? null),
+                'Foundation' => ($attr['foundationType'] ?? '') ?: 'N/A',
+                'Number of Floors' => $this->floors($attr['floorsInBuilding'] ?? null),
+                'Construction Type' => ($attr['constructionType'] ?? '') ?: 'N/A',
+                // nova only stores a Yes/No flag, not the count the form wants.
+                'Number Of Flood Openings' => 'N/A',
+                'Area Of Permanent Flood Openings (sq. in)' => 'N/A',
+                'Engineered Openings' => 'N/A',
+                'Community Number' => ($attr['communityId'] ?? '') ?: 'N/A',
+                'Map Panel' => trim(($attr['panelNumber'] ?? '').' '.($attr['panelSuffix'] ?? '')) ?: 'N/A',
+            ],
+
+            'buildingRight' => [
+                'Does Building Contain M&E' => ($attr['lowestMachineryEquipment'] ?? '') !== '' ? 'Yes' : 'No',
+                'M&E Located Above First Floor' => $this->machineryAboveFirstFloor($attr['lowestMachineryEquipment'] ?? null),
+                'Building Contains Washer, Dryer Or Freezer' => 'N/A',
+                'Washer, Dryer Or Freezer Above First Floor' => 'N/A',
+                'Enclosure Size' => 'N/A',
+                'First Floor Height' => $this->height($attr['firstFloorHeightFt'] ?? null, $attr['firstFloorHeightIn'] ?? null),
+                'First Floor Height Method' => 'N/A',
+                'Post Firm' => ($attr['firmStatus'] ?? '') ?: 'N/A',
+                'Flood Zone' => ($attr['floodZone'] ?? '') ?: 'N/A',
+                'Date Of Original Construction' => Helper::formatDate($attr['dateOfConstruction'] ?? null) ?: 'N/A',
+                'Substantial Improvement Date' => 'N/A',
+                'Firm Date' => Helper::formatDate($attr['firmDate'] ?? null) ?: 'N/A',
+            ],
+
+            'coverages' => $this->buildLoopRows($policy['coverages'] ?? [], fn (array $c): array => [
+                'type' => $c['coverageTypeName'] ?? '',
+                'amount' => Helper::formatCurrency($c['coverageAmount'] ?? null) ?: 'N/A',
+                'deductible' => Helper::formatCurrency($c['deductibleAmount'] ?? null) ?: 'N/A',
+            ]),
+
+            'mortgagees' => array_values(array_filter($this->buildLoopRows(
+                $this->sortByBankPosition($policy['mortgagees'] ?? []),
+                fn (array $m): string => trim((string) ($m['bankName'] ?? ''))
+            ))),
+
+            'adjusterName' => $inspector['fullName'] ?? '',
+            'adjusterEmail' => $inspector['email'] ?? '',
+            'adjusterPhone' => ($inspector['phoneInfo']['sPhoneNumber'] ?? '') ?: 'N/A',
+            'adjusterFcn' => ($inspector['fcnDocument']['sDocumentNumber'] ?? '') ?: 'N/A',
+
+            'agencyName' => ($agency['agencyName'] ?? '') ?: 'N/A',
+            'agencyPhone' => ($agency['businessPhone'] ?? '') ?: 'N/A',
+
+            'priorLossDate' => Helper::formatDate($priorLoss['lossDate'] ?? null) ?: 'N/A',
+            // prior_losses.amount is a single total, not split by coverage.
+            'priorLossAmount' => Helper::formatCurrency($priorLoss['amount'] ?? null) ?: 'N/A',
+            'priorLossAdjuster' => ($priorLoss['adjuster'] ?? '') ?: 'N/A',
+
+            // Source unclear -- left blank pending the client.
+            'claimsPhone' => 'N/A',
+            'comments' => '',
+        ];
+    }
+
+    /** Floor counts arrive as a number or a code; the form shows a plain number. */
+    private function floors($value): string
+    {
+        return match ((string) $value) {
+            '' => 'N/A',
+            'FLDONERFLOOR' => '1',
+            'FLDTWOFLOORS' => '2',
+            'THREEORMOREFLOORS' => '3 or more',
+            default => (string) $value,
+        };
+    }
+
+    /**
+     * lowestMachineryEquipment records where the machinery sits. Live values
+     * are Basement, Crawlspace, Enclosure, Ground Level, Other floor and
+     * Attic -- the first four are at or below the first floor, the rest above.
+     */
+    private function machineryAboveFirstFloor($value): string
+    {
+        if (! $value) {
+            return 'N/A';
         }
 
-        $inspection = \App\Models\Inspection::find($recordIdentifier);
+        $atOrBelowFirstFloor = ['Basement', 'Crawlspace', 'Enclosure', 'Ground Level'];
 
-        if (! $inspection) {
-            \Log::warning('WORKFLOW - No inspection found for the assignment form', [
-                'recordIdentifier' => $recordIdentifier,
-            ]);
+        return in_array((string) $value, $atOrBelowFirstFloor, true) ? 'No' : 'Yes';
+    }
 
-            return [];
+    /** primaryResidence is stored Yes/No; the form shows Primary/Secondary. */
+    private function primarySecondary($value): string
+    {
+        return match ((string) $value) {
+            'Yes' => 'Primary',
+            'No' => 'Secondary',
+            default => 'N/A',
+        };
+    }
+
+    /** occupancyType carries the tenancy; the form wants a Yes/No indicator. */
+    private function tenantIndicator($value): string
+    {
+        if (! $value) {
+            return 'N/A';
         }
 
-        return app(\App\Services\ClaimAssignmentFormService::class)->buildAttachment($inspection);
+        return str_contains(strtolower((string) $value), 'tenant') ? 'Yes' : 'No';
+    }
+
+    /** Feet and inches are separate attributes; the form shows them as ft.in. */
+    private function height($feet, $inches): string
+    {
+        if ($feet === null && $inches === null) {
+            return 'N/A';
+        }
+
+        return ((int) $feet).'.'.((int) $inches);
+    }
+
+    private function formatPeriod($from, $to): string
+    {
+        if (! $from && ! $to) {
+            return 'N/A';
+        }
+
+        return (Helper::formatDate($from) ?: 'N/A').' to '.(Helper::formatDate($to) ?: 'N/A');
+    }
+
+    /**
+     * Address lines for the form, which shows 'N/A' rather than an empty cell.
+     *
+     * @return array<int, string>
+     */
+    private function formatAddress(?array $address): array
+    {
+        return Helper::formatAddressLines($address) ?: ['N/A'];
+    }
+
+    /**
+     * bank_position is stored as Primary/Secondary, so a plain string sort puts
+     * Primary first; the form numbers them in that order.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function sortByBankPosition(array $mortgagees): array
+    {
+        usort($mortgagees, fn ($a, $b) => ($a['bankPosition'] ?? '') <=> ($b['bankPosition'] ?? ''));
+
+        return $mortgagees;
     }
 
     public function formatDateOfLossUS($isoDate): string
     {
-        if (! $isoDate) {
-            return '';
-        }
-
-        try {
-            return \Illuminate\Support\Carbon::parse($isoDate)->format('m/d/Y');
-        } catch (\Throwable) {
-            return (string) $isoDate;
-        }
+        return Helper::formatDate($isoDate) ?? '';
     }
 
     /**
