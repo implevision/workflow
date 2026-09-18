@@ -519,7 +519,7 @@ class TbPersonInfo extends AbstractSchema
         ];
 
         $fieldMapping['AgentDashboardURL'] = [
-            'GraphQLschemaToReplace' => '',
+            'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
             'parseResultCallback' => 'getAgentDashboard',
         ];
