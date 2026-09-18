@@ -213,10 +213,7 @@ class DispatchManualWorkflowService
                         'graphQLRequestPayload' => $graphQLRequestPayload,
                     ]);
                 }
-                // Pass the module's headers, as the scheduled path does. Without
-                // them a consumer whose endpoint is guarded (nova) authenticates on
-                // a scheduled run but not a manual one.
-                $graphQLClient = new GraphQLClient($moduleClassForGraphQL->getHeaders());
+                $graphQLClient = new GraphQLClient;
                 $response = $graphQLClient->query($graphQLRequestPayload);
 
                 $queryRootNode = $response[$queryName] ?? [];
