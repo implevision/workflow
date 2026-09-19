@@ -28,9 +28,9 @@ class Inspection extends AbstractSchema
         return $this->queryName;
     }
 
-    // No getHeaders() override: nova's inspection query is unguarded, same as
-    // Taurus's endpoint, so the default (no headers) from AbstractSchema applies.
-    // Confirmed with the workflow team.
+    // No getHeaders() override: nova's inspection query is unguarded, so the
+    // default (no headers) from AbstractSchema applies. Confirmed with the
+    // workflow team.
 
     /**
      * Everything the Claim Assignment Form PDF needs, in one place. Fetched
@@ -76,7 +76,7 @@ class Inspection extends AbstractSchema
                     ],
                 ],
                 'coverages' => [
-                    'coverageTypeName' => null,
+                    'coverageType' => null,
                     'coverageAmount' => null,
                     'deductibleAmount' => null,
                 ],
@@ -184,11 +184,23 @@ class Inspection extends AbstractSchema
             ],
             // Tenant-level branding, not per-record: no GraphQLschemaToReplace key
             // (nothing added to the query) and an empty jqFilter, which routes to
-            // resolveCompanyLogo() below instead of the GraphQL response.
+            // the callback below instead of the GraphQL response.
             'CompanyLogo' => [
                 'GraphQLschemaToReplace' => [],
                 'jqFilter' => '',
                 'parseResultCallback' => 'resolveCompanyLogo',
+            ],
+            // The adjusting firm this tenant operates as -- for email templates
+            // that sign off as the firm rather than as the product.
+            'AdjustingFirm' => [
+                'GraphQLschemaToReplace' => [],
+                'jqFilter' => '',
+                'parseResultCallback' => 'resolveAdjustingFirm',
+            ],
+            'AdjustingFirmPhone' => [
+                'GraphQLschemaToReplace' => [],
+                'jqFilter' => '',
+                'parseResultCallback' => 'resolveAdjustingFirmPhone',
             ],
             // The "Attach" prefix is what marks this as an email attachment:
             // EmailClient::extractAttachments() collects keys matching /^attach/i.
@@ -245,6 +257,16 @@ class Inspection extends AbstractSchema
         return '';
     }
 
+    public function resolveAdjustingFirm(): string
+    {
+        return Helper::adjustingFirmName();
+    }
+
+    public function resolveAdjustingFirmPhone(): string
+    {
+        return (string) (Helper::getHoldingCompanyDetail()?->phone_no ?? '');
+    }
+
     /** How long the presigned URL handed to SES stays valid. Minutes. */
     private const ATTACHMENT_URL_TTL_MINUTES = 60;
 
@@ -255,10 +277,8 @@ class Inspection extends AbstractSchema
      * it on S3. $record is the already-fetched, already-decoded GraphQL
      * response for this inspection (shape: ASSIGNMENT_FORM_SCHEMA).
      *
-     * Renders and uploads here rather than delegating to a nova-back service:
-     * this package already reaches Laravel's facades directly for everything
-     * else (see Consumer\Taurus\Helper), so there is one less place a reader
-     * has to follow to see the whole picture.
+     * Renders and uploads here rather than delegating to a nova-back service,
+     * so the whole attachment lives in one place.
      *
      * Never throws: a failure here must not block the assignment or stop the
      * email going out, so problems are logged and an empty list is returned,
@@ -334,9 +354,8 @@ class Inspection extends AbstractSchema
         $contact2 = $contacts[1] ?? [];
 
         // Carrier = insurer named in the header; holding company = the adjusting
-        // firm. Not the same organisation, and the form shows both. Same raw
-        // query Taurus's own Helper::getHoldingCompanyDetail() uses.
-        $holdingCompany = \DB::table('tb_holdingcompanies')->first();
+        // firm. Not the same organisation, and the form shows both.
+        $holdingCompany = Helper::getHoldingCompanyDetail();
 
         return [
             'carrierName' => $claim['carrier']['name'] ?? '',
@@ -409,7 +428,7 @@ class Inspection extends AbstractSchema
             ],
 
             'coverages' => $this->buildLoopRows($policy['coverages'] ?? [], fn (array $c): array => [
-                'type' => $c['coverageTypeName'] ?? '',
+                'type' => $c['coverageType'] ?? '',
                 'amount' => Helper::formatCurrency($c['coverageAmount'] ?? null) ?: 'N/A',
                 'deductible' => Helper::formatCurrency($c['deductibleAmount'] ?? null) ?: 'N/A',
             ]),

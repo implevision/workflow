@@ -5,15 +5,32 @@ namespace Taurus\Workflow\Consumer\Nova;
 use Carbon\Carbon;
 
 /**
- * Generic formatting shared by nova's schema classes, mirroring
- * Consumer\Taurus\Helper. Module-specific parsing stays in the schema class
- * that needs it; only formatting every module could reuse belongs here.
+ * Generic formatting shared by nova's schema classes. Module-specific parsing
+ * stays in the schema class that needs it; only formatting every module could
+ * reuse belongs here.
  */
 class Helper
 {
     /**
+     * The tenant's branding row. Nova writes branding to tb_holdingcompanies,
+     * not tb_companies -- the latter's logo_url is null for every tenant.
+     */
+    public static function getHoldingCompanyDetail(): ?object
+    {
+        return \DB::table('tb_holdingcompanies')->first();
+    }
+
+    /**
+     * Name of the adjusting firm this tenant operates as, or '' if unset.
+     */
+    public static function adjustingFirmName(): string
+    {
+        return (string) (self::getHoldingCompanyDetail()?->s_HoldingCompanyName ?? '');
+    }
+
+    /**
      * m/d/Y, or null when there is nothing to format. Callers decide what an
-     * empty date should read as ('N/A', '', ...), same as Taurus's Helper.
+     * empty date should read as ('N/A', '', ...).
      */
     public static function formatDate($dateToFormat): ?string
     {
