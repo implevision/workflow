@@ -16,12 +16,7 @@ class Inspection extends AbstractSchema
     /** Blade view rendered into the Claim Assignment Form PDF. */
     private const ATTACHMENT_VIEW = 'pdf.claim-assignment-form';
 
-    /**
-     * Everything the Claim Assignment Form PDF needs, in one place. Fetched
-     * alongside the record (not queried separately in nova-back) so the field
-     * mapping stays the single source of truth for "where does this data come
-     * from", same as every other placeholder here.
-     */
+    /** Everything the Claim Assignment Form PDF needs, fetched with the record. */
     private const ASSIGNMENT_FORM_SCHEMA = [
         'claim' => [
             'assignmentId' => null,
@@ -137,9 +132,7 @@ class Inspection extends AbstractSchema
         return $this->queryName;
     }
 
-    // No getHeaders() override: nova's inspection query is unguarded, so the
-    // default (no headers) from AbstractSchema applies. Confirmed with the
-    // workflow team.
+    // No getHeaders() override: the inspection query is unguarded.
 
     private function initializeFieldMapping(): array
     {
@@ -152,10 +145,7 @@ class Inspection extends AbstractSchema
                 'GraphQLschemaToReplace' => ['claim' => ['policy' => ['policyNumber' => null]]],
                 'jqFilter' => "{$this->queryPath}.claim.policy.policyNumber",
             ],
-            // Same underlying field as PolicyNo. The webhook body uses this exact
-            // name (matching what InspectionWorkflowObserver used to push), so it
-            // is kept as its own placeholder rather than asking the webhook config
-            // to be renamed.
+            // Same field as PolicyNo, under the name the webhook body expects.
             'PolicyNumberWithoutPrefix' => [
                 'GraphQLschemaToReplace' => ['claim' => ['policy' => ['policyNumber' => null]]],
                 'jqFilter' => "{$this->queryPath}.claim.policy.policyNumber",
@@ -164,9 +154,7 @@ class Inspection extends AbstractSchema
                 'GraphQLschemaToReplace' => ['claim' => ['dateOfLoss' => null]],
                 'jqFilter' => "{$this->queryPath}.claim.dateOfLoss",
             ],
-            // DateOfLoss stays ISO (webhook consumers may validate that format);
-            // this is the MM/DD/YYYY copy for email templates. Same GraphQL field,
-            // reformatted by parseResultCallback after extraction.
+            // MM/DD/YYYY copy for email templates; DateOfLoss stays ISO for webhooks.
             'DateOfLossUS' => [
                 'GraphQLschemaToReplace' => ['claim' => ['dateOfLoss' => null]],
                 'jqFilter' => "{$this->queryPath}.claim.dateOfLoss",
@@ -192,16 +180,13 @@ class Inspection extends AbstractSchema
                 'GraphQLschemaToReplace' => ['inspector' => ['fcnDocument' => ['sDocumentNumber' => null]]],
                 'jqFilter' => "{$this->queryPath}.inspector.fcnDocument.sDocumentNumber",
             ],
-            // Tenant-level branding, not per-record: no GraphQLschemaToReplace key
-            // (nothing added to the query) and an empty jqFilter, which routes to
-            // the callback below instead of the GraphQL response.
+            // Tenant-level, not per-record: empty jqFilter routes to the callback.
             'CompanyLogo' => [
                 'GraphQLschemaToReplace' => [],
                 'jqFilter' => '',
                 'parseResultCallback' => 'resolveCompanyLogo',
             ],
-            // The adjusting firm this tenant operates as -- for email templates
-            // that sign off as the firm rather than as the product.
+            // For templates that sign off as the firm rather than the product.
             'AdjustingFirmName' => [
                 'GraphQLschemaToReplace' => [],
                 'jqFilter' => '',
@@ -212,24 +197,14 @@ class Inspection extends AbstractSchema
                 'jqFilter' => '',
                 'parseResultCallback' => 'resolveAdjustingFirmPhone',
             ],
-            // The "Attach" prefix is what marks this as an email attachment:
+            // The "Attach" prefix marks this as an email attachment:
             // EmailClient::extractAttachments() collects keys matching /^attach/i.
-            // Fetches the whole record (ASSIGNMENT_FORM_SCHEMA) in one shot, so
-            // generateClaimAssignmentForm() below never has to query nova-back's
-            // database itself -- this field mapping is the single source of truth
-            // for what data the form needs and where it comes from.
             'AttachAssignmentForm' => [
                 'GraphQLschemaToReplace' => self::ASSIGNMENT_FORM_SCHEMA,
                 'jqFilter' => "{$this->queryPath}",
                 'parseResultCallback' => 'generateClaimAssignmentForm',
             ],
-            // The remaining entries exist only so the webhook action (the other
-            // action on this workflow) can resolve its own placeholders --
-            // {{Type}}, {{SubType}}, {{X-Client-key}}, {{api_key}}, {{api_secret}}
-            // -- the same way the email action resolves {{AdjusterName}} and the
-            // rest. This is what used to be pushed directly by
-            // InspectionWorkflowObserver; moving it here is what let the observer
-            // stop pushing an entity payload at all.
+            // The remaining entries are for the webhook action's own placeholders.
             'Type' => [
                 'GraphQLschemaToReplace' => [],
                 'jqFilter' => '',
@@ -278,19 +253,12 @@ class Inspection extends AbstractSchema
     }
 
     /**
-     * Render the Claim Assignment Form for the record under workflow and store
-     * it on S3. $record is the already-fetched, already-decoded GraphQL
-     * response for this inspection (shape: ASSIGNMENT_FORM_SCHEMA).
+     * Renders the form from $record (shape: ASSIGNMENT_FORM_SCHEMA) and stores
+     * it on S3. Never throws -- a failure here must not stop the email, so it
+     * logs and returns [], which means "no attachment".
      *
-     * Renders and uploads here rather than delegating to a nova-back service,
-     * so the whole attachment lives in one place.
-     *
-     * Never throws: a failure here must not block the assignment or stop the
-     * email going out, so problems are logged and an empty list is returned,
-     * which EmailClient::extractAttachments() treats as "no attachment".
-     *
-     * `path` must be readable by file_get_contents(), which is how
-     * SES::processAttachment() loads it -- hence a presigned URL, not an S3 key.
+     * `path` is a presigned URL, not an S3 key: SES::processAttachment() reads
+     * it with file_get_contents().
      *
      * @return array<int, array{name: string, path: string}>
      */
@@ -337,11 +305,7 @@ class Inspection extends AbstractSchema
         }
     }
 
-    /**
-     * Reshapes the GraphQL record into the flat, pre-formatted array the PDF
-     * view expects. Mirrors what nova-back's ClaimAssignmentFormService used to
-     * assemble via Eloquent -- same fields, same fallbacks, same layout choices.
-     */
+    /** Reshapes the GraphQL record into the flat array the PDF view expects. */
     private function buildAssignmentFormData(array $record): array
     {
         $claim = $record['claim'] ?? [];
@@ -352,14 +316,13 @@ class Inspection extends AbstractSchema
         $priorLoss = $policy['priorLosses'][0] ?? [];
         $attr = $policy['policyAttributesMap'] ?? [];
 
-        // contacts is a list: the first row is the primary contact and the
-        // second, when present, is the secondary contact.
+        // First contact is the primary, second (if any) the secondary.
         $contacts = $insured['contacts'] ?? [];
         $contact = $contacts[0] ?? [];
         $contact2 = $contacts[1] ?? [];
 
-        // Carrier = insurer named in the header; holding company = the adjusting
-        // firm. Not the same organisation, and the form shows both.
+        // Carrier is the insurer, holding company the adjusting firm. The form
+        // shows both, and they are different organisations.
         $holdingCompany = Helper::getHoldingCompanyDetail();
 
         return [
@@ -396,8 +359,8 @@ class Inspection extends AbstractSchema
             'contact2OtherPhone' => ($contact2['businessPhone'] ?? '') ?: 'N/A',
             'contact2Email' => ($contact2['emailAddress'] ?? '') ?: 'N/A',
 
-            // Two independent columns, matching the reference form's own order.
-            // 'N/A' entries have no source in nova and are kept as visible gaps.
+            // Two independent columns, in the reference form's order. 'N/A'
+            // entries have no source in nova and stay as visible gaps.
             'buildingLeft' => [
                 'Rate Method' => ($attr['floodProgramType'] ?? '') ?: 'N/A',
                 'Policy Form' => ($attr['sfipPolicyType'] ?? '') ?: 'N/A',
@@ -409,7 +372,7 @@ class Inspection extends AbstractSchema
                 'Foundation' => ($attr['foundationType'] ?? '') ?: 'N/A',
                 'Number of Floors' => $this->floors($attr['floorsInBuilding'] ?? null),
                 'Construction Type' => ($attr['constructionType'] ?? '') ?: 'N/A',
-                // nova only stores a Yes/No flag, not the count the form wants.
+                // nova stores a Yes/No flag, not the count the form wants.
                 'Number Of Flood Openings' => 'N/A',
                 'Area Of Permanent Flood Openings (sq. in)' => 'N/A',
                 'Engineered Openings' => 'N/A',
@@ -474,11 +437,7 @@ class Inspection extends AbstractSchema
         };
     }
 
-    /**
-     * lowestMachineryEquipment records where the machinery sits. Live values
-     * are Basement, Crawlspace, Enclosure, Ground Level, Other floor and
-     * Attic -- the first four are at or below the first floor, the rest above.
-     */
+    /** Basement, Crawlspace, Enclosure and Ground Level are at or below the first floor. */
     private function machineryAboveFirstFloor($value): string
     {
         if (! $value) {
@@ -530,7 +489,7 @@ class Inspection extends AbstractSchema
     }
 
     /**
-     * Address lines for the form, which shows 'N/A' rather than an empty cell.
+     * Address lines, or ['N/A'] -- the form has no empty cells.
      *
      * @return array<int, string>
      */
@@ -540,8 +499,7 @@ class Inspection extends AbstractSchema
     }
 
     /**
-     * bank_position is stored as Primary/Secondary, so a plain string sort puts
-     * Primary first; the form numbers them in that order.
+     * bank_position is Primary/Secondary, so a string sort puts Primary first.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -557,10 +515,7 @@ class Inspection extends AbstractSchema
         return Helper::formatDate($isoDate) ?? '';
     }
 
-    /**
-     * Constant for this module/action -- not looked up per record. Matches what
-     * InspectionWorkflowObserver used to hardcode directly into the payload.
-     */
+    /** Fixed for this module/action, not looked up per record. */
     public function resolveType(): string
     {
         return 'INSPECTION';
@@ -592,11 +547,7 @@ class Inspection extends AbstractSchema
         return $this->resolveClientApiKey($clientId)?->api_secret ?? '';
     }
 
-    /**
-     * Shared lookup behind the three api_key/api_secret/X-Client-key resolvers
-     * above -- one client-id-to-key lookup per placeholder is acceptable here:
-     * this runs once per workflow dispatch, not per record in a batch.
-     */
+    /** Shared by the api_key/api_secret/X-Client-key resolvers above. */
     private function resolveClientApiKey($clientId)
     {
         if (! $clientId || ! class_exists(\App\Services\ClientApiKeyService::class)) {
