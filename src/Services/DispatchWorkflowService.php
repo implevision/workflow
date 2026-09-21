@@ -625,6 +625,13 @@ class DispatchWorkflowService
                             } else {
                                 $data[$index]['email'] = explode(',', $emailPlaceHolderValue);
                             }
+                            $data[$index]['email'] = $this->workflowService->applyMfaEmailVerificationFilter(
+                                $data[$index]['email']
+                            );
+                            
+                            $data[$index]['email'] = $this->workflowService->applyEmailSupressedByConsumerFilter(
+                                $data[$index]['email']
+                            );
                         }
                     }
 

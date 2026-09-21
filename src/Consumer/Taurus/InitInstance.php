@@ -75,6 +75,27 @@ class InitInstance
         }
     }
 
+    public function getEmailSupressedByConsumerService()
+    {
+        $supressionServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\Email\\EmailSupressedByConsumerService';
+
+        if (class_exists($supressionServiceClass)) {
+            return new $supressionServiceClass;
+        } else {
+            throw new \Exception("Email supressed by consumer service class '$supressionServiceClass' does not exist.");
+        }
+    }
+    public function getMfaEmailVerificationService()
+    {
+        $mfaEmailVerificationServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\Email\\MfaEmailVerificationService';
+
+        if (class_exists($mfaEmailVerificationServiceClass)) {
+            return new $mfaEmailVerificationServiceClass;
+        } else {
+            throw new \Exception("MFA email verification service class '$mfaEmailVerificationServiceClass' does not exist.");
+        }
+    }
+
     public function getParentClassService()
     {
         $parentClassServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\ParentClass\\ParentClassService';
