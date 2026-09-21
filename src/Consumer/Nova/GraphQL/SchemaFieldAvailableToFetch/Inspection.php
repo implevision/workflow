@@ -2,35 +2,19 @@
 
 namespace Taurus\Workflow\Consumer\Nova\GraphQL\SchemaFieldAvailableToFetch;
 
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Taurus\Workflow\Consumer\Nova\Helper;
 
 class Inspection extends AbstractSchema
 {
-    protected $fieldMapping = [];
+    /** How long the presigned URL handed to SES stays valid. Minutes. */
+    private const ATTACHMENT_URL_TTL_MINUTES = 60;
 
-    protected $queryName = 'inspection';
-
-    protected $queryPath;
-
-    public function __construct()
-    {
-        $this->queryPath = '.'.$this->queryName;
-        $this->fieldMapping = $this->initializeFieldMapping();
-    }
-
-    public function getFieldMapping(): array
-    {
-        return $this->fieldMapping;
-    }
-
-    public function getQueryName(): string
-    {
-        return $this->queryName;
-    }
-
-    // No getHeaders() override: nova's inspection query is unguarded, so the
-    // default (no headers) from AbstractSchema applies. Confirmed with the
-    // workflow team.
+    /** Blade view rendered into the Claim Assignment Form PDF. */
+    private const ATTACHMENT_VIEW = 'pdf.claim-assignment-form';
 
     /**
      * Everything the Claim Assignment Form PDF needs, in one place. Fetched
@@ -131,6 +115,32 @@ class Inspection extends AbstractSchema
         ],
     ];
 
+    protected $fieldMapping = [];
+
+    protected $queryName = 'inspection';
+
+    protected $queryPath;
+
+    public function __construct()
+    {
+        $this->queryPath = '.'.$this->queryName;
+        $this->fieldMapping = $this->initializeFieldMapping();
+    }
+
+    public function getFieldMapping(): array
+    {
+        return $this->fieldMapping;
+    }
+
+    public function getQueryName(): string
+    {
+        return $this->queryName;
+    }
+
+    // No getHeaders() override: nova's inspection query is unguarded, so the
+    // default (no headers) from AbstractSchema applies. Confirmed with the
+    // workflow team.
+
     private function initializeFieldMapping(): array
     {
         return [
@@ -192,10 +202,10 @@ class Inspection extends AbstractSchema
             ],
             // The adjusting firm this tenant operates as -- for email templates
             // that sign off as the firm rather than as the product.
-            'AdjustingFirm' => [
+            'AdjustingFirmName' => [
                 'GraphQLschemaToReplace' => [],
                 'jqFilter' => '',
-                'parseResultCallback' => 'resolveAdjustingFirm',
+                'parseResultCallback' => 'resolveAdjustingFirmName',
             ],
             'AdjustingFirmPhone' => [
                 'GraphQLschemaToReplace' => [],
@@ -257,20 +267,15 @@ class Inspection extends AbstractSchema
         return '';
     }
 
-    public function resolveAdjustingFirm(): string
+    public function resolveAdjustingFirmName(): string
     {
         return Helper::adjustingFirmName();
     }
 
     public function resolveAdjustingFirmPhone(): string
     {
-        return (string) (Helper::getHoldingCompanyDetail()?->phone_no ?? '');
+        return Helper::adjustingFirmPhone();
     }
-
-    /** How long the presigned URL handed to SES stays valid. Minutes. */
-    private const ATTACHMENT_URL_TTL_MINUTES = 60;
-
-    private const ATTACHMENT_VIEW = 'pdf.claim-assignment-form';
 
     /**
      * Render the Claim Assignment Form for the record under workflow and store
@@ -294,39 +299,39 @@ class Inspection extends AbstractSchema
         try {
             $data = $this->buildAssignmentFormData($record);
 
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(self::ATTACHMENT_VIEW, $data)
+            $pdf = Pdf::loadView(self::ATTACHMENT_VIEW, $data)
                 ->setPaper('letter', 'portrait')
                 ->setOptions(['isRemoteEnabled' => true]);
 
-            $assignmentId = $data['assignmentId'] ?: (string) \Illuminate\Support\Str::uuid();
-            $fileName = 'Claim_Assignment_Form_'.\Illuminate\Support\Str::slug($assignmentId, '_').'.pdf';
+            $assignmentId = $data['assignmentId'] ?: (string) Str::uuid();
+            $fileName = 'Claim_Assignment_Form_'.Str::slug($assignmentId, '_').'.pdf';
             $path = tenant('id').'/'.now()->format('Y').'/'.now()->format('m').'/'.now()->format('d')
                 .'/OTHER/claim-assignment-forms/'.$fileName;
 
-            $uploaded = \Illuminate\Support\Facades\Storage::disk('s3')->put($path, $pdf->output(), 'private');
+            $uploaded = Storage::disk('s3')->put($path, $pdf->output(), 'private');
 
             if (! $uploaded) {
-                \Log::error('NOVA_ASSIGNMENT_FORM: S3 upload failed', ['path' => $path]);
+                Log::error('NOVA_ASSIGNMENT_FORM: S3 upload failed', ['path' => $path]);
 
                 return [];
             }
 
-            $url = \Illuminate\Support\Facades\Storage::disk('s3')->temporaryUrl(
+            $url = Storage::disk('s3')->temporaryUrl(
                 $path,
                 now()->addMinutes(self::ATTACHMENT_URL_TTL_MINUTES)
             );
 
             if (! $url) {
-                \Log::warning('NOVA_ASSIGNMENT_FORM: could not presign the stored PDF', ['path' => $path]);
+                Log::warning('NOVA_ASSIGNMENT_FORM: could not presign the stored PDF', ['path' => $path]);
 
                 return [];
             }
 
-            \Log::info('NOVA_ASSIGNMENT_FORM: attachment ready', ['path' => $path]);
+            Log::info('NOVA_ASSIGNMENT_FORM: attachment ready', ['path' => $path]);
 
             return [['name' => $fileName, 'path' => $url]];
         } catch (\Throwable $e) {
-            \Log::error('NOVA_ASSIGNMENT_FORM: failed to build the form', ['error' => $e->getMessage()]);
+            Log::error('NOVA_ASSIGNMENT_FORM: failed to build the form', ['error' => $e->getMessage()]);
 
             return [];
         }

@@ -3,6 +3,7 @@
 namespace Taurus\Workflow\Consumer\Nova;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Generic formatting shared by nova's schema classes. Module-specific parsing
@@ -17,7 +18,7 @@ class Helper
      */
     public static function getHoldingCompanyDetail(): ?object
     {
-        return \DB::table('tb_holdingcompanies')->first();
+        return DB::table('tb_holdingcompanies')->first();
     }
 
     /**
@@ -26,6 +27,14 @@ class Helper
     public static function adjustingFirmName(): string
     {
         return (string) (self::getHoldingCompanyDetail()?->s_HoldingCompanyName ?? '');
+    }
+
+    /**
+     * Contact number for the adjusting firm, or '' if unset.
+     */
+    public static function adjustingFirmPhone(): string
+    {
+        return (string) (self::getHoldingCompanyDetail()?->phone_no ?? '');
     }
 
     /**
