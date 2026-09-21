@@ -11,9 +11,12 @@ class Client
 
     protected array $headers;
 
+    protected int $timeout;
+
     public function __construct(array $headers = [])
     {
         $this->endpoint = config('workflow.graphql.endpoint');
+        $this->timeout = config('workflow.graphql.timeout', 30);
 
         $tenant = getTenant();
         $noTenantIdentifier = getNoTenantIdentifier();
@@ -29,6 +32,7 @@ class Client
     public function query(string $query, array $variables = []): array
     {
         $response = Http::withHeaders($this->headers)
+            ->timeout($this->timeout)
             ->post($this->endpoint, [
                 'query' => $query,
                 'variables' => $variables,
