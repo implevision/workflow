@@ -83,18 +83,11 @@ class Inspection extends AbstractSchema
                     'firstFloorHeightFt' => null,
                     'firstFloorHeightIn' => null,
                     'floorsInBuilding' => null,
-                    'floodOpenings' => null,
-                    'floodProofed' => null,
                     'floodZone' => null,
                     'lowestMachineryEquipment' => null,
-                    'floorNumber' => null,
                     'firmDate' => null,
                     'firmStatus' => null,
                     'dateOfConstruction' => null,
-                    'lowestFloorElevation' => null,
-                    'baseFloodElevation' => null,
-                    'isElevated' => null,
-                    'replacementValue' => null,
                     'primaryResidence' => null,
                     'communityId' => null,
                     'panelNumber' => null,
@@ -197,8 +190,6 @@ class Inspection extends AbstractSchema
                 'jqFilter' => '',
                 'parseResultCallback' => 'resolveAdjustingFirmPhone',
             ],
-            // The "Attach" prefix marks this as an email attachment:
-            // EmailClient::extractAttachments() collects keys matching /^attach/i.
             'AttachAssignmentForm' => [
                 'GraphQLschemaToReplace' => self::ASSIGNMENT_FORM_SCHEMA,
                 'jqFilter' => "{$this->queryPath}",
@@ -284,10 +275,7 @@ class Inspection extends AbstractSchema
                 return [];
             }
 
-            $url = Storage::disk('s3')->temporaryUrl(
-                $path,
-                now()->addMinutes(self::ATTACHMENT_URL_TTL_MINUTES)
-            );
+            $url = Helper::generatePresignedUrl($path, self::ATTACHMENT_URL_TTL_MINUTES);
 
             if (! $url) {
                 Log::warning('NOVA_ASSIGNMENT_FORM: could not presign the stored PDF', ['path' => $path]);

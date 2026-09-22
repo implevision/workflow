@@ -4,6 +4,8 @@ namespace Taurus\Workflow\Consumer\Nova;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Generic formatting shared by nova's schema classes. Module-specific parsing
@@ -50,7 +52,28 @@ class Helper
         try {
             return Carbon::parse($dateToFormat)->format('m/d/Y');
         } catch (\Throwable) {
-            return (string) $dateToFormat;
+            return null;
+        }
+    }
+
+    /**
+     * Pre-signed S3 URL for a stored file, or null if it cannot be built.
+     *
+     * @param  string  $path  Key inside the bucket
+     * @param  int  $expiry  Expiry in minutes
+     */
+    public static function generatePresignedUrl(string $path, int $expiry = 60): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        try {
+            return Storage::disk('s3')->temporaryUrl($path, now()->addMinutes($expiry));
+        } catch (\Throwable $e) {
+            Log::error('NOVA_WORKFLOW: failed to presign', ['path' => $path, 'error' => $e->getMessage()]);
+
+            return null;
         }
     }
 
