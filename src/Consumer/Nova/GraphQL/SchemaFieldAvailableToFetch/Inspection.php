@@ -215,17 +215,17 @@ class Inspection extends AbstractSchema
                 'jqFilter' => '',
                 'parseResultCallback' => 'resolveSubType',
             ],
-            'X-Client-key' => [
+            'XClientKey' => [
                 'GraphQLschemaToReplace' => ['claim' => ['clientId' => null]],
                 'jqFilter' => "{$this->queryPath}.claim.clientId",
                 'parseResultCallback' => 'resolveXClientKey',
             ],
-            'api_key' => [
+            'ApiKey' => [
                 'GraphQLschemaToReplace' => ['claim' => ['clientId' => null]],
                 'jqFilter' => "{$this->queryPath}.claim.clientId",
                 'parseResultCallback' => 'resolveApiKey',
             ],
-            'api_secret' => [
+            'ApiSecret' => [
                 'GraphQLschemaToReplace' => ['claim' => ['clientId' => null]],
                 'jqFilter' => "{$this->queryPath}.claim.clientId",
                 'parseResultCallback' => 'resolveApiSecret',
