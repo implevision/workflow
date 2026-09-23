@@ -78,46 +78,20 @@ class Helper
     }
 
     /**
-     * Formats a number to US dollar currency format (e.g. $1,234.56), or ''
-     * when the value is not numeric.
+     * Embeddable URL for the tenant's logo, or '' when there is none.
+     *
+     * Nova keeps branding in tb_holdingcompanies rather than on the claim
+     * graph, so there is nothing to pull through GraphQL -- App\Support     * CompanyLogo already resolves the public-bucket URL and falls back to
+     * the proxy route, and this just makes it reachable from every module.
      */
-    public static function formatCurrency($amount): string
+    public static function parseCompanyLogo(): string
     {
-        if (! is_numeric($amount)) {
+        if (! class_exists(\App\Support\CompanyLogo::class)) {
+            Log::warning('NOVA_WORKFLOW: company logo resolver unavailable');
+
             return '';
         }
 
-        return '$'.number_format((float) $amount, 2);
-    }
-
-    /**
-     * Flattens a GraphQL Address into display lines: street, then locality.
-     * Returns an empty list when there is no address, so callers can decide
-     * what to render in its place.
-     *
-     * @param  array<string, mixed>|null  $address
-     * @return array<int, string>
-     */
-    public static function formatAddressLines(?array $address): array
-    {
-        if (! $address) {
-            return [];
-        }
-
-        $street = trim(implode(' ', array_filter([
-            $address['addressLine1'] ?? '',
-            $address['addressLine2'] ?? '',
-        ])));
-
-        $postal = trim((string) ($address['postalCode'] ?? ''));
-        $suffix = trim((string) ($address['postalCodeSuffix'] ?? ''));
-
-        $locality = trim(implode(' ', array_filter([
-            $address['city'] ?? '',
-            $address['state'] ?? '',
-            $suffix ? $postal.'-'.$suffix : $postal,
-        ])));
-
-        return array_values(array_filter([$street, $locality]));
+        return \App\Support\CompanyLogo::url();
     }
 }
