@@ -3,9 +3,9 @@
 namespace Taurus\Workflow\Tests\GraphQL\Taurus;
 
 use Orchestra\Testbench\TestCase;
-use Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch\TbPersonInfo;
+use Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch\Agency;
 
-class TbPersonInfoSchemaFieldAvailableToFetchTest extends TestCase
+class AgencySchemaFieldAvailableToFetchTest extends TestCase
 {
     // -------------------------------------------------------------------------
     // Helpers
@@ -26,8 +26,8 @@ class TbPersonInfoSchemaFieldAvailableToFetchTest extends TestCase
 
     public function test_field_mapping_for_w9_form_employee_identification_number()
     {
-        $tbPersonInfo = new TbPersonInfo;
-        $fieldMapping = $tbPersonInfo->getFieldMapping();
+        $agencyProducer = new Agency;
+        $fieldMapping = $agencyProducer->getFieldMapping();
 
         $expectedArray = [
             'GraphQLschemaToReplace' => $this->wrapSchemaWithData([
@@ -50,37 +50,37 @@ class TbPersonInfoSchemaFieldAvailableToFetchTest extends TestCase
 
     public function test_parse_w9_form_employee_identification_number_formats_nine_digit_number()
     {
-        $tbPersonInfo = new TbPersonInfo;
+        $agencyProducer = new Agency;
 
-        $this->assertSame('1 2   3 4 5 6 7 8 9', $tbPersonInfo->parseW9FormEmployeeIdentificationNumber('123456789'));
+        $this->assertSame('1 2   3 4 5 6 7 8 9', $agencyProducer->parseW9FormEmployeeIdentificationNumber('123456789'));
     }
 
     public function test_parse_w9_form_employee_identification_number_strips_non_digit_characters_before_formatting()
     {
-        $tbPersonInfo = new TbPersonInfo;
+        $agencyProducer = new Agency;
 
-        $this->assertSame('1 2   3 4 5 6 7 8 9', $tbPersonInfo->parseW9FormEmployeeIdentificationNumber('12-3456789'));
+        $this->assertSame('1 2   3 4 5 6 7 8 9', $agencyProducer->parseW9FormEmployeeIdentificationNumber('12-3456789'));
     }
 
     public function test_parse_w9_form_employee_identification_number_returns_null_when_empty()
     {
-        $tbPersonInfo = new TbPersonInfo;
+        $agencyProducer = new Agency;
 
-        $this->assertNull($tbPersonInfo->parseW9FormEmployeeIdentificationNumber(''));
+        $this->assertNull($agencyProducer->parseW9FormEmployeeIdentificationNumber(''));
     }
 
     public function test_parse_w9_form_employee_identification_number_returns_null_when_null()
     {
-        $tbPersonInfo = new TbPersonInfo;
+        $agencyProducer = new Agency;
 
-        $this->assertNull($tbPersonInfo->parseW9FormEmployeeIdentificationNumber(null));
+        $this->assertNull($agencyProducer->parseW9FormEmployeeIdentificationNumber(null));
     }
 
     public function test_parse_w9_form_employee_identification_number_returns_null_when_digit_count_is_not_nine()
     {
-        $tbPersonInfo = new TbPersonInfo;
+        $agencyProducer = new Agency;
 
-        $this->assertNull($tbPersonInfo->parseW9FormEmployeeIdentificationNumber('12345678'));
-        $this->assertNull($tbPersonInfo->parseW9FormEmployeeIdentificationNumber('1234567890'));
+        $this->assertNull($agencyProducer->parseW9FormEmployeeIdentificationNumber('12345678'));
+        $this->assertNull($agencyProducer->parseW9FormEmployeeIdentificationNumber('1234567890'));
     }
 }
