@@ -2,44 +2,41 @@
 
 namespace Taurus\Workflow\Services;
 
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use Taurus\Workflow\Models\WorkflowLog;
-use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 use Taurus\Workflow\Repositories\Eloquent\WorkflowRepository;
-use Taurus\Workflow\Services\AWS\S3;
-use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
-use Taurus\Workflow\Services\WorkflowActions\EmailAction;
-use Taurus\Workflow\Services\WorkflowActions\WebhookAction;
-use Taurus\Workflow\Services\WorkflowActions\WorkflowOutputAction;
 
 /**
  * Class DispatchWorkflowService
  *
- * This class is responsible for managing the dispatch workflow.
- * It handles the workflow ID, workflow information, and interacts
- * with the job workflow repository and workflow service.
+ * Dispatches a workflow that was configured and saved beforehand: it loads the
+ * workflow definition, walks its conditions, and runs each condition's actions
+ * against the records the workflow targets.
  *
  * @property int $workflowId The ID of the workflow.
- * @property mixed|null $workflowInfo Information related to the workflow.
- * @property JobWorkflowRepository $jobWorkflowRepo Repository for job workflows.
- * @property WorkflowService $workflowService Service for managing workflows.
- * @property bool $isWorkflowLive Indicates if the workflow is currently live.
- * @property string $recordIdentifier Identifier for the record associated with the workflow.
+ * @property mixed|null $workflowInfo The workflow definition loaded from the database.
+ * @property array $data Caller-supplied record data; when non-empty the run is treated as manually invoked.
+ * @property array $appendPlaceHolders Extra placeholders to resolve, keyed by name; a non-empty value needs no lookup.
+ * @property int $page Zero-based page of records this run processes, for paginated modules.
+ * @property bool $isManuallyInvoked True when the run was handed its data instead of querying for it.
+ * @property string|null $referenceId Optional external reference recorded against the job-workflow row.
+ * @property WorkflowRepository $workflowRepo Repository used to reload the workflow when re-scheduling.
+ * @property array|null $nextPageCommand Command to dispatch the next page, set once more pages are reported.
  */
-class DispatchWorkflowService
+class DispatchWorkflowService extends AbstractDispatchService
 {
+    // Signals returned by processAction to steer the dispatch loops.
+    private const SIGNAL_SKIP_CONDITION = 'SKIP_CONDITION'; // skip the rest of this condition
+
+    private const SIGNAL_NEXT_ACTION = 'NEXT_ACTION'; // abandon this action only
+
+    private const SIGNAL_STOP_ALL = 'STOP_ALL'; // stop the whole dispatch
+
     private $workflowId;
 
     private $workflowInfo = null;
-
-    protected $jobWorkflowRepo;
-
-    protected $workflowService;
-
-    protected $isWorkflowLive;
-
-    protected $recordIdentifier;
 
     protected $data;
 
@@ -53,17 +50,32 @@ class DispatchWorkflowService
 
     protected $workflowRepo;
 
+    protected string $logPrefix = 'WORKFLOW';
+
+    private ?array $nextPageCommand = null;
+
     /**
      * DispatchWorkflowService constructor.
      *
      * @param  int  $workflowId  The ID of the workflow to be dispatched.
      * @param  int|string  $recordIdentifier  An optional identifier for the record, default is 0.
+     * @param  array  $data  Record data supplied by the caller; when non-empty the run is treated as manually invoked
+     * @param  array  $appendPlaceHolders  Extra placeholders keyed by name; a non-empty value needs no lookup
+     * @param  string|null  $referenceId  Optional external reference for the job-workflow row
+     * @param  int  $page  Zero-based page of records to process, for paginated modules
+     * @param  int|string|null  $userId  The user who triggered the run
      */
-    public function __construct(int $workflowId, int|string $recordIdentifier = 0, $data = [], $appendPlaceHolders = [], ?string $referenceId = null, int $page = 0)
-    {
+    public function __construct(
+        int $workflowId,
+        int|string $recordIdentifier = 0,
+        $data = [],
+        $appendPlaceHolders = [],
+        ?string $referenceId = null,
+        int $page = 0,
+        int|string|null $userId = null
+    ) {
         $this->workflowId = $workflowId;
-        $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
-        $this->workflowService = app(WorkflowService::class);
+        $this->initializeServices();
         $this->workflowRepo = app(WorkflowRepository::class);
         $this->recordIdentifier = $recordIdentifier;
         $this->data = $data;
@@ -71,6 +83,7 @@ class DispatchWorkflowService
         $this->page = $page;
         $this->isManuallyInvoked = count($data) ? true : false;
         $this->referenceId = $referenceId;
+        $this->userId = $userId;
         $this->getInfo();
     }
 
@@ -87,7 +100,7 @@ class DispatchWorkflowService
         try {
             $workflowInfo = $this->workflowService->getWorkflowDetailsById($this->workflowId);
         } catch (\Exception $e) {
-            \Log::error('WORKFLOW - Error fetching workflow details: '.$e->getMessage());
+            Log::error("{$this->logPrefix} - Error fetching workflow details: ".$e->getMessage());
 
             return false;
         }
@@ -112,564 +125,518 @@ class DispatchWorkflowService
             return false;
         }
 
-        if (
-            ! empty($this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'])
-            && $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'] == 'WITH_IN'
-        ) {
-            $workflow = $this->workflowRepo->getById($this->workflowId)->toArray();
-            $this->workflowService->scheduleWorkflows([$workflow]);
-        }
+        $this->rescheduleWithinEventWorkflow();
 
-        if ($this->workflowInfo['detail']['isActive'] == false) {
-            \Log::info('WORKFLOW - Workflow is not active. Exiting.');
-
+        if (! $this->isWorkflowActive()) {
             return false;
         }
 
-        \Log::info('WORKFLOW - Name: '.$this->workflowInfo['detail']['name']);
+        Log::info("{$this->logPrefix} - Name: ".$this->workflowInfo['detail']['name']);
 
-        $jobWorkflowId = 0;
-        try {
-            $jobWorkflow = [
-                'workflow_id' => $this->workflowId,
-                'status' => 'CREATED',
-                'total_no_of_records_to_execute' => 0,
-                'total_no_of_records_executed' => 0,
-                'response' => [],
-            ];
-            if ($this->referenceId !== null) {
-                $jobWorkflow['reference_id'] = $this->referenceId;
-            }
-            $jobWorkflowId = $this->jobWorkflowRepo->createSingle($jobWorkflow);
-            setRunningJobWorkflowId($jobWorkflowId);
-        } catch (\Exception $e) {
-            \Log::error('WORKFLOW - Error while creating entry in JOB WORKFLOW table. '.$e->getMessage());
-
+        $jobWorkflowId = $this->createJobWorkflowEntry($this->workflowId, $this->referenceId);
+        if (! $jobWorkflowId) {
             return false;
         }
 
         setModuleForCurrentWorkflow($this->workflowInfo['detail']['module']);
-        $allConditions = $this->workflowInfo['workFlowConditions'];
-        $nextPageCommand = null;
 
-        $graphQLQuery = [];
-        $effectiveActionQuery = [];
-        // NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
-        // Example: After/Before X day(s)/month(s)/year(s) of the event
-        if (
-            ! $this->isManuallyInvoked &&
-            $this->workflowInfo['when']['effectiveActionToExecuteWorkflow'] == 'ON_DATE_TIME' &&
-            ! $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['certainDateTime']
-        ) {
-            try {
-                $effectiveActionQuery = $this->workflowService->getQueryForEffectiveAction(
-                    $this->workflowInfo['detail']['module'],
-                    $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequency'],
-                    $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequencyType'],
-                    $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'],
-                    $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEvent']
-                );
-            } catch (\Exception $e) {
-                throw new \Exception('Error while creating GraphQL query for effective action. '.$e->getMessage());
-            }
-        }
+        $this->nextPageCommand = null;
+        $graphQLQuery = $this->buildBaseGraphQLQuery();
 
-        if ($this->recordIdentifier && ! $this->isManuallyInvoked) {
-            try {
-                $recordIdentifierQuery = $this->workflowService->getQueryForRecordIdentifier(
-                    $this->workflowInfo['detail']['module'],
-                    $this->recordIdentifier
-                );
-                if (count($effectiveActionQuery)) {
-                    $graphQLQuery = $recordIdentifierQuery;
-                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$effectiveActionQuery]];
-                } else {
-                    $graphQLQuery = $recordIdentifierQuery;
-                }
-            } catch (\Exception $e) {
-                throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
-            }
-        } elseif (count($effectiveActionQuery)) {
-            $graphQLQuery = $effectiveActionQuery;
-        }
-
-        foreach ($allConditions as $condition) {
+        foreach ($this->workflowInfo['workFlowConditions'] as $condition) {
             if (isset($condition['status']) && $condition['status'] === false) {
-                \Log::info('WORKFLOW - Condition skipped (inactive): '.($condition['id'] ?? ''));
+                Log::info("{$this->logPrefix} - Condition skipped (inactive): ".($condition['id'] ?? ''));
 
                 continue;
             }
 
-            $feedFile = '';
-            $data = [];
+            $feedFile = $this->resolveFeedFile($condition);
 
-            if ($condition['applyRuleTo'] == 'ALL') {
-                // DO NOTHING
-            }
-
-            if ($condition['applyRuleTo'] == 'CUSTOM_FEED') {
-                try {
-                    $feedFile = $this->getFileOnLocal($condition['s3FilePath']);
-                } catch (\Exception $e) {
-                    \Log::error('WORKFLOW - Failed to download feed file from S3: '.$condition['s3FilePath']);
-                    \Log::error('WORKFLOW - '.$e->getMessage());
-                }
-            }
-
-            if ($condition['applyRuleTo'] == 'CERTAIN' && ! $this->isManuallyInvoked) {
-                $conditionsToApply = GraphQLSchemaBuilderService::buildWhereConditionFromGroup($condition['applyConditionRules']);
-
-                if (! empty($conditionsToApply)) {
-                    if (count($graphQLQuery)) {
-                        if (isset($graphQLQuery['JOIN'])) {
-                            $graphQLQuery['JOIN']['condition'][] = $conditionsToApply;
-                        } else {
-                            $graphQLQuery['JOIN'] = $conditionsToApply;
-                        }
-                    } else {
-                        $graphQLQuery = $conditionsToApply;
-                    }
-                }
-            }
+            // NOTE: the merge intentionally persists into subsequent conditions,
+            // matching the original behaviour.
+            $graphQLQuery = $this->mergeConditionRules($condition, $graphQLQuery);
 
             foreach ($condition['instanceActions'] as $action) {
-                $data = [];
-                $actionToExecute = null;
-                $actionType = $action['actionType'];
-                $actionPayload = $action['payload'];
+                $signal = $this->processAction($action, $graphQLQuery, $jobWorkflowId, $feedFile);
 
-                // Workflow Log
-                $workflowLog = WorkflowLog::create([
-                    'job_workflow_id' => $jobWorkflowId ?: null,
-                    'workflow_id' => $this->workflowId,
-                    'record_identifier' => $this->recordIdentifier ?? null,
-                    'module' => $this->workflowInfo['detail']['module'],
-                    'status' => WorkflowLog::STATUS_IN_PROGRESS,
-                    'action_type' => $actionType,
-                ]);
-                $extendedTemplateInfoForModule = $this->workflowService->getExtendedTemplateInfoForModule(
-                    $this->workflowInfo['detail']['module'],
-                    $actionPayload
-                );
-                switch ($actionType) {
-                    case 'EMAIL':
-                        try {
-                            $actionToExecute = new EmailAction($actionType, $actionPayload);
-                            $actionToExecute->setExtendedTemplateInfo($extendedTemplateInfoForModule);
-                            $actionToExecute->handle();
-                        } catch (\Exception $e) {
-                            $this->workflowService->addWorkflowLog(
-                                $this->workflowId,
-                                $jobWorkflowId,
-                                'ERROR_INITIATING_ACTION',
-                                $e->getMessage()
-                            );
-                            \Log::error('WORKFLOW - Error while initiating email action. '.$e->getMessage());
-
-                            continue 2;
-                        }
-                        break;
-
-                    case 'WEB_HOOK':
-                        try {
-                            $actionToExecute = new WebhookAction($actionType, $actionPayload);
-                            $actionToExecute->handle();
-                        } catch (\Exception $e) {
-                            $this->workflowService->addWorkflowLog(
-                                $this->workflowId,
-                                $jobWorkflowId,
-                                'ERROR_INITIATING_ACTION',
-                                $e->getMessage()
-                            );
-                            \Log::error('WORKFLOW - Error while initiating webhook action. '.$e->getMessage());
-
-                            continue 2;
-                        }
-                        break;
-
-                    case 'WORKFLOW_OUTPUT':
-                        try {
-                            $actionToExecute = new WorkflowOutputAction($actionType, $actionPayload);
-                            $actionToExecute->setExtendedTemplateInfo($extendedTemplateInfoForModule);
-                            $actionToExecute->handle();
-                        } catch (\Exception $e) {
-                            $this->workflowService->addWorkflowLog(
-                                $this->workflowId,
-                                $jobWorkflowId,
-                                'ERROR_INITIATING_ACTION',
-                                $e->getMessage()
-                            );
-                            \Log::error('WORKFLOW - Error while initiating workflow output action. '.$e->getMessage());
-
-                            continue 2;
-                        }
-                        break;
-
-                    default:
-                        \Log::error('WORKFLOW - Error while initiating action. '.$actionType);
+                if ($signal === self::SIGNAL_SKIP_CONDITION) {
+                    continue 2;
                 }
 
-                if (! $actionToExecute) {
-                    \Log::error('WORKFLOW - Action not found: '.$actionType);
-
-                    continue;
-                }
-
-                /***
-                 * Placeholders data to extract from appendPlaceHolders
-                 */
-                $placeHolderWithValues = [];
-                $placeHolderToExtract = [];
-                if (count($this->appendPlaceHolders)) {
-                    foreach ($this->appendPlaceHolders as $placeHolderKey => $placeHolderValue) {
-                        if ($placeHolderValue) { // NO NEED TO EXTRACT IF VALUE IS ALREADY AVAILABLE
-                            $placeHolderWithValues[$placeHolderKey] = $placeHolderValue;
-
-                            continue;
-                        }
-
-                        $placeHolderToExtract[] = $placeHolderKey;
-                    }
-                }
-
-                try {
-                    $listOfRequiredData = $actionToExecute ? $actionToExecute->getListOfRequiredData() : [];
-                    $listOfMandateData = $actionToExecute ? $actionToExecute->getListOfMandateData() : [];
-
-                    $listOfRequiredData = array_merge($listOfRequiredData, $placeHolderToExtract);
-
-                    if ($actionType == 'EMAIL' && strtoupper($action['payload']['emailRecipient']) != 'CUSTOM') {
-                        $listOfRequiredData[] = $listOfMandateData[] = ucfirst($action['payload']['emailRecipient']);
-                    }
-                } catch (\Exception $e) {
-                    \Log::error('WORKFLOW - Error while getting required data for action - '.$actionType.' : '.$e->getMessage());
-
-                    continue;
-                }
-
-                if ($this->isManuallyInvoked) {
-                    $data[] = $this->data;
-                } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
-                    // Build GraphQL query
-                    try {
-                        $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->workflowInfo['detail']['module'], $this->appendPlaceHolders);
-                        $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
-                        $queryName = $moduleClassForGraphQL->getQueryName();
-                        $graphQLHeaders = $moduleClassForGraphQL->getHeaders();
-                        $graphQLSchemaBuilder = new GraphQLSchemaBuilderService($fieldMapping);
-                        foreach ($listOfRequiredData as $placeHolder) {
-                            $graphQLSchemaBuilder->addField($placeHolder);
-                        }
-                        $schemaData = $graphQLSchemaBuilder->getSchema();
-                        $moduleClassForGraphQL->setPage($this->page);
-
-                        $moduleClassForGraphQL->setQueryArgsContext(
-                            $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow'] ?? []
-                        );
-
-                        $queryArgs = $moduleClassForGraphQL->getQueryArgs();
-                        $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery($schemaData, $queryName, $graphQLQuery, $queryArgs, $this->page, $moduleClassForGraphQL->supportsPagination());
-                    } catch (\Exception $e) {
-                        $this->workflowService->addWorkflowLog(
-                            $this->workflowId,
-                            $jobWorkflowId,
-                            'GRAPHQL_ERROR',
-                            $e->getMessage()
-                        );
-                        \Log::error('WORKFLOW - Error while preparing GraphQL query payload - '.$e->getMessage());
-
-                        continue;
-                    }
-
-                    // Handle GraphQL query execution
-                    try {
-                        // \Log::info('WORKFLOW - GraphQL end point: ' . config('workflow.graphql.endpoint'));
-                        \Log::info('WORKFLOW - GraphQL Request Payload: '.$graphQLRequestPayload);
-                        $graphQLClient = new GraphQLClient($graphQLHeaders);
-                        $response = $graphQLClient->query($graphQLRequestPayload);
-                        \Log::info('WORKFLOW - GraphQL Response: ', $response);
-                    } catch (\Exception $e) {
-                        $this->workflowService->addWorkflowLog(
-                            $this->workflowId,
-                            $jobWorkflowId,
-                            'GRAPHQL_ERROR',
-                            $e->getMessage()
-                        );
-                        \Log::error('WORKFLOW - Error while executing GraphQL query - '.$e->getMessage());
-
-                        continue;
-                    }
-
-                    // If schema provides custom record extraction, use it directly (skip jqFilter)
-                    if ($moduleClassForGraphQL->hasCustomRecordExtraction()) {
-                        foreach ($moduleClassForGraphQL->getRecordsFromResponse($response) as $record) {
-                            $record = array_merge($record, $placeHolderWithValues);
-                            $data[] = $record;
-                        }
-                    } else {
-                        if (empty(array_first($response))) {
-                            \Log::debug('WORKFLOW - GraphQL unable to fetch the data');
-
-                            continue;
-                        }
-
-                        $queryName = $moduleClassForGraphQL->getQueryName();
-                        $queryRootNode = $response[$queryName] ?? [];
-                        $records = $moduleClassForGraphQL->supportsPagination()
-                            ? ($queryRootNode['data'] ?? [])
-                            : [$queryRootNode];
-
-                        $perRecordResponses = array_map(
-                            fn ($record) => [$queryName => $record],
-                            $records
-                        );
-
-                        try {
-                            foreach ($perRecordResponses as $recordResponse) {
-                                $parsedData = [];
-
-                                foreach ($listOfRequiredData as $placeHolder) {
-                                    if (! array_key_exists($placeHolder, $fieldMapping)) {
-                                        $this->workflowService->addWorkflowLog(
-                                            $this->workflowId,
-                                            $jobWorkflowId,
-                                            'FIELD_MAPPING_ISSUE',
-                                            'Field mapping not found for placeholder: '.$placeHolder
-                                        );
-                                        \Log::error('WORKFLOW - Field mapping not found for placeholder: '.$placeHolder);
-                                        $parsedData[$placeHolder] = '';
-
-                                        continue;
-                                    }
-
-                                    $jqFilter = $fieldMapping[$placeHolder]['jqFilter'];
-                                    $parseResultCallback = ! empty($fieldMapping[$placeHolder]['parseResultCallback']) ? $fieldMapping[$placeHolder]['parseResultCallback'] : null;
-
-                                    $placeHolderValue = '';
-                                    if (! $jqFilter && $parseResultCallback) {
-                                        if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
-                                            $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback();
-                                        }
-                                    } else {
-                                        $placeHolderValue = $graphQLSchemaBuilder->extractValue($recordResponse, $jqFilter);
-
-                                        if ($placeHolderValue) {
-                                            $parsedValue = json_decode($placeHolderValue, true);
-                                            $placeHolderValue = json_last_error() === JSON_ERROR_NONE ? $parsedValue : $placeHolderValue;
-
-                                            if ($parseResultCallback) {
-                                                if (method_exists($moduleClassForGraphQL, $parseResultCallback)) {
-                                                    $placeHolderValue = $moduleClassForGraphQL->$parseResultCallback($placeHolderValue);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    $parsedData[$placeHolder] = $placeHolderValue;
-                                }
-
-                                $parsedData = array_merge($parsedData, $placeHolderWithValues);
-                                $hasAtLeastOneValue = ! empty(array_filter($parsedData, fn ($v) => $v !== null && $v !== '' && $v !== false && $v !== 'null'));
-
-                                if ($this->recordIdentifier && ! empty($parsedData) && ! $hasAtLeastOneValue) {
-                                    \Log::warning('WORKFLOW -  Data unavailable or all required fields are empty');
-                                    break 2;
-                                }
-                                if ($actionType == 'WEB_HOOK') {
-                                    $data = array_merge($data, $this->generatePayloadFromParsedData($parsedData));
-                                } else {
-                                    // SET DATA FOR ACTION
-                                    $data[] = $parsedData;
-                                }
-                            }
-                        } catch (\Exception $e) {
-                            $this->workflowService->addWorkflowLog(
-                                $this->workflowId,
-                                $jobWorkflowId,
-                                'GRAPHQL_ERROR',
-                                $e->getMessage()
-                            );
-                            \Log::error(
-                                'WORKFLOW - Error while extracting data from GraphQL response - '.$e->getMessage(),
-                                [
-                                    'message' => $e->getMessage(),
-                                    'file' => $e->getFile(),
-                                    'line_no' => $e->getLine(),
-                                ]
-                            );
-
-                            continue;
-                        }
-                    } // end else (jqFilter path)
-
-                    if ($nextPageCommand === null) {
-                        $nextPageArgs = $moduleClassForGraphQL->getNextPageArgs($response, $queryArgs);
-                        if ($nextPageArgs !== null) {
-                            $nextPageCommand = gitCommandToDispatchWorkflow(
-                                $this->workflowId,
-                                $this->recordIdentifier,
-                                [],
-                                $this->appendPlaceHolders,
-                                $this->referenceId,
-                                $this->page + 1
-                            );
-                        }
-                    }
-                }
-
-                if (config('app.env') != 'production') {
-                    \Log::info('WORKFLOW - data: ', $data);
-                }
-
-                try {
-                    // VALIDATE ALL REQUIRED INFO IS PRESENT OR NOT
-                    $hasPriorDataForWorkflow = false;
-                    $missingMandateDataRecords = [];
-
-                    foreach ($data as $index => $dataItem) {
-                        $data[$index]['hasPriorDataForWorkflow'] = true;
-                        foreach ($listOfMandateData as $mandateData) {
-                            if (! isset($dataItem[$mandateData]) || empty($dataItem[$mandateData])) {
-                                $data[$index]['hasPriorDataForWorkflow'] = false;
-                                $missingMandateDataRecords[] = $mandateData;
-                            }
-                        }
-
-                        // FROM BUNCH OF RECORDS THERE MUST BE RECORD WHICH HAS MANDATE DATA
-                        if ($data[$index]['hasPriorDataForWorkflow']) {
-                            $hasPriorDataForWorkflow = true;
-                        } else {
-                            $this->workflowService->addWorkflowLog(
-                                $this->workflowId,
-                                $jobWorkflowId,
-                                'MISSING_MANDATE_DATA',
-                                ['missingMandateDataRecords' => $missingMandateDataRecords, 'data' => $data[$index], 'listOfMandateData' => $listOfMandateData]
-                            );
-                            \Log::warning('WORKFLOW - Missing mandate data', ['missingMandateDataRecords' => $missingMandateDataRecords, 'data' => $data[$index], 'listOfMandateData' => $listOfMandateData]);
-                            unset($data[$index]);
-
-                            continue;
-                        }
-
-                        if ($actionType == 'EMAIL') {
-                            if (! empty($action['payload']['emailRecipient']) && strtoupper($action['payload']['emailRecipient']) == 'CUSTOM') {
-                                $emailPlaceHolderValue = $action['payload']['customEmailRecipients'];
-                            } else {
-                                $emailPlaceHolder = ucfirst($action['payload']['emailRecipient']);
-                                $emailPlaceHolderValue = ! empty($data[$index][$emailPlaceHolder]) ? $data[$index][$emailPlaceHolder] : '';
-                            }
-
-                            if (! empty($placeHolderToExtract['emailRecipient'])) {
-                                $emailPlaceHolder = ucfirst($placeHolderToExtract['emailRecipient']);
-                                $emailPlaceHolderValue = ! empty($data[$index][$emailPlaceHolder]) ? $data[$index][$emailPlaceHolder] : '';
-                            }
-
-                            \Log::info('WORKFLOW - Actual email address: '.$emailPlaceHolderValue);
-
-                            if (! $emailPlaceHolderValue) {
-                                $this->workflowService->addWorkflowLog(
-                                    $this->workflowId,
-                                    $jobWorkflowId,
-                                    'MISSING_EMAIL_ADDRESS',
-                                    'System was not able to find email address for the record'
-                                );
-                            }
-
-                            if (config('app.env') != 'production') {
-                                $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
-
-                                if (
-                                    $sendAllEmailsTo &&
-                                    ! (! empty($action['payload']['emailRecipient']) &&
-                                        strtoupper($action['payload']['emailRecipient']) == 'CUSTOM')
-                                ) {
-                                    $emailPlaceHolderValue = $sendAllEmailsTo;
-                                }
-
-                                $emailPlaceHolderValue = explode(',', $emailPlaceHolderValue);
-
-                                $executeEmailAction = false;
-                                $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));
-                                if (count($allowedEmailAddressList1) > 0) {
-                                    $executeEmailAction = true;
-                                }
-
-                                $allowedEmailAddressList2 = [];
-                                $allowedEmailShouldEndsWithInNonProduction = array_merge(['@thinktaurus.com'], config('workflow.allowed_receiver.ends_with'));
-                                foreach ($allowedEmailShouldEndsWithInNonProduction as $endsWith) {
-                                    foreach ((array) $emailPlaceHolderValue as $singleEmail) {
-                                        if (str_ends_with($singleEmail, $endsWith)) {
-                                            $executeEmailAction = true;
-                                            $allowedEmailAddressList2[] = $singleEmail;
-                                        }
-                                    }
-                                }
-
-                                $finalList = [...$allowedEmailAddressList1, ...$allowedEmailAddressList2];
-
-                                if ($executeEmailAction && count($finalList) > 0) {
-                                    $data[$index]['email'] = $emailPlaceHolderValue;
-                                } else {
-                                    $this->workflowService->addWorkflowLog(
-                                        $this->workflowId,
-                                        $jobWorkflowId,
-                                        'UNAUTHORIZED_EMAIL_ADDRESS',
-                                        'Email address not allowed in non-production env: '.implode(',', $emailPlaceHolderValue)
-                                    );
-
-                                    \Log::error('WORKFLOW - Email address not allowed in non-production env: '.implode(',', $emailPlaceHolderValue));
-                                    $hasPriorDataForWorkflow = false;
-                                    unset($data[$index]);
-
-                                    continue;
-                                }
-                            } else {
-                                $data[$index]['email'] = explode(',', $emailPlaceHolderValue);
-                            }
-                        }
-                    }
-
-                    if ($hasPriorDataForWorkflow === false && count($data) == 0) {
-                        continue;
-                    }
-
-                    $actionToExecute->setWorkflowData($this->workflowId, $jobWorkflowId, $this->recordIdentifier);
-                    $actionToExecute->setDataForAction($feedFile, $data);
-                    $actionToExecute->execute();
-                } catch (\Exception $e) {
-                    \Log::error('WORKFLOW - Error while executing action - '.$actionType.' : '.$e->getMessage());
-
-                    continue;
+                if ($signal === self::SIGNAL_STOP_ALL) {
+                    break 2;
                 }
             }
+
             WorkflowLog::markWorkflowCompleted($this->workflowId, $jobWorkflowId);
         }
 
-        if ($nextPageCommand !== null) {
-            \Illuminate\Support\Facades\Artisan::call($nextPageCommand['command'], $nextPageCommand['options']);
+        $this->dispatchNextPage();
+
+        return true;
+    }
+
+    /**
+     * Re-schedules the workflow when its execution event is configured as WITH_IN,
+     * so the follow-up occurrences are queued before this run proceeds.
+     */
+    private function rescheduleWithinEventWorkflow(): void
+    {
+        if (
+            empty($this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'])
+            || $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'] != 'WITH_IN'
+        ) {
+            return;
+        }
+
+        $workflow = $this->workflowRepo->getById($this->workflowId)->toArray();
+        $this->workflowService->scheduleWorkflows([$workflow]);
+    }
+
+    /**
+     * Checks that the workflow is currently active.
+     */
+    private function isWorkflowActive(): bool
+    {
+        if ($this->workflowInfo['detail']['isActive'] == false) {
+            Log::info("{$this->logPrefix} - Workflow is not active. Exiting.");
+
+            return false;
         }
 
         return true;
     }
 
     /**
-     * Retrieves a file from the local storage based on the provided S3 file path.
+     * Builds the base GraphQL filter query from the effective-action configuration and
+     * the record identifier.
      *
-     * @param  string  $s3FilePath  The S3 file path to locate the corresponding local file.
-     * @return mixed Returns the local file if found, otherwise returns null or an appropriate error.
+     * Both parts are optional. When both are present the effective-action query is
+     * joined onto the record-identifier query with an AND. The method throws when
+     * either sub-build fails so the caller can surface the error.
+     *
+     * @throws \Exception When a sub-query cannot be built.
      */
-    private function getFileOnLocal($s3FilePath)
+    private function buildBaseGraphQLQuery(): array
     {
-        $bucketName = config('workflow.aws_bucket');
-        $feedFile = storage_path('app'.$s3FilePath);
+        $effectiveActionQuery = $this->buildEffectiveActionQuery();
 
-        try {
-            Storage::makeDirectory(dirname($s3FilePath));
-            S3::downloadFile($bucketName, $s3FilePath, $feedFile);
-        } catch (\Exception $e) {
-            throw new \Exception($e->getMessage());
+        if ($this->recordIdentifier && ! $this->isManuallyInvoked) {
+            try {
+                $graphQLQuery = $this->workflowService->getQueryForRecordIdentifier(
+                    $this->workflowInfo['detail']['module'],
+                    $this->recordIdentifier
+                );
+
+                if (count($effectiveActionQuery)) {
+                    $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$effectiveActionQuery]];
+                }
+
+                return $graphQLQuery;
+            } catch (\Exception $e) {
+                throw new \Exception('Error while creating GraphQL query for record identifier. '.$e->getMessage());
+            }
         }
 
-        return $feedFile;
+        return $effectiveActionQuery;
+    }
+
+    /**
+     * Builds the effective-action filter used when the workflow runs on a follow-up
+     * event rather than a certain date/time.
+     *
+     * NEED TO FILTER DATA IF EFFECTIVE ACTION IS 'ON_DATE_TIME' AND EVENT CONFIGURED FOR FOLLOW UP EVENT
+     *
+     * Example: After/Before X day(s)/month(s)/year(s) of the event.
+     * Returns an empty array when the workflow is not configured that way.
+     *
+     * @throws \Exception When the query cannot be built.
+     */
+    private function buildEffectiveActionQuery(): array
+    {
+        if (
+            $this->isManuallyInvoked ||
+            $this->workflowInfo['when']['effectiveActionToExecuteWorkflow'] != 'ON_DATE_TIME' ||
+            $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['certainDateTime']
+        ) {
+            return [];
+        }
+
+        try {
+            return $this->workflowService->getQueryForEffectiveAction(
+                $this->workflowInfo['detail']['module'],
+                $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequency'],
+                $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequencyType'],
+                $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'],
+                $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEvent']
+            );
+        } catch (\Exception $e) {
+            throw new \Exception('Error while creating GraphQL query for effective action. '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Downloads the custom-feed file from S3 when the condition targets a CUSTOM_FEED.
+     * Returns an empty string for every other applyRuleTo value, and on download
+     * failure (the error is logged and the workflow continues).
+     */
+    private function resolveFeedFile(array $condition): string
+    {
+        if ($condition['applyRuleTo'] == 'ALL') {
+            // DO NOTHING
+        }
+
+        if ($condition['applyRuleTo'] != 'CUSTOM_FEED') {
+            return '';
+        }
+
+        try {
+            return $this->getFileOnLocal($condition['s3FilePath']);
+        } catch (\Exception $e) {
+            Log::error("{$this->logPrefix} - Failed to download feed file from S3: ".$condition['s3FilePath']);
+            Log::error("{$this->logPrefix} - ".$e->getMessage());
+
+            return '';
+        }
+    }
+
+    /**
+     * Merges a CERTAIN condition's rules into the running GraphQL query.
+     *
+     * When the query already carries a JOIN the rules are appended to it; otherwise
+     * they become the JOIN, or the whole query when nothing has been built yet.
+     */
+    private function mergeConditionRules(array $condition, array $graphQLQuery): array
+    {
+        if ($condition['applyRuleTo'] != 'CERTAIN' || $this->isManuallyInvoked) {
+            return $graphQLQuery;
+        }
+
+        $conditionsToApply = GraphQLSchemaBuilderService::buildWhereConditionFromGroup($condition['applyConditionRules']);
+
+        if (empty($conditionsToApply)) {
+            return $graphQLQuery;
+        }
+
+        if (! count($graphQLQuery)) {
+            return $conditionsToApply;
+        }
+
+        if (isset($graphQLQuery['JOIN'])) {
+            $graphQLQuery['JOIN']['condition'][] = $conditionsToApply;
+        } else {
+            $graphQLQuery['JOIN'] = $conditionsToApply;
+        }
+
+        return $graphQLQuery;
+    }
+
+    /**
+     * Processes a single action within a condition: instantiates it, resolves its data,
+     * validates it and executes it.
+     *
+     * Returns a signal constant to control the outer dispatch loops, or null to carry on
+     * with the next action.
+     */
+    private function processAction(array $action, array $graphQLQuery, int $jobWorkflowId, string $feedFile): ?string
+    {
+        $actionType = $action['actionType'];
+        $actionPayload = $action['payload'];
+
+        $this->createInProgressLog(
+            $this->workflowId,
+            $jobWorkflowId,
+            $this->workflowInfo['detail']['module'],
+            $actionType
+        );
+
+        try {
+            $actionToExecute = $this->instantiateAction(
+                $actionType,
+                $actionPayload,
+                $this->workflowInfo['detail']['module'],
+                $this->workflowId,
+                $jobWorkflowId
+            );
+        } catch (\RuntimeException $e) {
+            // Initialisation failed and has already been logged; skip the rest of this condition.
+            return self::SIGNAL_SKIP_CONDITION;
+        }
+
+        if (! $actionToExecute) {
+            Log::error("{$this->logPrefix} - Action not found: ".$actionType);
+
+            return null;
+        }
+
+        // Placeholders data to extract from appendPlaceHolders
+        [$placeHolderWithValues, $placeHolderToExtract] = $this->partitionPlaceholders($this->appendPlaceHolders);
+
+        try {
+            [$listOfRequiredData, $listOfMandateData] = $this->resolveActionDataRequirements(
+                $actionToExecute,
+                $actionType,
+                $actionPayload,
+                $placeHolderToExtract
+            );
+        } catch (\Exception $e) {
+            Log::error("{$this->logPrefix} - Error while getting required data for action - ".$actionType.' : '.$e->getMessage());
+
+            return null;
+        }
+
+        if ($this->isManuallyInvoked) {
+            $data = [$this->data];
+        } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
+            $result = $this->fetchDataForAction(
+                $graphQLQuery,
+                $listOfRequiredData,
+                $actionType,
+                $jobWorkflowId,
+                $placeHolderWithValues
+            );
+
+            // SIGNAL_NEXT_ACTION simply abandons this action; anything else
+            // (SIGNAL_STOP_ALL) is propagated to the dispatch loops.
+            if ($result['signal'] === self::SIGNAL_NEXT_ACTION) {
+                return null;
+            }
+
+            if ($result['signal'] !== null) {
+                return $result['signal'];
+            }
+
+            $data = $result['data'];
+        } else {
+            $data = [];
+        }
+
+        if (config('app.env') != 'production') {
+            Log::info("{$this->logPrefix} - data: ", $data);
+        }
+
+        try {
+            $data = $this->validateAndFilterData(
+                $data,
+                $listOfMandateData,
+                $actionPayload,
+                $actionType,
+                $this->workflowId,
+                $jobWorkflowId,
+                $placeHolderToExtract
+            );
+
+            if ($data === false) {
+                return null;
+            }
+
+            $actionToExecute->setWorkflowData($this->workflowId, $jobWorkflowId, $this->recordIdentifier);
+            $actionToExecute->setDataForAction($feedFile, $data);
+            $actionToExecute->execute();
+        } catch (\Exception $e) {
+            Log::error("{$this->logPrefix} - Error while executing action - ".$actionType.' : '.$e->getMessage());
+
+            return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Runs the GraphQL query for an action and turns the response into action data rows.
+     *
+     * Returns ['data' => array, 'signal' => string|null].
+     *
+     * A non-null signal means the caller must stop:
+     * `SIGNAL_NEXT_ACTION` when the query or extraction failed and this
+     * action cannot run,
+     * `SIGNAL_STOP_ALL` when the targeted record has no usable data.
+     */
+    private function fetchDataForAction(
+        array $graphQLQuery,
+        array $listOfRequiredData,
+        string $actionType,
+        int $jobWorkflowId,
+        array $placeHolderWithValues
+    ): array {
+        $queryResult = $this->buildAndExecuteGraphQLQuery(
+            $this->workflowInfo['detail']['module'],
+            $this->appendPlaceHolders,
+            $listOfRequiredData,
+            $graphQLQuery,
+            true,
+            $this->workflowId,
+            $jobWorkflowId,
+            function ($moduleClassForGraphQL) {
+                $moduleClassForGraphQL->setPage($this->page);
+                $moduleClassForGraphQL->setQueryArgsContext(
+                    $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow'] ?? []
+                );
+
+                return $this->page;
+            }
+        );
+
+        if ($queryResult === null) {
+            return ['data' => [], 'signal' => self::SIGNAL_NEXT_ACTION];
+        }
+
+        $moduleClassForGraphQL = $queryResult['moduleClassForGraphQL'];
+        $response = $queryResult['response'];
+
+        // If schema provides custom record extraction, use it directly (skip jqFilter)
+        if ($moduleClassForGraphQL->hasCustomRecordExtraction()) {
+            $data = [];
+            foreach ($moduleClassForGraphQL->getRecordsFromResponse($response) as $record) {
+                $data[] = array_merge($record, $placeHolderWithValues);
+            }
+        } else {
+            if (empty(array_first($response))) {
+                Log::debug("{$this->logPrefix} - GraphQL unable to fetch the data");
+
+                return ['data' => [], 'signal' => self::SIGNAL_NEXT_ACTION];
+            }
+
+            $extraction = $this->extractRecordsFromResponse(
+                $queryResult,
+                $listOfRequiredData,
+                $actionType,
+                $jobWorkflowId,
+                $placeHolderWithValues
+            );
+
+            if ($extraction['signal'] !== null) {
+                return $extraction;
+            }
+
+            $data = $extraction['data'];
+        }
+
+        $this->captureNextPageCommand($moduleClassForGraphQL, $response, $queryResult['queryArgs']);
+
+        return ['data' => $data, 'signal' => null];
+    }
+
+    /**
+     * Parses every record in a GraphQL response into action data rows using the
+     * configured jqFilter / parseResultCallback mapping.
+     *
+     * WEB_HOOK actions fan each parsed record out into one row per array value; every
+     * other action type contributes one row per record.
+     *
+     * Returns ['data' => array, 'signal' => string|null], where the signal is
+     * SIGNAL_STOP_ALL when a targeted record resolved to no usable values, and
+     * SIGNAL_NEXT_ACTION when extraction threw.
+     */
+    private function extractRecordsFromResponse(
+        array $queryResult,
+        array $listOfRequiredData,
+        string $actionType,
+        int $jobWorkflowId,
+        array $placeHolderWithValues
+    ): array {
+        $moduleClassForGraphQL = $queryResult['moduleClassForGraphQL'];
+        $queryName = $moduleClassForGraphQL->getQueryName();
+        $queryRootNode = $queryResult['response'][$queryName] ?? [];
+
+        $records = $moduleClassForGraphQL->supportsPagination()
+            ? ($queryRootNode['data'] ?? [])
+            : [$queryRootNode];
+
+        $perRecordResponses = array_map(
+            fn ($record) => [$queryName => $record],
+            $records
+        );
+
+        $data = [];
+
+        try {
+            foreach ($perRecordResponses as $recordResponse) {
+                $parsedData = $this->parseGraphQLResponse(
+                    $recordResponse,
+                    $listOfRequiredData,
+                    $queryResult['fieldMapping'],
+                    $moduleClassForGraphQL,
+                    $queryResult['graphQLSchemaBuilder'],
+                    $this->workflowId,
+                    $jobWorkflowId
+                );
+
+                $parsedData = array_merge($parsedData, $placeHolderWithValues);
+                $hasAtLeastOneValue = ! empty(array_filter($parsedData, fn ($v) => $v !== null && $v !== '' && $v !== false && $v !== 'null'));
+
+                if ($this->recordIdentifier && ! empty($parsedData) && ! $hasAtLeastOneValue) {
+                    Log::warning("{$this->logPrefix} -  Data unavailable or all required fields are empty");
+
+                    return ['data' => [], 'signal' => self::SIGNAL_STOP_ALL];
+                }
+
+                if ($actionType == 'WEB_HOOK') {
+                    $data = array_merge($data, $this->generatePayloadFromParsedData($parsedData));
+                } else {
+                    // SET DATA FOR ACTION
+                    $data[] = $parsedData;
+                }
+            }
+        } catch (\Exception $e) {
+            $this->workflowService->addWorkflowLog(
+                $this->workflowId,
+                $jobWorkflowId,
+                'GRAPHQL_ERROR',
+                $e->getMessage()
+            );
+            Log::error(
+                "{$this->logPrefix} - Error while extracting data from GraphQL response - ".$e->getMessage(),
+                [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line_no' => $e->getLine(),
+                ]
+            );
+
+            return ['data' => [], 'signal' => self::SIGNAL_NEXT_ACTION];
+        }
+
+        return ['data' => $data, 'signal' => null];
+    }
+
+    /**
+     * Records the command that will dispatch the next page, the first time a response
+     * reports that more pages are available.
+     */
+    private function captureNextPageCommand($moduleClassForGraphQL, array $response, array $queryArgs): void
+    {
+        if ($this->nextPageCommand !== null) {
+            return;
+        }
+
+        $nextPageArgs = $moduleClassForGraphQL->getNextPageArgs($response, $queryArgs);
+
+        if ($nextPageArgs === null) {
+            return;
+        }
+
+        $this->nextPageCommand = gitCommandToDispatchWorkflow(
+            $this->workflowId,
+            $this->recordIdentifier,
+            [],
+            $this->appendPlaceHolders,
+            $this->referenceId,
+            $this->page + 1,
+            $this->userId
+        );
+    }
+
+    /**
+     * Runs the queued next-page dispatch command, when the run produced one.
+     */
+    private function dispatchNextPage(): void
+    {
+        if ($this->nextPageCommand === null) {
+            return;
+        }
+
+        Artisan::call($this->nextPageCommand['command'], $this->nextPageCommand['options']);
     }
 
     /**

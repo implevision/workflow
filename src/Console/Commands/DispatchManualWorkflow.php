@@ -16,7 +16,8 @@ class DispatchManualWorkflow extends Command
                             {--module=}
                             {--recordIdentifier=}
                             {--selectedActions=}
-                            {--actionsConfig=}';
+                            {--actionsConfig=}
+                            {--userId=}';
 
     /**
      * The console command description.
@@ -39,7 +40,7 @@ class DispatchManualWorkflow extends Command
         $actionsConfig = $this->option('actionsConfig');
         $actionsConfig = $actionsConfig ? json_decode($actionsConfig, true) : [];
 
-        $userId = $this->option('userId') ?? null;
+        $userId = $this->option('userId') ?: null;
 
         if (! $module) {
             $this->error('The --module option is required.');
