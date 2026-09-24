@@ -57,7 +57,7 @@ return [
 
     'graphql' => [
         'endpoint' => env('GRAPHQL_ENDPOINT'),
-        'timeout' => env('GRAPHQL_TIMEOUT', 30),
+        'timeout' => env('GRAPHQL_TIMEOUT', 45),
         'headers' => [
             'User-Agent' => 'Odysseynext GraphQL Client',
         ],

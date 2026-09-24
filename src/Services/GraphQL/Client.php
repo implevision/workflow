@@ -16,7 +16,7 @@ class Client
     public function __construct(array $headers = [])
     {
         $this->endpoint = config('workflow.graphql.endpoint');
-        $this->timeout = config('workflow.graphql.timeout', 30);
+        $this->timeout = config('workflow.graphql.timeout', 45);
 
         $tenant = getTenant();
         $noTenantIdentifier = getNoTenantIdentifier();
