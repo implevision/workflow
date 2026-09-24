@@ -2,8 +2,9 @@
 
 namespace Taurus\Workflow\Consumer\Nova;
 
+use App\Helpers\AwsS3Helper;
+use App\Models\HoldingCompany;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,10 +18,14 @@ class Helper
     /**
      * The tenant's branding row. Nova writes branding to tb_holdingcompanies,
      * not tb_companies -- the latter's logo_url is null for every tenant.
+     *
+     * Read through the model, never DB::table: nova puts every tenant in one
+     * database and separates them with a global scope, so a raw query returns
+     * whichever row is first and hands one tenant another tenant's branding.
      */
     public static function getHoldingCompanyDetail(): ?object
     {
-        return DB::table('tb_holdingcompanies')->first();
+        return HoldingCompany::first();
     }
 
     /**
@@ -81,17 +86,11 @@ class Helper
      * Embeddable URL for the tenant's logo, or '' when there is none.
      *
      * Nova keeps branding in tb_holdingcompanies rather than on the claim
-     * graph, so there is nothing to pull through GraphQL -- App\Support     * CompanyLogo already resolves the public-bucket URL and falls back to
-     * the proxy route, and this just makes it reachable from every module.
+     * graph, so there is nothing to pull through GraphQL. AwsS3Helper owns
+     * the bucket rules, so the lookup is delegated rather than repeated here.
      */
     public static function parseCompanyLogo(): string
     {
-        if (! class_exists(\App\Support\CompanyLogo::class)) {
-            Log::warning('NOVA_WORKFLOW: company logo resolver unavailable');
-
-            return '';
-        }
-
-        return \App\Support\CompanyLogo::url();
+        return AwsS3Helper::companyLogoUrl();
     }
 }

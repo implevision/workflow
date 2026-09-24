@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Nova\GraphQL\SchemaFieldAvailableToFetch;
 
+use App\Services\ClientApiKeyService;
 use Taurus\Workflow\Consumer\Nova\Helper;
 
 class Inspection extends AbstractSchema
@@ -207,11 +208,11 @@ class Inspection extends AbstractSchema
     {
         $key = $this->resolveClientApiKey($clientId);
 
-        if (! $key || ! class_exists(\App\Services\ClientApiKeyService::class)) {
+        if (! $key) {
             return '';
         }
 
-        return app(\App\Services\ClientApiKeyService::class)->resolveXClientKey($key);
+        return app(ClientApiKeyService::class)->resolveXClientKey($key);
     }
 
     public function resolveApiKey($clientId): string
@@ -227,10 +228,10 @@ class Inspection extends AbstractSchema
     /** Shared by the ApiKey/ApiSecret/XClientKey resolvers above. */
     private function resolveClientApiKey($clientId)
     {
-        if (! $clientId || ! class_exists(\App\Services\ClientApiKeyService::class)) {
+        if (! $clientId) {
             return null;
         }
 
-        return app(\App\Services\ClientApiKeyService::class)->getValidKeyForClient((int) $clientId);
+        return app(ClientApiKeyService::class)->getValidKeyForClient((int) $clientId);
     }
 }
