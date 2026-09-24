@@ -104,6 +104,7 @@ class Inspection extends AbstractSchema
             'AttachAssignmentForm' => [
                 'GraphQLschemaToReplace' => [
                     'documents' => [
+                        'id' => null,
                         'docName' => null,
                         'docPath' => null,
                         'groupType' => [
@@ -111,9 +112,12 @@ class Inspection extends AbstractSchema
                         ],
                     ],
                 ],
+                // Highest id only, so that if more than one form is ever filed
+                // against an inspection the latest one is the one attached.
                 'jqFilter' => '['.$this->queryPath.'.documents[]?
                     | select(.groupType?.docTypeCode? == "'.self::ASSIGNMENT_FORM_DOC_TYPE.'")
-                    | { name: .docName?, path: .docPath? }]',
+                    | { id: (.id? | tonumber? // 0), name: .docName?, path: .docPath? }]
+                    | sort_by(.id) | reverse | .[0:1] | map({ name, path })',
                 'parseResultCallback' => 'generatePresignedUrl',
             ],
             // The remaining entries are for the webhook action's own placeholders.
