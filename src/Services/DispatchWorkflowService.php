@@ -474,7 +474,7 @@ class DispatchWorkflowService extends AbstractDispatchService
             }
         } else {
             if (empty(array_first($response))) {
-                Log::debug("{$this->logPrefix} - GraphQL unable to fetch the data");
+                Log::warning("{$this->logPrefix} - GraphQL unable to fetch the data");
 
                 return ['data' => [], 'signal' => self::SIGNAL_NEXT_ACTION];
             }
