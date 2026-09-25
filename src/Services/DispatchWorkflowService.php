@@ -302,8 +302,11 @@ class DispatchWorkflowService extends AbstractDispatchService
         try {
             return $this->getFileOnLocal($condition['s3FilePath']);
         } catch (\Exception $e) {
-            Log::error("{$this->logPrefix} - Failed to download feed file from S3: ".$condition['s3FilePath']);
-            Log::error("{$this->logPrefix} - ".$e->getMessage());
+            Log::error("{$this->logPrefix} - Failed to download feed file from S3.", [
+                'exception' => $e->getMessage(),
+                's3FilePath' => $condition['s3FilePath'],
+                'stackTrace' => $e->getTraceAsString(),
+            ]);
 
             return '';
         }

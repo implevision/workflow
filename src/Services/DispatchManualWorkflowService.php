@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Services;
 
 use Illuminate\Support\Facades\Log;
 use Taurus\Workflow\Models\WorkflowLog;
+use Taurus\Workflow\Services\WorkflowActions\AbstractWorkflowAction;
 
 /**
  * Class DispatchManualWorkflowService
@@ -240,7 +241,7 @@ class DispatchManualWorkflowService extends AbstractDispatchService
      * execution failed.
      */
     private function executeAction(
-        $actionToExecute,
+        AbstractWorkflowAction $actionToExecute,
         array $data,
         array $listOfMandateData,
         string $actionType,
