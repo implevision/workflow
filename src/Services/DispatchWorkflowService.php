@@ -566,12 +566,7 @@ class DispatchWorkflowService extends AbstractDispatchService
                 }
             }
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog(
-                $this->workflowId,
-                $this->jobWorkflowId,
-                'GRAPHQL_ERROR',
-                $e->getMessage()
-            );
+            $this->addWorkflowLog('GRAPHQL_ERROR', $e->getMessage());
             Log::error(
                 "{$this->logPrefix} - Error while extracting data from GraphQL response - ".$e->getMessage(),
                 [

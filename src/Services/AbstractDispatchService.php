@@ -141,6 +141,25 @@ abstract class AbstractDispatchService
     }
 
     /**
+     * Records an error against this run's workflow-log row.
+     *
+     * Wraps WorkflowService::addWorkflowLog so callers do not repeat the workflow and
+     * job-workflow ids, which are fixed for the whole run.
+     *
+     * @param  string  $errorType  Machine-readable error category, e.g. GRAPHQL_ERROR.
+     * @param  mixed  $exception  Message or context recorded alongside the error type.
+     */
+    protected function addWorkflowLog(string $errorType, $exception = null): void
+    {
+        $this->workflowService->addWorkflowLog(
+            $this->workflowId,
+            $this->jobWorkflowId,
+            $errorType,
+            $exception
+        );
+    }
+
+    /**
      * Instantiates and initialises the concrete action class for the given type,
      * wiring in the module's extended template info before handle() is called.
      *
@@ -197,12 +216,7 @@ abstract class AbstractDispatchService
                     return null;
             }
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog(
-                $this->workflowId,
-                $this->jobWorkflowId,
-                'ERROR_INITIATING_ACTION',
-                $e->getMessage()
-            );
+            $this->addWorkflowLog('ERROR_INITIATING_ACTION', $e->getMessage());
             Log::error("{$this->logPrefix} - Error while initiating ".$this->actionLabel($actionType).' action. '.$e->getMessage());
 
             throw new \RuntimeException($e->getMessage(), 0, $e);
@@ -322,7 +336,7 @@ abstract class AbstractDispatchService
                 $moduleClassForGraphQL->supportsPagination()
             );
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog($this->workflowId, $this->jobWorkflowId, 'GRAPHQL_ERROR', $e->getMessage());
+            $this->addWorkflowLog('GRAPHQL_ERROR', $e->getMessage());
             Log::error("{$this->logPrefix} - Error while preparing GraphQL query payload - ".$e->getMessage());
 
             return null;
@@ -336,7 +350,7 @@ abstract class AbstractDispatchService
 
             Log::info("{$this->logPrefix} - GraphQL Response: ", $response);
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog($this->workflowId, $this->jobWorkflowId, 'GRAPHQL_ERROR', $e->getMessage());
+            $this->addWorkflowLog('GRAPHQL_ERROR', $e->getMessage());
             Log::error("{$this->logPrefix} - Error while executing GraphQL query - ".$e->getMessage());
 
             return null;
@@ -371,9 +385,7 @@ abstract class AbstractDispatchService
 
         foreach ($listOfRequiredData as $placeHolder) {
             if (! array_key_exists($placeHolder, $fieldMapping)) {
-                $this->workflowService->addWorkflowLog(
-                    $this->workflowId,
-                    $this->jobWorkflowId,
+                $this->addWorkflowLog(
                     'FIELD_MAPPING_ISSUE',
                     'Field mapping not found for placeholder: '.$placeHolder
                 );
@@ -451,12 +463,7 @@ abstract class AbstractDispatchService
                     'data' => $data[$index],
                     'listOfMandateData' => $listOfMandateData,
                 ];
-                $this->workflowService->addWorkflowLog(
-                    $this->workflowId,
-                    $this->jobWorkflowId,
-                    'MISSING_MANDATE_DATA',
-                    $logContext
-                );
+                $this->addWorkflowLog('MISSING_MANDATE_DATA', $logContext);
                 Log::warning("{$this->logPrefix} - Missing mandate data", $logContext);
                 unset($data[$index]);
 
@@ -516,9 +523,7 @@ abstract class AbstractDispatchService
         Log::info("{$this->logPrefix} - Actual email address: ".$emailPlaceHolderValue);
 
         if (! $emailPlaceHolderValue) {
-            $this->workflowService->addWorkflowLog(
-                $this->workflowId,
-                $this->jobWorkflowId,
+            $this->addWorkflowLog(
                 'MISSING_EMAIL_ADDRESS',
                 'System was not able to find email address for the record'
             );
@@ -579,9 +584,7 @@ abstract class AbstractDispatchService
         }
 
         $implodedEmailList = implode(',', $emailPlaceHolderValue);
-        $this->workflowService->addWorkflowLog(
-            $this->workflowId,
-            $this->jobWorkflowId,
+        $this->addWorkflowLog(
             'UNAUTHORIZED_EMAIL_ADDRESS',
             'Email address not allowed in non-production env: '.$implodedEmailList
         );

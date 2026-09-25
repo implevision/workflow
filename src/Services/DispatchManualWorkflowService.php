@@ -116,9 +116,7 @@ class DispatchManualWorkflowService extends AbstractDispatchService
         );
 
         if (! $actionPayload) {
-            $this->workflowService->addWorkflowLog(
-                $this->workflowId,
-                $this->jobWorkflowId,
+            $this->addWorkflowLog(
                 'EMPTY_ACTION_CONFIG',
                 'No config found for action: '.$actionType
             );
@@ -153,9 +151,7 @@ class DispatchManualWorkflowService extends AbstractDispatchService
                 $actionPayload
             );
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog(
-                $this->workflowId,
-                $this->jobWorkflowId,
+            $this->addWorkflowLog(
                 'ERROR_GETTING_REQUIRED_DATA',
                 $e->getMessage()
             );
@@ -192,12 +188,7 @@ class DispatchManualWorkflowService extends AbstractDispatchService
                 $this->recordIdentifier
             );
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog(
-                $this->workflowId,
-                $this->jobWorkflowId,
-                'GRAPHQL_ERROR',
-                $e->getMessage()
-            );
+            $this->addWorkflowLog('GRAPHQL_ERROR', $e->getMessage());
             Log::error("{$this->logPrefix} - Error executing GraphQL query: ".$e->getMessage());
 
             return null;
@@ -232,12 +223,7 @@ class DispatchManualWorkflowService extends AbstractDispatchService
                 $queryResult['graphQLSchemaBuilder'],
             );
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog(
-                $this->workflowId,
-                $this->jobWorkflowId,
-                'GRAPHQL_ERROR',
-                $e->getMessage()
-            );
+            $this->addWorkflowLog('GRAPHQL_ERROR', $e->getMessage());
             Log::error("{$this->logPrefix} - Error parsing GraphQL response: ".$e->getMessage());
 
             return null;
@@ -278,12 +264,7 @@ class DispatchManualWorkflowService extends AbstractDispatchService
 
             return $actionToExecute->execute();
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog(
-                $this->workflowId,
-                $this->jobWorkflowId,
-                'ERROR_EXECUTING_ACTION',
-                $e->getMessage()
-            );
+            $this->addWorkflowLog('ERROR_EXECUTING_ACTION', $e->getMessage());
             Log::error("{$this->logPrefix} - Error while executing action ".$actionType.': '.$e->getMessage());
 
             return null;
