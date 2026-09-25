@@ -144,7 +144,7 @@ class DispatchWorkflowService extends AbstractDispatchService
         $graphQLQuery = $this->buildBaseGraphQLQuery();
 
         foreach ($this->workflowInfo['workFlowConditions'] as $condition) {
-            if (isset($condition['status']) && $condition['status'] === false) {
+            if (! $this->isConditionActive($condition)) {
                 Log::info("{$this->logPrefix} - Condition skipped (inactive): ".($condition['id'] ?? ''));
 
                 continue;
@@ -205,6 +205,15 @@ class DispatchWorkflowService extends AbstractDispatchService
         }
 
         return true;
+    }
+
+    /**
+     * Checks that a condition is active. A condition with no status key is treated
+     * as active, so only an explicit false switches it off.
+     */
+    private function isConditionActive(array $condition): bool
+    {
+        return ! isset($condition['status']) || $condition['status'] !== false;
     }
 
     /**
