@@ -15,7 +15,6 @@ use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
  * workflow definition, walks its conditions, and runs each condition's actions
  * against the records the workflow targets.
  *
- * @property int $workflowId The ID of the workflow.
  * @property mixed|null $workflowInfo The workflow definition loaded from the database.
  * @property array $data Caller-supplied record data; when non-empty the run is treated as manually invoked.
  * @property array $appendPlaceHolders Extra placeholders to resolve, keyed by name; a non-empty value needs no lookup.
@@ -24,6 +23,7 @@ use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
  * @property string|null $referenceId Optional external reference recorded against the job-workflow row.
  * @property WorkflowRepository $workflowRepo Repository used to reload the workflow when re-scheduling.
  * @property array|null $nextPageCommand Command to dispatch the next page, set once more pages are reported.
+ * @property string $logPrefix Overrides the inherited prefix to tag this engine's log lines.
  */
 class DispatchWorkflowService extends AbstractDispatchService
 {
@@ -33,8 +33,6 @@ class DispatchWorkflowService extends AbstractDispatchService
     private const SIGNAL_NEXT_ACTION = 'NEXT_ACTION'; // abandon this action only
 
     private const SIGNAL_STOP_ALL = 'STOP_ALL'; // stop the whole dispatch
-
-    private $workflowId;
 
     private $workflowInfo = null;
 
@@ -85,6 +83,9 @@ class DispatchWorkflowService extends AbstractDispatchService
         $this->referenceId = $referenceId;
         $this->userId = $userId;
         $this->getInfo();
+        // getInfo() leaves workflowInfo null when the lookup fails; dispatch() bails
+        // on that before anything reads the module.
+        $this->module = $this->workflowInfo['detail']['module'] ?? '';
     }
 
     /**
@@ -133,12 +134,11 @@ class DispatchWorkflowService extends AbstractDispatchService
 
         Log::info("{$this->logPrefix} - Name: ".$this->workflowInfo['detail']['name']);
 
-        $jobWorkflowId = $this->createJobWorkflowEntry($this->workflowId, $this->referenceId);
-        if (! $jobWorkflowId) {
+        if (! $this->createJobWorkflowEntry($this->workflowId, $this->referenceId)) {
             return false;
         }
 
-        setModuleForCurrentWorkflow($this->workflowInfo['detail']['module']);
+        setModuleForCurrentWorkflow($this->module);
 
         $this->nextPageCommand = null;
         $graphQLQuery = $this->buildBaseGraphQLQuery();
@@ -157,7 +157,7 @@ class DispatchWorkflowService extends AbstractDispatchService
             $graphQLQuery = $this->mergeConditionRules($condition, $graphQLQuery);
 
             foreach ($condition['instanceActions'] as $action) {
-                $signal = $this->processAction($action, $graphQLQuery, $jobWorkflowId, $feedFile);
+                $signal = $this->processAction($action, $graphQLQuery, $feedFile);
 
                 if ($signal === self::SIGNAL_SKIP_CONDITION) {
                     continue 2;
@@ -168,7 +168,7 @@ class DispatchWorkflowService extends AbstractDispatchService
                 }
             }
 
-            WorkflowLog::markWorkflowCompleted($this->workflowId, $jobWorkflowId);
+            WorkflowLog::markWorkflowCompleted($this->workflowId, $this->jobWorkflowId);
         }
 
         $this->dispatchNextPage();
@@ -224,7 +224,7 @@ class DispatchWorkflowService extends AbstractDispatchService
         if ($this->recordIdentifier && ! $this->isManuallyInvoked) {
             try {
                 $graphQLQuery = $this->workflowService->getQueryForRecordIdentifier(
-                    $this->workflowInfo['detail']['module'],
+                    $this->module,
                     $this->recordIdentifier
                 );
 
@@ -264,7 +264,7 @@ class DispatchWorkflowService extends AbstractDispatchService
 
         try {
             return $this->workflowService->getQueryForEffectiveAction(
-                $this->workflowInfo['detail']['module'],
+                $this->module,
                 $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequency'],
                 $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionFrequencyType'],
                 $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow']['executionEventIncident'],
@@ -338,26 +338,15 @@ class DispatchWorkflowService extends AbstractDispatchService
      * Returns a signal constant to control the outer dispatch loops, or null to carry on
      * with the next action.
      */
-    private function processAction(array $action, array $graphQLQuery, int $jobWorkflowId, string $feedFile): ?string
+    private function processAction(array $action, array $graphQLQuery, string $feedFile): ?string
     {
         $actionType = $action['actionType'];
         $actionPayload = $action['payload'];
 
-        $this->createInProgressLog(
-            $this->workflowId,
-            $jobWorkflowId,
-            $this->workflowInfo['detail']['module'],
-            $actionType
-        );
+        $this->createInProgressLog($actionType);
 
         try {
-            $actionToExecute = $this->instantiateAction(
-                $actionType,
-                $actionPayload,
-                $this->workflowInfo['detail']['module'],
-                $this->workflowId,
-                $jobWorkflowId
-            );
+            $actionToExecute = $this->instantiateAction($actionType, $actionPayload);
         } catch (\RuntimeException $e) {
             // Initialisation failed and has already been logged; skip the rest of this condition.
             return self::SIGNAL_SKIP_CONDITION;
@@ -392,7 +381,6 @@ class DispatchWorkflowService extends AbstractDispatchService
                 $graphQLQuery,
                 $listOfRequiredData,
                 $actionType,
-                $jobWorkflowId,
                 $placeHolderWithValues
             );
 
@@ -421,8 +409,6 @@ class DispatchWorkflowService extends AbstractDispatchService
                 $listOfMandateData,
                 $actionPayload,
                 $actionType,
-                $this->workflowId,
-                $jobWorkflowId,
                 $placeHolderToExtract
             );
 
@@ -430,7 +416,7 @@ class DispatchWorkflowService extends AbstractDispatchService
                 return null;
             }
 
-            $actionToExecute->setWorkflowData($this->workflowId, $jobWorkflowId, $this->recordIdentifier);
+            $actionToExecute->setWorkflowData($this->workflowId, $this->jobWorkflowId, $this->recordIdentifier);
             $actionToExecute->setDataForAction($feedFile, $data);
             $actionToExecute->execute();
         } catch (\Exception $e) {
@@ -456,17 +442,13 @@ class DispatchWorkflowService extends AbstractDispatchService
         array $graphQLQuery,
         array $listOfRequiredData,
         string $actionType,
-        int $jobWorkflowId,
         array $placeHolderWithValues
     ): array {
         $queryResult = $this->buildAndExecuteGraphQLQuery(
-            $this->workflowInfo['detail']['module'],
             $this->appendPlaceHolders,
             $listOfRequiredData,
             $graphQLQuery,
             true,
-            $this->workflowId,
-            $jobWorkflowId,
             function ($moduleClassForGraphQL) {
                 $moduleClassForGraphQL->setPage($this->page);
                 $moduleClassForGraphQL->setQueryArgsContext(
@@ -501,7 +483,6 @@ class DispatchWorkflowService extends AbstractDispatchService
                 $queryResult,
                 $listOfRequiredData,
                 $actionType,
-                $jobWorkflowId,
                 $placeHolderWithValues
             );
 
@@ -532,7 +513,6 @@ class DispatchWorkflowService extends AbstractDispatchService
         array $queryResult,
         array $listOfRequiredData,
         string $actionType,
-        int $jobWorkflowId,
         array $placeHolderWithValues
     ): array {
         $moduleClassForGraphQL = $queryResult['moduleClassForGraphQL'];
@@ -558,8 +538,6 @@ class DispatchWorkflowService extends AbstractDispatchService
                     $queryResult['fieldMapping'],
                     $moduleClassForGraphQL,
                     $queryResult['graphQLSchemaBuilder'],
-                    $this->workflowId,
-                    $jobWorkflowId
                 );
 
                 $parsedData = array_merge($parsedData, $placeHolderWithValues);
@@ -581,7 +559,7 @@ class DispatchWorkflowService extends AbstractDispatchService
         } catch (\Exception $e) {
             $this->workflowService->addWorkflowLog(
                 $this->workflowId,
-                $jobWorkflowId,
+                $this->jobWorkflowId,
                 'GRAPHQL_ERROR',
                 $e->getMessage()
             );

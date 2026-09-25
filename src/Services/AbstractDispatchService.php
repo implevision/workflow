@@ -32,6 +32,9 @@ use Taurus\Workflow\Services\WorkflowActions\WorkflowOutputAction;
  *
  * @property JobWorkflowRepository $jobWorkflowRepo Repository used to create the job-workflow tracking rows.
  * @property WorkflowService $workflowService Provides the module GraphQL mappings, template info, query builders and error logging.
+ * @property int $workflowId The saved workflow being run; 0 for a manual run.
+ * @property int $jobWorkflowId The job-workflow row tracking this run, set once creation succeeds.
+ * @property string $module Module the run operates on, used to resolve its GraphQL mapping and template info.
  * @property int|string $recordIdentifier Identifier of the record the run targets; 0 when not scoped to one record.
  * @property int|string|null $userId The user who triggered the run, or null when triggered by the system.
  * @property string $logPrefix Prefix on every log line, so the two engines stay distinguishable.
@@ -46,6 +49,12 @@ abstract class AbstractDispatchService
     protected $jobWorkflowRepo;
 
     protected $workflowService;
+
+    protected int $workflowId = 0;
+
+    protected int $jobWorkflowId = 0;
+
+    protected string $module = '';
 
     protected int|string $recordIdentifier = 0;
 
@@ -68,8 +77,9 @@ abstract class AbstractDispatchService
     }
 
     /**
-     * Creates a job-workflow tracking record in the database and registers its ID
-     * globally, so the rest of the run can attribute its work to this job.
+     * Creates a job-workflow tracking record in the database, stores its ID on the
+     * engine and registers it globally, so the rest of the run can attribute its
+     * work to this job.
      *
      * Returns 0 (falsy) on failure so the caller can short-circuit; the error is logged.
      *
@@ -88,10 +98,10 @@ abstract class AbstractDispatchService
                 'reference_id' => $referenceId,
             ];
 
-            $jobWorkflowId = $this->jobWorkflowRepo->createSingle($jobWorkflow);
-            setRunningJobWorkflowId($jobWorkflowId);
+            $this->jobWorkflowId = $this->jobWorkflowRepo->createSingle($jobWorkflow);
+            setRunningJobWorkflowId($this->jobWorkflowId);
 
-            return $jobWorkflowId;
+            return $this->jobWorkflowId;
         } catch (\Exception $e) {
             Log::error("{$this->logPrefix} - Error while creating entry in JOB WORKFLOW table. ".$e->getMessage());
 
@@ -110,17 +120,14 @@ abstract class AbstractDispatchService
      * exact action config it was handed.
      */
     protected function createInProgressLog(
-        int $workflowId,
-        int $jobWorkflowId,
-        string $module,
         string $actionType,
         ?array $actionConfigPayload = null
     ): WorkflowLog {
         $attributes = [
-            'job_workflow_id' => $jobWorkflowId ?: null,
-            'workflow_id' => $workflowId,
+            'job_workflow_id' => $this->jobWorkflowId ?: null,
+            'workflow_id' => $this->workflowId,
             'record_identifier' => $this->recordIdentifier ?? null,
-            'module' => $module,
+            'module' => $this->module,
             'status' => WorkflowLog::STATUS_IN_PROGRESS,
             'action_type' => $actionType,
             'user_id' => $this->userId,
@@ -149,9 +156,6 @@ abstract class AbstractDispatchService
     protected function instantiateAction(
         string $actionType,
         array $actionPayload,
-        string $module,
-        int $workflowId,
-        int $jobWorkflowId,
         array $supportedActionTypes = self::SUPPORTED_ACTION_TYPES
     ): ?AbstractWorkflowAction {
         if (! in_array($actionType, $supportedActionTypes, true)) {
@@ -161,7 +165,7 @@ abstract class AbstractDispatchService
         }
 
         $extendedTemplateInfoForModule = $this->workflowService->getExtendedTemplateInfoForModule(
-            $module,
+            $this->module,
             $actionPayload
         );
 
@@ -194,8 +198,8 @@ abstract class AbstractDispatchService
             }
         } catch (\Exception $e) {
             $this->workflowService->addWorkflowLog(
-                $workflowId,
-                $jobWorkflowId,
+                $this->workflowId,
+                $this->jobWorkflowId,
                 'ERROR_INITIATING_ACTION',
                 $e->getMessage()
             );
@@ -284,17 +288,14 @@ abstract class AbstractDispatchService
      * moduleClassForGraphQL, fieldMapping, graphQLSchemaBuilder, queryArgs, response
      */
     protected function buildAndExecuteGraphQLQuery(
-        string $module,
         array $appendPlaceHolders,
         array $listOfRequiredData,
         array $graphQLQuery,
         bool $useHeaders,
-        int $workflowId,
-        int $jobWorkflowId,
         ?\Closure $configureQuery = null
     ): ?array {
         try {
-            $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($module, $appendPlaceHolders);
+            $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->module, $appendPlaceHolders);
             $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
             $queryName = $moduleClassForGraphQL->getQueryName();
             $graphQLHeaders = $useHeaders ? $moduleClassForGraphQL->getHeaders() : [];
@@ -321,7 +322,7 @@ abstract class AbstractDispatchService
                 $moduleClassForGraphQL->supportsPagination()
             );
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog($workflowId, $jobWorkflowId, 'GRAPHQL_ERROR', $e->getMessage());
+            $this->workflowService->addWorkflowLog($this->workflowId, $this->jobWorkflowId, 'GRAPHQL_ERROR', $e->getMessage());
             Log::error("{$this->logPrefix} - Error while preparing GraphQL query payload - ".$e->getMessage());
 
             return null;
@@ -335,7 +336,7 @@ abstract class AbstractDispatchService
 
             Log::info("{$this->logPrefix} - GraphQL Response: ", $response);
         } catch (\Exception $e) {
-            $this->workflowService->addWorkflowLog($workflowId, $jobWorkflowId, 'GRAPHQL_ERROR', $e->getMessage());
+            $this->workflowService->addWorkflowLog($this->workflowId, $this->jobWorkflowId, 'GRAPHQL_ERROR', $e->getMessage());
             Log::error("{$this->logPrefix} - Error while executing GraphQL query - ".$e->getMessage());
 
             return null;
@@ -365,16 +366,14 @@ abstract class AbstractDispatchService
         array $fieldMapping,
         $moduleClassForGraphQL,
         GraphQLSchemaBuilderService $graphQLSchemaBuilder,
-        int $workflowId,
-        int $jobWorkflowId
     ): array {
         $parsedData = [];
 
         foreach ($listOfRequiredData as $placeHolder) {
             if (! array_key_exists($placeHolder, $fieldMapping)) {
                 $this->workflowService->addWorkflowLog(
-                    $workflowId,
-                    $jobWorkflowId,
+                    $this->workflowId,
+                    $this->jobWorkflowId,
                     'FIELD_MAPPING_ISSUE',
                     'Field mapping not found for placeholder: '.$placeHolder
                 );
@@ -428,8 +427,6 @@ abstract class AbstractDispatchService
         array $listOfMandateData,
         array $actionPayload,
         string $actionType,
-        int $workflowId,
-        int $jobWorkflowId,
         array $placeHolderToExtract = []
     ): array|false {
         $hasPriorDataForWorkflow = false;
@@ -455,8 +452,8 @@ abstract class AbstractDispatchService
                     'listOfMandateData' => $listOfMandateData,
                 ];
                 $this->workflowService->addWorkflowLog(
-                    $workflowId,
-                    $jobWorkflowId,
+                    $this->workflowId,
+                    $this->jobWorkflowId,
                     'MISSING_MANDATE_DATA',
                     $logContext
                 );
@@ -471,9 +468,7 @@ abstract class AbstractDispatchService
                     $actionPayload,
                     $data,
                     $index,
-                    $placeHolderToExtract,
-                    $workflowId,
-                    $jobWorkflowId
+                    $placeHolderToExtract
                 );
 
                 if ($emailAddresses === false) {
@@ -505,8 +500,6 @@ abstract class AbstractDispatchService
         array $data,
         int $index,
         array $placeHolderToExtract,
-        int $workflowId,
-        int $jobWorkflowId
     ): array|false {
         if (! empty($actionPayload['emailRecipient']) && strtoupper($actionPayload['emailRecipient']) == 'CUSTOM') {
             $emailPlaceHolderValue = $actionPayload['customEmailRecipients'];
@@ -524,15 +517,15 @@ abstract class AbstractDispatchService
 
         if (! $emailPlaceHolderValue) {
             $this->workflowService->addWorkflowLog(
-                $workflowId,
-                $jobWorkflowId,
+                $this->workflowId,
+                $this->jobWorkflowId,
                 'MISSING_EMAIL_ADDRESS',
                 'System was not able to find email address for the record'
             );
         }
 
         if (config('app.env') != 'production') {
-            return $this->filterEmailForNonProduction($emailPlaceHolderValue, $actionPayload, $workflowId, $jobWorkflowId);
+            return $this->filterEmailForNonProduction($emailPlaceHolderValue, $actionPayload);
         }
 
         return explode(',', $emailPlaceHolderValue);
@@ -549,8 +542,6 @@ abstract class AbstractDispatchService
     protected function filterEmailForNonProduction(
         string $emailPlaceHolderValue,
         array $actionPayload,
-        int $workflowId,
-        int $jobWorkflowId
     ): array|false {
         $sendAllEmailsTo = config('workflow.send_all_workflow_email_to');
 
@@ -589,8 +580,8 @@ abstract class AbstractDispatchService
 
         $implodedEmailList = implode(',', $emailPlaceHolderValue);
         $this->workflowService->addWorkflowLog(
-            $workflowId,
-            $jobWorkflowId,
+            $this->workflowId,
+            $this->jobWorkflowId,
             'UNAUTHORIZED_EMAIL_ADDRESS',
             'Email address not allowed in non-production env: '.$implodedEmailList
         );
