@@ -196,7 +196,6 @@ class DispatchManualWorkflowService extends AbstractDispatchService
         }
 
         $queryResult = $this->buildAndExecuteGraphQLQuery(
-            [],
             $listOfRequiredData,
             $graphQLQuery,
             false,
@@ -206,11 +205,10 @@ class DispatchManualWorkflowService extends AbstractDispatchService
             return null;
         }
 
-        $moduleClassForGraphQL = $queryResult['moduleClassForGraphQL'];
         $queryName = $queryResult['queryName'];
         $queryRootNode = $queryResult['response'][$queryName] ?? [];
 
-        $record = $moduleClassForGraphQL->supportsPagination()
+        $record = $this->moduleSchema()->supportsPagination()
             ? ($queryRootNode['data'][0] ?? [])
             : $queryRootNode;
 
@@ -220,7 +218,6 @@ class DispatchManualWorkflowService extends AbstractDispatchService
                 [$queryName => $record],
                 $listOfRequiredData,
                 $queryResult['fieldMapping'],
-                $moduleClassForGraphQL,
                 $queryResult['graphQLSchemaBuilder'],
             );
         } catch (\Exception $e) {

@@ -217,6 +217,34 @@ class DispatchWorkflowService extends AbstractDispatchService
     }
 
     /**
+     * {@inheritdoc}
+     */
+    protected function appendedPlaceHolders(): array
+    {
+        return $this->appendPlaceHolders;
+    }
+
+    /**
+     * Seeds the page and the workflow's date/event context, which modules with named
+     * query args (PolicyRenewal, DeclarationPage) read back in getQueryArgs().
+     */
+    protected function configureModuleSchema($moduleSchema): void
+    {
+        $moduleSchema->setPage($this->page);
+        $moduleSchema->setQueryArgsContext(
+            $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow'] ?? []
+        );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function currentPage(): int
+    {
+        return $this->page;
+    }
+
+    /**
      * Builds the base GraphQL filter query from the effective-action configuration and
      * the record identifier.
      *
@@ -457,25 +485,17 @@ class DispatchWorkflowService extends AbstractDispatchService
         array $placeHolderWithValues
     ): array {
         $queryResult = $this->buildAndExecuteGraphQLQuery(
-            $this->appendPlaceHolders,
             $listOfRequiredData,
             $graphQLQuery,
             true,
-            function ($moduleClassForGraphQL) {
-                $moduleClassForGraphQL->setPage($this->page);
-                $moduleClassForGraphQL->setQueryArgsContext(
-                    $this->workflowInfo['when']['dateTimeInfoToExecuteWorkflow'] ?? []
-                );
-
-                return $this->page;
-            }
+            true
         );
 
         if ($queryResult === null) {
             return ['data' => [], 'signal' => self::SIGNAL_NEXT_ACTION];
         }
 
-        $moduleClassForGraphQL = $queryResult['moduleClassForGraphQL'];
+        $moduleClassForGraphQL = $this->moduleSchema();
         $response = $queryResult['response'];
 
         // If schema provides custom record extraction, use it directly (skip jqFilter)
@@ -505,7 +525,7 @@ class DispatchWorkflowService extends AbstractDispatchService
             $data = $extraction['data'];
         }
 
-        $this->captureNextPageCommand($moduleClassForGraphQL, $response, $queryResult['queryArgs']);
+        $this->captureNextPageCommand($response, $queryResult['queryArgs']);
 
         return ['data' => $data, 'signal' => null];
     }
@@ -527,7 +547,7 @@ class DispatchWorkflowService extends AbstractDispatchService
         string $actionType,
         array $placeHolderWithValues
     ): array {
-        $moduleClassForGraphQL = $queryResult['moduleClassForGraphQL'];
+        $moduleClassForGraphQL = $this->moduleSchema();
         $queryName = $moduleClassForGraphQL->getQueryName();
         $queryRootNode = $queryResult['response'][$queryName] ?? [];
 
@@ -548,8 +568,7 @@ class DispatchWorkflowService extends AbstractDispatchService
                     $recordResponse,
                     $listOfRequiredData,
                     $queryResult['fieldMapping'],
-                    $moduleClassForGraphQL,
-                    $queryResult['graphQLSchemaBuilder'],
+                    $queryResult['graphQLSchemaBuilder']
                 );
 
                 $parsedData = array_merge($parsedData, $placeHolderWithValues);
@@ -589,13 +608,13 @@ class DispatchWorkflowService extends AbstractDispatchService
      * Records the command that will dispatch the next page, the first time a response
      * reports that more pages are available.
      */
-    private function captureNextPageCommand($moduleClassForGraphQL, array $response, array $queryArgs): void
+    private function captureNextPageCommand(array $response, array $queryArgs): void
     {
         if ($this->nextPageCommand !== null) {
             return;
         }
 
-        $nextPageArgs = $moduleClassForGraphQL->getNextPageArgs($response, $queryArgs);
+        $nextPageArgs = $this->moduleSchema()->getNextPageArgs($response, $queryArgs);
 
         if ($nextPageArgs === null) {
             return;

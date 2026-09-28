@@ -35,6 +35,7 @@ use Taurus\Workflow\Services\WorkflowActions\WorkflowOutputAction;
  * @property int $workflowId The saved workflow being run; 0 for a manual run.
  * @property int $jobWorkflowId The job-workflow row tracking this run, set once creation succeeds.
  * @property string $module Module the run operates on, used to resolve its GraphQL mapping and template info.
+ * @property mixed $moduleSchema The module's GraphQL schema object for this run, created on first use.
  * @property int|string $recordIdentifier Identifier of the record the run targets; 0 when not scoped to one record.
  * @property int|string|null $userId The user who triggered the run, or null when triggered by the system.
  * @property string $logPrefix Prefix on every log line, so the two engines stay distinguishable.
@@ -56,6 +57,8 @@ abstract class AbstractDispatchService
 
     protected string $module = '';
 
+    protected $moduleSchema = null;
+
     protected int|string $recordIdentifier = 0;
 
     protected int|string|null $userId = null;
@@ -74,6 +77,54 @@ abstract class AbstractDispatchService
     {
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
         $this->workflowService = app(WorkflowService::class);
+    }
+
+    /**
+     * The module's GraphQL schema object for this run, created on first use.
+     *
+     * Everything the object is built from - the module, the appended placeholders and
+     * whatever configureModuleSchema() seeds - is fixed for the whole run, so a single
+     * instance serves every action.
+     */
+    protected function moduleSchema()
+    {
+        if ($this->moduleSchema === null) {
+            $this->moduleSchema = $this->workflowService->getGraphQLQueryMappingService(
+                $this->module,
+                $this->appendedPlaceHolders()
+            );
+            $this->configureModuleSchema($this->moduleSchema);
+        }
+
+        return $this->moduleSchema;
+    }
+
+    /**
+     * Placeholders seeded into the schema object when it is created. Only the
+     * configured-workflow engine has them.
+     */
+    protected function appendedPlaceHolders(): array
+    {
+        return [];
+    }
+
+    /**
+     * Hook to seed engine-specific state on the freshly created schema object, before
+     * anything reads from it. No-op by default.
+     *
+     * @param  mixed  $moduleSchema  The newly created schema object.
+     */
+    protected function configureModuleSchema($moduleSchema): void
+    {
+        // Nothing to seed by default.
+    }
+
+    /**
+     * Page of records this run requests, for modules that paginate.
+     */
+    protected function currentPage(): int
+    {
+        return 0;
     }
 
     /**
@@ -289,43 +340,34 @@ abstract class AbstractDispatchService
     }
 
     /**
-     * Builds the GraphQL request payload for a module and executes it.
-     *
-     * $configureQuery, when given, is invoked with the resolved module GraphQL-mapping
-     * instance right after it is created - this is DispatchWorkflowService's hook for
-     * pagination (setPage/setQueryArgsContext) before getQueryArgs() and the query
-     * generation run. The manual engine has no such concept and omits it, matching its
-     * original unpaginated query.
+     * Builds the GraphQL request payload from this run's module schema and executes it.
      *
      * Returns null on failure (the query-build and query-execute steps are logged
      * separately with GRAPHQL_ERROR), or an array with:
-     * moduleClassForGraphQL, fieldMapping, graphQLSchemaBuilder, queryArgs, response
+     * fieldMapping, graphQLSchemaBuilder, queryName, queryArgs, response.
      */
     protected function buildAndExecuteGraphQLQuery(
-        array $appendPlaceHolders,
         array $listOfRequiredData,
         array $graphQLQuery,
         bool $useHeaders,
-        ?\Closure $configureQuery = null
+        bool $useQueryArgs = false
     ): ?array {
         try {
-            $moduleClassForGraphQL = $this->workflowService->getGraphQLQueryMappingService($this->module, $appendPlaceHolders);
+            $moduleClassForGraphQL = $this->moduleSchema();
             $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
             $queryName = $moduleClassForGraphQL->getQueryName();
             $graphQLHeaders = $useHeaders ? $moduleClassForGraphQL->getHeaders() : [];
 
+            // The builder accumulates fields, so it stays per-call even though the
+            // schema object above is shared for the whole run.
             $graphQLSchemaBuilder = new GraphQLSchemaBuilderService($fieldMapping);
             foreach ($listOfRequiredData as $placeHolder) {
                 $graphQLSchemaBuilder->addField($placeHolder);
             }
             $schemaData = $graphQLSchemaBuilder->getSchema();
 
-            $queryArgs = [];
-            $page = 0;
-            if ($configureQuery !== null) {
-                $page = $configureQuery($moduleClassForGraphQL) ?? 0;
-                $queryArgs = $moduleClassForGraphQL->getQueryArgs();
-            }
+            $queryArgs = $useQueryArgs ? $moduleClassForGraphQL->getQueryArgs() : [];
+            $page = $useQueryArgs ? $this->currentPage() : 0;
 
             $graphQLRequestPayload = $graphQLSchemaBuilder->generateGraphQLQuery(
                 $schemaData,
@@ -357,7 +399,6 @@ abstract class AbstractDispatchService
         }
 
         return [
-            'moduleClassForGraphQL' => $moduleClassForGraphQL,
             'fieldMapping' => $fieldMapping,
             'graphQLSchemaBuilder' => $graphQLSchemaBuilder,
             'queryName' => $queryName,
@@ -378,9 +419,9 @@ abstract class AbstractDispatchService
         array $response,
         array $listOfRequiredData,
         array $fieldMapping,
-        $moduleClassForGraphQL,
         GraphQLSchemaBuilderService $graphQLSchemaBuilder,
     ): array {
+        $moduleClassForGraphQL = $this->moduleSchema();
         $parsedData = [];
 
         foreach ($listOfRequiredData as $placeHolder) {
