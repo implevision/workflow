@@ -43,9 +43,30 @@ use Taurus\Workflow\Services\WorkflowActions\WorkflowOutputAction;
 abstract class AbstractDispatchService
 {
     /**
-     * All action types the dispatch engines know how to instantiate.
+     * Every action type the dispatch engines can run, and what each one needs:
+     * the class to build, the label used in log lines, and whether the module's
+     * extended template info applies to it.
+     *
+     * This is the single source of truth for action types - supported types, class
+     * resolution and log labels are all derived from it.
      */
-    protected const SUPPORTED_ACTION_TYPES = ['EMAIL', 'WEB_HOOK', 'WORKFLOW_OUTPUT'];
+    protected const ACTIONS = [
+        'EMAIL' => [
+            'class' => EmailAction::class,
+            'label' => 'email',
+            'usesTemplateInfo' => true,
+        ],
+        'WEB_HOOK' => [
+            'class' => WebhookAction::class,
+            'label' => 'webhook',
+            'usesTemplateInfo' => false,
+        ],
+        'WORKFLOW_OUTPUT' => [
+            'class' => WorkflowOutputAction::class,
+            'label' => 'workflow output',
+            'usesTemplateInfo' => true,
+        ],
+    ];
 
     protected $jobWorkflowRepo;
 
@@ -219,53 +240,42 @@ abstract class AbstractDispatchService
      * appropriate loop signal (DispatchWorkflowService skips the rest of the
      * condition; DispatchManualWorkflowService skips to the next selected action).
      *
-     * @param  array  $supportedActionTypes  Action types this engine accepts.
+     * @param  array|null  $supportedActionTypes  Action types this engine accepts;
+     *                                            null means every type in ACTIONS.
      *
      * @throws \RuntimeException When the action class fails to initialise.
      */
     protected function instantiateAction(
         string $actionType,
         array $actionPayload,
-        array $supportedActionTypes = self::SUPPORTED_ACTION_TYPES
+        ?array $supportedActionTypes = null
     ): ?AbstractWorkflowAction {
-        if (! in_array($actionType, $supportedActionTypes, true)) {
+        $supportedActionTypes ??= array_keys(self::ACTIONS);
+
+        if (! in_array($actionType, $supportedActionTypes, true) || ! isset(self::ACTIONS[$actionType])) {
             Log::error("{$this->logPrefix} - Error while initiating action. ".$actionType);
 
             return null;
         }
 
-        $extendedTemplateInfoForModule = $this->workflowService->getExtendedTemplateInfoForModule(
-            $this->module,
-            $actionPayload
-        );
+        $actionConfig = self::ACTIONS[$actionType];
 
         try {
-            switch ($actionType) {
-                case 'EMAIL':
-                    $action = new EmailAction($actionType, $actionPayload);
-                    $action->setExtendedTemplateInfo($extendedTemplateInfoForModule);
-                    $action->handle();
+            $actionClass = $actionConfig['class'];
+            $action = new $actionClass($actionType, $actionPayload);
 
-                    return $action;
-
-                case 'WEB_HOOK':
-                    $action = new WebhookAction($actionType, $actionPayload);
-                    $action->handle();
-
-                    return $action;
-
-                case 'WORKFLOW_OUTPUT':
-                    $action = new WorkflowOutputAction($actionType, $actionPayload);
-                    $action->setExtendedTemplateInfo($extendedTemplateInfoForModule);
-                    $action->handle();
-
-                    return $action;
-
-                default:
-                    Log::error("{$this->logPrefix} - Error while initiating action. ".$actionType);
-
-                    return null;
+            if ($actionConfig['usesTemplateInfo']) {
+                $action->setExtendedTemplateInfo(
+                    $this->workflowService->getExtendedTemplateInfoForModule(
+                        $this->module,
+                        $actionPayload
+                    )
+                );
             }
+
+            $action->handle();
+
+            return $action;
         } catch (\Exception $e) {
             $this->addWorkflowLog('ERROR_INITIATING_ACTION', $e->getMessage());
             Log::error("{$this->logPrefix} - Error while initiating ".$this->actionLabel($actionType).' action. '.$e->getMessage());
@@ -279,12 +289,7 @@ abstract class AbstractDispatchService
      */
     private function actionLabel(string $actionType): string
     {
-        return match ($actionType) {
-            'EMAIL' => 'email',
-            'WEB_HOOK' => 'webhook',
-            'WORKFLOW_OUTPUT' => 'workflow output',
-            default => $actionType,
-        };
+        return self::ACTIONS[$actionType]['label'] ?? $actionType;
     }
 
     /**
