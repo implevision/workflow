@@ -623,7 +623,7 @@ abstract class AbstractDispatchService
         $finalList = [...$allowedEmailAddressList1, ...$allowedEmailAddressList2];
 
         if ($executeEmailAction && count($finalList) > 0) {
-            return $emailPlaceHolderValue;
+            return $finalList;
         }
 
         $implodedEmailList = implode(',', $emailPlaceHolderValue);
