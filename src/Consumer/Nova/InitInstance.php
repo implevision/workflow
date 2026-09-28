@@ -26,15 +26,21 @@ class InitInstance
      * Retrieves the GraphQL query mapping for a specified module.
      *
      * @param  string  $module  The name of the module(with namespace) for which to retrieve the query mapping.
+     * @param  array  $appendPlaceHolders  Placeholders seeded onto the schema instance.
      * @return mixed An associative array representing the GraphQL query mapping for the specified module.
      */
-    public function getGraphQLQueryMappingService($module)
+    public function getGraphQLQueryMappingService($module, $appendPlaceHolders = [])
     {
         $module = $this->getModuleName($module);
         $graphQLQueryMappingClass = "Taurus\\Workflow\\Consumer\\Nova\\GraphQL\\SchemaFieldAvailableToFetch\\{$module}";
 
         if (class_exists($graphQLQueryMappingClass)) {
-            return new $graphQLQueryMappingClass;
+            $instance = new $graphQLQueryMappingClass;
+            if (! empty($appendPlaceHolders)) {
+                $instance->setAppendedPlaceHolders($appendPlaceHolders);
+            }
+
+            return $instance;
         } else {
             throw new \Exception("Graph QL query mapping class '$graphQLQueryMappingClass' does not exist.");
         }
