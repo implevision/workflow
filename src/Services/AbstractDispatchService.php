@@ -390,7 +390,9 @@ abstract class AbstractDispatchService
             $graphQLClient = new GraphQLClient($graphQLHeaders);
             $response = $graphQLClient->query($graphQLRequestPayload);
 
-            Log::info("{$this->logPrefix} - GraphQL Response: ", $response);
+            if (config('app.env') != 'production') {
+                Log::info("{$this->logPrefix} - GraphQL Response: ", $response);
+            }
         } catch (\Exception $e) {
             $this->addWorkflowLog('GRAPHQL_ERROR', $e->getMessage());
             Log::error("{$this->logPrefix} - Error while executing GraphQL query - ".$e->getMessage());
