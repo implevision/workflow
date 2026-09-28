@@ -205,7 +205,7 @@ class DispatchManualWorkflowService extends AbstractDispatchService
             return null;
         }
 
-        $queryName = $queryResult['queryName'];
+        $queryName = $this->moduleSchema()->getQueryName();
         $queryRootNode = $queryResult['response'][$queryName] ?? [];
 
         $record = $this->moduleSchema()->supportsPagination()
@@ -217,8 +217,7 @@ class DispatchManualWorkflowService extends AbstractDispatchService
             $parsedData = $this->parseGraphQLResponse(
                 [$queryName => $record],
                 $listOfRequiredData,
-                $queryResult['fieldMapping'],
-                $queryResult['graphQLSchemaBuilder'],
+                $queryResult['graphQLSchemaBuilder']
             );
         } catch (\Exception $e) {
             $this->addWorkflowLog('GRAPHQL_ERROR', $e->getMessage());

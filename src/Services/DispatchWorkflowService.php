@@ -525,7 +525,7 @@ class DispatchWorkflowService extends AbstractDispatchService
             $data = $extraction['data'];
         }
 
-        $this->captureNextPageCommand($response, $queryResult['queryArgs']);
+        $this->captureNextPageCommand($response);
 
         return ['data' => $data, 'signal' => null];
     }
@@ -567,7 +567,6 @@ class DispatchWorkflowService extends AbstractDispatchService
                 $parsedData = $this->parseGraphQLResponse(
                     $recordResponse,
                     $listOfRequiredData,
-                    $queryResult['fieldMapping'],
                     $queryResult['graphQLSchemaBuilder']
                 );
 
@@ -608,13 +607,14 @@ class DispatchWorkflowService extends AbstractDispatchService
      * Records the command that will dispatch the next page, the first time a response
      * reports that more pages are available.
      */
-    private function captureNextPageCommand(array $response, array $queryArgs): void
+    private function captureNextPageCommand(array $response): void
     {
         if ($this->nextPageCommand !== null) {
             return;
         }
 
-        $nextPageArgs = $this->moduleSchema()->getNextPageArgs($response, $queryArgs);
+        $moduleSchema = $this->moduleSchema();
+        $nextPageArgs = $moduleSchema->getNextPageArgs($response, $moduleSchema->getQueryArgs());
 
         if ($nextPageArgs === null) {
             return;

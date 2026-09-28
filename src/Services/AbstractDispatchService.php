@@ -343,8 +343,7 @@ abstract class AbstractDispatchService
      * Builds the GraphQL request payload from this run's module schema and executes it.
      *
      * Returns null on failure (the query-build and query-execute steps are logged
-     * separately with GRAPHQL_ERROR), or an array with:
-     * fieldMapping, graphQLSchemaBuilder, queryName, queryArgs, response.
+     * separately with GRAPHQL_ERROR), or an array with graphQLSchemaBuilder and response.
      */
     protected function buildAndExecuteGraphQLQuery(
         array $listOfRequiredData,
@@ -401,10 +400,7 @@ abstract class AbstractDispatchService
         }
 
         return [
-            'fieldMapping' => $fieldMapping,
             'graphQLSchemaBuilder' => $graphQLSchemaBuilder,
-            'queryName' => $queryName,
-            'queryArgs' => $queryArgs,
             'response' => $response,
         ];
     }
@@ -420,10 +416,10 @@ abstract class AbstractDispatchService
     protected function parseGraphQLResponse(
         array $response,
         array $listOfRequiredData,
-        array $fieldMapping,
         GraphQLSchemaBuilderService $graphQLSchemaBuilder,
     ): array {
         $moduleClassForGraphQL = $this->moduleSchema();
+        $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
         $parsedData = [];
 
         foreach ($listOfRequiredData as $placeHolder) {
