@@ -29,7 +29,7 @@ class ExecuteWorkflowFromLogs extends Command
      *
      * @var int
      */
-    protected const int BATCH_SIZE = 20;
+    protected const BATCH_SIZE = 20;
 
     /**
      * Execute the console command.
