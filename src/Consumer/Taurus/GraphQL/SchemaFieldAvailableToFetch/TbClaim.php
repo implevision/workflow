@@ -9,8 +9,8 @@ use Taurus\Workflow\Consumer\Taurus\Helper;
 class TbClaim extends AbstractSchema
 {
     private const COVERAGE_DESC = [
-        'Building' => 'Building',
-        'Content' => 'Content',
+        'Building' => 'BUILDING',
+        'Content' => 'CONTENT',
     ];
 
     private const TRAN_TYPE = [
