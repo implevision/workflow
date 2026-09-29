@@ -621,7 +621,7 @@ abstract class AbstractDispatchService
             }
         }
 
-        $finalList = [...$allowedEmailAddressList1, ...$allowedEmailAddressList2];
+        $finalList = array_values(array_unique([...$allowedEmailAddressList1, ...$allowedEmailAddressList2]));
 
         if ($executeEmailAction && count($finalList) > 0) {
             return $finalList;
