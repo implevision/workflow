@@ -85,6 +85,13 @@ class TbClaim extends AbstractSchema
         return $this->queryName;
     }
 
+    public function getRelationFieldMap(): array
+    {
+        return [
+            'TbDocuploadinfo' => 'docuploadinfo',
+        ];
+    }
+
     /**
      * Initializes the field mapping with GraphQL schema for the TbClaim class.
      *
