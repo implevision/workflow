@@ -139,6 +139,84 @@ class GraphQLSchemaBuilderService
     }
 
     /**
+     * Mirrors AND-ed HAS conditions from the root where clause onto the matching
+     * relation fields of the selection, e.g. docuploadinfo(where: {...}), so only
+     * the related rows that satisfied the condition are returned.
+     *
+     * HAS conditions under an OR are skipped: they don't constrain every parent
+     * row, so filtering the relation by them would drop valid related rows.
+     *
+     * @param  array  $schema  Selection built via addField()
+     * @param  array  $where  Root where condition array
+     * @param  array  $relationFieldMap  relation name => GraphQL field name
+     * @return array The selection with filtered relation fields
+     */
+    public function applyRelationFilters(array $schema, array $where, array $relationFieldMap): array
+    {
+        $filtersByField = [];
+        foreach ($this->collectAndedRelationConditions($where) as $cond) {
+            $field = $relationFieldMap[$cond['relation']] ?? null;
+            if ($field) {
+                unset($cond['relation'], $cond['JOIN']);
+                $filtersByField[$field][] = $cond;
+            }
+        }
+
+        if (empty($filtersByField)) {
+            return $schema;
+        }
+
+        if (isset($schema['data'])) {
+            $schema['data'] = $this->addWhereArgsToFields($schema['data'], $filtersByField);
+
+            return $schema;
+        }
+
+        return $this->addWhereArgsToFields($schema, $filtersByField);
+    }
+
+    private function collectAndedRelationConditions(array $cond): array
+    {
+        if (isset($cond['condition'])) {
+            if (($cond['operator'] ?? 'AND') !== 'AND') {
+                return [];
+            }
+
+            return array_merge([], ...array_map([$this, 'collectAndedRelationConditions'], $cond['condition']));
+        }
+
+        $found = isset($cond['relation']) ? [$cond] : [];
+        if (isset($cond['JOIN'])) {
+            $found = array_merge($found, $this->collectAndedRelationConditions($cond['JOIN']));
+        }
+
+        return $found;
+    }
+
+    /**
+     * Rewrites matching field keys to carry a where: argument, preserving key order.
+     * The response key stays the bare field name, so jqFilters are unaffected.
+     *
+     * Multiple HAS clauses on the same relation are OR-ed: each HAS may be
+     * satisfied by a different related row, so AND-ing them at field level could
+     * return an empty collection for a parent that matched the root query.
+     */
+    private function addWhereArgsToFields(array $fields, array $filtersByField): array
+    {
+        $result = [];
+        foreach ($fields as $key => $value) {
+            if (isset($filtersByField[$key])) {
+                $conditions = $filtersByField[$key];
+                $where = count($conditions) === 1 ? $conditions[0] : ['operator' => 'OR', 'condition' => $conditions];
+                $key .= '(where: '.$this->formatGraphQLCondition($where).')';
+            }
+            $result[$key] = $value;
+        }
+
+        return $result;
+    }
+
+    /**
      * Alternative function for generating field list only (without query wrapper)
      *
      * @param  array  $data  The data structure

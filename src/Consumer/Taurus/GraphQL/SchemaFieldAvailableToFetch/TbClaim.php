@@ -53,7 +53,6 @@ class TbClaim extends AbstractSchema
     {
         $this->queryName = 'claimsQuery';
         $this->queryPath = '.'.$this->queryName;
-        $this->fieldMapping = $this->initializeFieldMapping();
     }
 
     /**
@@ -66,6 +65,10 @@ class TbClaim extends AbstractSchema
      */
     public function getFieldMapping()
     {
+        if (empty($this->fieldMapping)) {
+            $this->fieldMapping = $this->initializeFieldMapping();
+        }
+
         return $this->fieldMapping;
     }
 
@@ -82,6 +85,13 @@ class TbClaim extends AbstractSchema
         return $this->queryName;
     }
 
+    public function getRelationFieldMap(): array
+    {
+        return [
+            'TbDocuploadinfo' => 'docuploadinfo',
+        ];
+    }
+
     /**
      * Initializes the field mapping with GraphQL schema for the TbClaim class.
      *
@@ -96,6 +106,8 @@ class TbClaim extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $appendedPlaceHolders = $this->getAppendedPlaceHolders();
+
         $fieldMapping = [
             'ClaimId' => [
                 'GraphQLschemaToReplace' => [
@@ -660,6 +672,35 @@ class TbClaim extends AbstractSchema
             ],
             'jqFilter' => "{$this->queryPath}.claimCommunication",
             'parseResultCallback' => 'parseClaimantAddress',
+        ];
+
+        $docUploadInfoId = isset($appendedPlaceHolders['DocUploadInfoId']) ? (int) $appendedPlaceHolders['DocUploadInfoId'] : 'null';
+
+        $fieldMapping['AttachUploadedDocument'] = [
+            'GraphQLschemaToReplace' => [
+                'docuploadinfo' => [
+                    'id' => null,
+                    'docUploadDocInfoRel' => [
+                        'docInfo' => [
+                            'docPath' => null,
+                            'docName' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => "
+                [
+                    {$this->queryPath}.docuploadinfo[]
+                    | select((.id|tostring) == ({$docUploadInfoId}|tostring))
+                    | .docUploadDocInfoRel[]
+                    | .docInfo[]
+                    | {
+                        name: .docName,
+                        path: .docPath
+                    }
+                ]
+            ",
+            'parseResultCallback' => 'generatePresignedUrl',
         ];
 
         return $this->wrapFieldMappingSchemaUnderData($fieldMapping);

@@ -368,7 +368,11 @@ abstract class AbstractDispatchService
             foreach ($listOfRequiredData as $placeHolder) {
                 $graphQLSchemaBuilder->addField($placeHolder);
             }
-            $schemaData = $graphQLSchemaBuilder->getSchema();
+            $schemaData = $graphQLSchemaBuilder->applyRelationFilters(
+                $graphQLSchemaBuilder->getSchema(),
+                $graphQLQuery,
+                $moduleClassForGraphQL->getRelationFieldMap()
+            );
 
             $queryArgs = $useQueryArgs ? $moduleClassForGraphQL->getQueryArgs() : [];
             $page = $useQueryArgs ? $this->currentPage() : 0;
