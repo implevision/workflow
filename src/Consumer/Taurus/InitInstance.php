@@ -85,4 +85,15 @@ class InitInstance
             throw new \Exception("Parent class service class '$parentClassServiceClass' does not exist.");
         }
     }
+
+    public function getCreateRecordService()
+    {
+        $createRecordServiceClass = 'Taurus\\Workflow\\Consumer\\Taurus\\CreateRecord\\CreateRecordService';
+
+        if (class_exists($createRecordServiceClass)) {
+            return new $createRecordServiceClass;
+        } else {
+            throw new \Exception("Create record service class '$createRecordServiceClass' does not exist.");
+        }
+    }
 }
