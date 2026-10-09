@@ -707,6 +707,22 @@ class WorkflowService
         }
     }
 
+    public function getCreateRecordService()
+    {
+        try {
+            $consumerService = $this->getConsumerService();
+            if ($consumerService instanceof stdClass) {
+                return new stdClass;
+            }
+
+            return $consumerService->getCreateRecordService();
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return new stdClass;
+        }
+    }
+
     public function getParentClassService()
     {
         try {
