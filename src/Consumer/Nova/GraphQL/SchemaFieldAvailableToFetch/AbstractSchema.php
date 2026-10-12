@@ -53,6 +53,15 @@ class AbstractSchema
     }
 
     /**
+     * Maps condition relation names (HAS) to the GraphQL fields they filter.
+     * See the Taurus AbstractSchema for details.
+     */
+    public function getRelationFieldMap(): array
+    {
+        return [];
+    }
+
+    /**
      * Nova modules query a single record directly under the query root
      * (no `{data: [...], paginatorInfo: {...}}` wrapper), so pagination
      * doesn't apply by default. Override to return true for a module whose
