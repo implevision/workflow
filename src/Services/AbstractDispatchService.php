@@ -127,6 +127,26 @@ abstract class AbstractDispatchService
     }
 
     /**
+     * The module's field mapping plus the common placeholders every module supports
+     * (see CommonPlaceholders). A module mapping the same placeholder wins.
+     */
+    protected function fieldMapping(): array
+    {
+        return $this->moduleSchema()->getFieldMapping() + $this->commonFieldMapping();
+    }
+
+    /**
+     * Common placeholder mapping of this run's schema; empty for consumers whose
+     * schemas do not use CommonPlaceholders (e.g. Nova).
+     */
+    protected function commonFieldMapping(): array
+    {
+        $moduleSchema = $this->moduleSchema();
+
+        return method_exists($moduleSchema, 'getCommonFieldMapping') ? $moduleSchema->getCommonFieldMapping() : [];
+    }
+
+    /**
      * Placeholders seeded into the schema object when it is created. Only the
      * configured-workflow engine has them.
      */
@@ -364,7 +384,7 @@ abstract class AbstractDispatchService
     ): ?array {
         try {
             $moduleClassForGraphQL = $this->moduleSchema();
-            $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
+            $fieldMapping = $this->fieldMapping();
             $queryName = $moduleClassForGraphQL->getQueryName();
             $graphQLHeaders = $useHeaders ? $moduleClassForGraphQL->getHeaders() : [];
 
@@ -434,7 +454,7 @@ abstract class AbstractDispatchService
         GraphQLSchemaBuilderService $graphQLSchemaBuilder,
     ): array {
         $moduleClassForGraphQL = $this->moduleSchema();
-        $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
+        $fieldMapping = $this->fieldMapping();
         $parsedData = [];
 
         foreach ($listOfRequiredData as $placeHolder) {
@@ -540,6 +560,11 @@ abstract class AbstractDispatchService
                 }
 
                 $data[$index]['email'] = $emailAddresses;
+
+                // e.g. UnsubscribeURL needs the recipient, which is only known now
+                if ($this->commonFieldMapping()) {
+                    $data[$index] = $this->moduleSchema()->applyRecipientToCommonPlaceholders($data[$index]);
+                }
             }
         }
 

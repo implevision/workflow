@@ -2,8 +2,12 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Taurus\Workflow\Consumer\Common\GraphQL\CommonPlaceholders;
+
 class AbstractSchema
 {
+    use CommonPlaceholders;
+
     protected $headers = [];
 
     protected int $page = 0;

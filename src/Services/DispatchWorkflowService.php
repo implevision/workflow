@@ -500,9 +500,16 @@ class DispatchWorkflowService extends AbstractDispatchService
 
         // If schema provides custom record extraction, use it directly (skip jqFilter)
         if ($moduleClassForGraphQL->hasCustomRecordExtraction()) {
+            // Custom records skip parseGraphQLResponse, so resolve the common placeholders here
+            $commonPlaceholderData = $this->parseGraphQLResponse(
+                $response,
+                array_values(array_intersect($listOfRequiredData, array_keys($this->commonFieldMapping()))),
+                $queryResult['graphQLSchemaBuilder']
+            );
+
             $data = [];
             foreach ($moduleClassForGraphQL->getRecordsFromResponse($response) as $record) {
-                $data[] = array_merge($record, $placeHolderWithValues);
+                $data[] = array_merge($commonPlaceholderData, $record, $placeHolderWithValues);
             }
         } else {
             if (empty(array_first($response))) {
