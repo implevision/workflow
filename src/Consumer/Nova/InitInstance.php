@@ -68,4 +68,15 @@ class InitInstance
             throw new \Exception("Post action service class '$postActionServiceClass' does not exist.");
         }
     }
+
+    public function getCreateRecordService()
+    {
+        $createRecordServiceClass = 'Taurus\\Workflow\\Consumer\\Nova\\CreateRecord\\CreateRecordService';
+
+        if (class_exists($createRecordServiceClass)) {
+            return new $createRecordServiceClass;
+        } else {
+            throw new \Exception("Create record service class '$createRecordServiceClass' does not exist.");
+        }
+    }
 }
