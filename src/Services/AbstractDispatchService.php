@@ -147,6 +147,24 @@ abstract class AbstractDispatchService
     }
 
     /**
+     * Resolves the common placeholders among $listOfRequiredData, for rows that do
+     * not go through parseGraphQLResponse(). Common placeholders come from callbacks
+     * only, so no GraphQL response is needed.
+     */
+    protected function resolveCommonPlaceholders(array $listOfRequiredData): array
+    {
+        $moduleSchema = $this->moduleSchema();
+        $resolved = [];
+
+        foreach (array_intersect_key($this->commonFieldMapping(), array_flip($listOfRequiredData)) as $placeHolder => $mapping) {
+            $callback = $mapping['parseResultCallback'] ?? null;
+            $resolved[$placeHolder] = $callback && method_exists($moduleSchema, $callback) ? $moduleSchema->$callback() : '';
+        }
+
+        return $resolved;
+    }
+
+    /**
      * Placeholders seeded into the schema object when it is created. Only the
      * configured-workflow engine has them.
      */
@@ -561,9 +579,13 @@ abstract class AbstractDispatchService
 
                 $data[$index]['email'] = $emailAddresses;
 
-                // e.g. UnsubscribeURL needs the recipient, which is only known now
+                // e.g. UnsubscribeURL needs the recipient, which is only known now. A row may
+                // come back split into one row per recipient; the extra rows are appended
+                // after the loop's copy of $data, so they are not validated again.
                 if ($this->commonFieldMapping()) {
-                    $data[$index] = $this->moduleSchema()->applyRecipientToCommonPlaceholders($data[$index]);
+                    $recipientRows = $this->moduleSchema()->applyRecipientToCommonPlaceholders($data[$index]);
+                    $data[$index] = array_shift($recipientRows);
+                    array_push($data, ...$recipientRows);
                 }
             }
         }

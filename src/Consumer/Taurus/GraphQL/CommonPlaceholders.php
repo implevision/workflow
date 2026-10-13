@@ -1,14 +1,15 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\Common\GraphQL;
+namespace Taurus\Workflow\Consumer\Taurus\GraphQL;
 
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 /**
- * Placeholders available to every module (mirrors `commonPlaceholders` in the
- * front-end placeholder list).
+ * Placeholders available to every Taurus module (mirrors `commonPlaceholders`
+ * in the front-end placeholder list).
  *
- * Used by the base AbstractSchema of each consumer. The dispatch engines merge
+ * Kept per consumer, since values like the unsubscribe link depend on the
+ * consumer's portals. Used by the Taurus AbstractSchema. The dispatch engines merge
  * getCommonFieldMapping() into every module's getFieldMapping(), so a placeholder
  * added here works in all modules without touching them. A module that maps the
  * same placeholder itself takes precedence.
@@ -47,21 +48,31 @@ trait CommonPlaceholders
 
     /**
      * Fills the recipient into common placeholders that depend on it, once the
-     * email row has its `email` resolved. When a row has several recipients, the
-     * first one is used.
+     * email row has its `email` resolved. Since a row is sent as one email to all
+     * its recipients, a row with several recipients is split into one row per
+     * recipient, so each gets their own unsubscribe link.
+     *
+     * @return array[] the rows to send, at least one
      */
     public function applyRecipientToCommonPlaceholders(array $row): array
     {
         if (empty($row['UnsubscribeURL']) || ! str_contains($row['UnsubscribeURL'], '[email]')) {
-            return $row;
+            return [$row];
         }
 
-        $emails = array_values(array_filter((array) ($row['email'] ?? [])));
+        $emails = array_values(array_filter(array_map('trim', (array) ($row['email'] ?? []))));
 
-        $row['UnsubscribeURL'] = $emails
-            ? str_replace('[email]', rawurlencode(trim($emails[0])), $row['UnsubscribeURL'])
-            : '';
+        if (! $emails) {
+            $row['UnsubscribeURL'] = '';
 
-        return $row;
+            return [$row];
+        }
+
+        return array_map(function (string $email) use ($row) {
+            $row['email'] = [$email];
+            $row['UnsubscribeURL'] = str_replace('[email]', rawurlencode($email), $row['UnsubscribeURL']);
+
+            return $row;
+        }, $emails);
     }
 }

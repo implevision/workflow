@@ -2,7 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
-use Taurus\Workflow\Consumer\Common\GraphQL\CommonPlaceholders;
+use Taurus\Workflow\Consumer\Taurus\GraphQL\CommonPlaceholders;
 
 class AbstractSchema
 {

@@ -415,7 +415,9 @@ class DispatchWorkflowService extends AbstractDispatchService
         }
 
         if ($this->isManuallyInvoked) {
-            $data = [$this->data];
+            // Caller data skips parseGraphQLResponse, so resolve the common placeholders here;
+            // a value the caller supplied wins
+            $data = [array_merge($this->resolveCommonPlaceholders($listOfRequiredData), $this->data)];
         } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
             $result = $this->fetchDataForAction(
                 $graphQLQuery,
