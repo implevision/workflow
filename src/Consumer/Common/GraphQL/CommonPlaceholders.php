@@ -2,6 +2,8 @@
 
 namespace Taurus\Workflow\Consumer\Common\GraphQL;
 
+use Taurus\Workflow\Consumer\Taurus\Helper;
+
 /**
  * Placeholders available to every module (mirrors `commonPlaceholders` in the
  * front-end placeholder list).
@@ -28,19 +30,19 @@ trait CommonPlaceholders
     }
 
     /**
-     * Unsubscribe link on the app's `email/unsubscribe/{email}` route.
+     * Unsubscribe link on the agent portal `/email/unsubscribe` page, which calls
+     * the core unsubscribe API and shows the result.
      * [email] is left in place, since the recipient is only known later - see
      * applyRecipientToCommonPlaceholders().
      */
     public function getUnsubscribeUrl(): string
     {
-        $baseUrl = rtrim((string) config('app.url'), '/');
-
-        if (! $baseUrl) {
+        if (! Helper::extractDomainSimple(config('app.url'))) {
             return '';
         }
 
-        return "{$baseUrl}/api/email/unsubscribe/[email]?tenant=".rawurlencode((string) getTenant());
+        return Helper::createPortalURL('AgentPortal')
+            .'/email/unsubscribe?type=workflow&tenant='.rawurlencode((string) getTenant()).'&email=[email]';
     }
 
     /**
