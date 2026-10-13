@@ -10,9 +10,12 @@ use Taurus\Workflow\Consumer\Taurus\Helper;
  *
  * Kept per consumer, since values like the unsubscribe link depend on the
  * consumer's portals. Used by the Taurus AbstractSchema. The dispatch engines merge
- * getCommonFieldMapping() into every module's getFieldMapping(), so a placeholder
- * added here works in all modules without touching them. A module that maps the
- * same placeholder itself takes precedence.
+ * getCommonFieldMapping() into every Taurus module's getFieldMapping(), so a
+ * placeholder added here works in all Taurus modules without touching them. A
+ * module that maps the same placeholder itself takes precedence.
+ *
+ * Taurus only for now: Nova's AbstractSchema does not use this trait, so these
+ * placeholders are not supported there (they resolve as unmapped fields).
  */
 trait CommonPlaceholders
 {

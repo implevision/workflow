@@ -127,8 +127,9 @@ abstract class AbstractDispatchService
     }
 
     /**
-     * The module's field mapping plus the common placeholders every module supports
-     * (see CommonPlaceholders). A module mapping the same placeholder wins.
+     * The module's field mapping plus its consumer's common placeholders, if any
+     * (only Taurus has them, see Taurus CommonPlaceholders). A module mapping the
+     * same placeholder wins.
      */
     protected function fieldMapping(): array
     {
@@ -137,7 +138,7 @@ abstract class AbstractDispatchService
 
     /**
      * Common placeholder mapping of this run's schema; empty for consumers whose
-     * schemas do not use CommonPlaceholders (e.g. Nova).
+     * schemas do not use CommonPlaceholders (currently Nova, which is out of scope).
      */
     protected function commonFieldMapping(): array
     {
