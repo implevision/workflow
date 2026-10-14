@@ -578,6 +578,21 @@ abstract class AbstractDispatchService
                     continue;
                 }
 
+                $emailAddresses = $this->workflowService->applyEmailSupressedByConsumerFilter($emailAddresses);
+
+                // Every recipient of the row has unsubscribed, so there is no one to send to
+                if (empty($emailAddresses)) {
+                    $this->addWorkflowLog(
+                        'EMAIL_UNSUBSCRIBED',
+                        'All recipients of the record have unsubscribed from emails'
+                    );
+                    Log::info("{$this->logPrefix} - All recipients have unsubscribed, skipping the record");
+                    $hasPriorDataForWorkflow = false;
+                    unset($data[$index]);
+
+                    continue;
+                }
+
                 $data[$index]['email'] = $emailAddresses;
 
                 // e.g. UnsubscribeURL needs the recipient, which is only known now. A row may

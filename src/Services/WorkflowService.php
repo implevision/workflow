@@ -739,6 +739,26 @@ class WorkflowService
         }
     }
 
+    /**
+     * Drops recipients that unsubscribed from the consumer's emails. Consumers
+     * without this service (e.g. Nova) get the emails back unchanged.
+     */
+    public function applyEmailSupressedByConsumerFilter($emails)
+    {
+        try {
+            $consumerService = $this->getConsumerService();
+            if ($consumerService instanceof stdClass || ! method_exists($consumerService, 'getEmailSupressedByConsumerService')) {
+                return $emails;
+            }
+
+            return $consumerService->getEmailSupressedByConsumerService()->applyEmailSupressedByConsumerFilter($emails);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            return $emails;
+        }
+    }
+
     private function getConsumerService()
     {
         try {
