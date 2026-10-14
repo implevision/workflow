@@ -532,7 +532,8 @@ abstract class AbstractDispatchService
         array $listOfMandateData,
         array $actionPayload,
         string $actionType,
-        array $placeHolderToExtract = []
+        array $placeHolderToExtract = [],
+        bool $isPromotionalEmail = false
     ): array|false {
         $hasPriorDataForWorkflow = false;
 
@@ -578,7 +579,10 @@ abstract class AbstractDispatchService
                     continue;
                 }
 
-                $emailAddresses = $this->workflowService->applyEmailSupressedByConsumerFilter($emailAddresses);
+                $emailAddresses = $this->workflowService->applyEmailSupressedByConsumerFilter(
+                    $emailAddresses,
+                    $isPromotionalEmail
+                );
 
                 // Every recipient of the row has unsubscribed, so there is no one to send to
                 if (empty($emailAddresses)) {
@@ -611,6 +615,15 @@ abstract class AbstractDispatchService
         }
 
         return $data;
+    }
+
+    /**
+     * Whether the action's email template is promotional, so its recipients are
+     * checked for unsubscribes (see EmailAction::isPromotionalEmail()).
+     */
+    protected function isPromotionalEmail(AbstractWorkflowAction $action): bool
+    {
+        return method_exists($action, 'isPromotionalEmail') && $action->isPromotionalEmail();
     }
 
     /**

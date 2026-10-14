@@ -451,7 +451,8 @@ class DispatchWorkflowService extends AbstractDispatchService
                 $listOfMandateData,
                 $actionPayload,
                 $actionType,
-                $placeHolderToExtract
+                $placeHolderToExtract,
+                $this->isPromotionalEmail($actionToExecute)
             );
 
             if ($data === false) {
