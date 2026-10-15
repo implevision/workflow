@@ -8,9 +8,4 @@ class LexisNexisErrorModelService extends ModuleService
     {
         return 'policy';
     }
-
-    public function isCustomResolverDefinedForModule()
-    {
-        return true;
-    }
 }

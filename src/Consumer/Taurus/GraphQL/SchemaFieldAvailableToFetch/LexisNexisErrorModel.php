@@ -2,11 +2,19 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Avatar\Infrastructure\Models\Api\v1\TbAgentTasksList;
 use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 
 class LexisNexisErrorModel extends AbstractSchema
 {
+    private const RETURN_MAIL_TASK_CODE = 'RETURNMAIL';
+
+    /**
+     * @var array|null Cached RETURNMAIL row (id, task_title) from tb_agent_tasks_list.
+     */
+    private ?array $returnMailTask = null;
+
     /**
      * @var array
      *
@@ -21,10 +29,15 @@ class LexisNexisErrorModel extends AbstractSchema
      */
     protected $queryName;
 
+    /**
+     * @var string|null The path of the query associated with this class.
+     */
+    protected $queryPath;
+
     public function __construct()
     {
-        $this->fieldMapping = $this->initializeFieldMapping();
-        $this->queryName = 'queryLexisNexisErrors';
+        $this->queryName = 'lexisNexisErrorsQuery';
+        $this->queryPath = '.'.$this->queryName;
     }
 
     /**
@@ -34,6 +47,10 @@ class LexisNexisErrorModel extends AbstractSchema
      */
     public function getFieldMapping()
     {
+        if (empty($this->fieldMapping)) {
+            $this->fieldMapping = $this->initializeFieldMapping();
+        }
+
         return $this->fieldMapping;
     }
 
@@ -48,75 +65,6 @@ class LexisNexisErrorModel extends AbstractSchema
     }
 
     /**
-     * Signals that this class handles its own record extraction via
-     * getRecordsFromResponse(), bypassing the jqFilter mechanism.
-     */
-    public function hasCustomRecordExtraction(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Turns every LexisNexis failure on the page into its own record, so each
-     * failure produces one action payload (e.g. one agent task).
-     */
-    public function getRecordsFromResponse(array $response): array
-    {
-        return array_map(
-            fn (array $error) => $this->formatError($error),
-            array_filter($this->errorsFromResponse($response), 'is_array')
-        );
-    }
-
-    /**
-     * Extracts the flat list of failures from the queryLexisNexisErrors response.
-     */
-    private function errorsFromResponse(array $response): array
-    {
-        return $response[$this->queryName]['data'] ?? [];
-    }
-
-    /**
-     * Returns the arguments required by the queryLexisNexisErrors query, mapped from the
-     * workflow's raw dateTimeInfo config (passed via setQueryArgsContext):
-     *   frequency        <- executionFrequency
-     *   typeOfFrequency  <- executionFrequencyType (DAY|MONTH|YEAR)
-     *   incidentEvent    <- executionEventIncident (AFTER|BEFORE|WITH_IN)
-     *   executionEvent   <- executionEvent
-     */
-    public function getQueryArgs(): array
-    {
-        $context = $this->queryArgsContext;
-
-        $args = [
-            'frequency' => (int) (($context['executionFrequency'] ?? null) ?: 1),
-            'typeOfFrequency' => $context['executionFrequencyType'] ?? 'DAY',
-            'incidentEvent' => $context['executionEventIncident'] ?? 'WITH_IN',
-            'executionEvent' => $context['executionEvent'] ?? null,
-            'page' => $this->page,
-        ];
-
-        // Drop null/empty args so the generated GraphQL stays valid (no "executionEvent: " gaps).
-        return array_filter($args, fn ($value) => $value !== null && $value !== '');
-    }
-
-    /**
-     * The window reports currentPage/lastPage rather than paginatorInfo,
-     * so advance until the last page is reached.
-     */
-    public function getNextPageArgs(array $response, array $currentArgs): ?array
-    {
-        $currentPage = (int) ($response[$this->queryName]['currentPage'] ?? 0);
-        $lastPage = (int) ($response[$this->queryName]['lastPage'] ?? 0);
-
-        if (empty($this->errorsFromResponse($response)) || $currentPage >= $lastPage) {
-            return null;
-        }
-
-        return array_merge($currentArgs, ['page' => $currentPage + 1]);
-    }
-
-    /**
      * Initializes the field mapping with GraphQL schema for the LexisNexisErrorModel class.
      *
      * KEYS are PLACEHOLDER for the GraphQL schema to be replaced.
@@ -125,81 +73,134 @@ class LexisNexisErrorModel extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
-        $dataSchema = [
-            'data' => [
-                [
+        $fieldMapping = [
+            'Id' => [
+                'GraphQLschemaToReplace' => [
+                    'id' => null,
+                ],
+                'jqFilter' => "{$this->queryPath}.id",
+            ],
+            'TransactionId' => [
+                'GraphQLschemaToReplace' => [
                     'transactionId' => null,
+                ],
+                'jqFilter' => "{$this->queryPath}.transactionId",
+            ],
+            'PolicyMasterId' => [
+                'GraphQLschemaToReplace' => [
                     'policyNo' => null,
+                ],
+                'jqFilter' => "{$this->queryPath}.policyNo",
+                'parseResultCallback' => 'getPolicyMasterId',
+            ],
+            'PolicyNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'policyNo' => null,
+                ],
+                'jqFilter' => "{$this->queryPath}.policyNo",
+            ],
+            'ActionCode' => [
+                'GraphQLschemaToReplace' => [
                     'actionCode' => null,
+                ],
+                'jqFilter' => "{$this->queryPath}.actionCode",
+            ],
+            'ErrorMessage' => [
+                'GraphQLschemaToReplace' => [
                     'errorMessage' => null,
+                ],
+                'jqFilter' => "{$this->queryPath}.errorMessage",
+            ],
+            'DocumentDescription' => [
+                'GraphQLschemaToReplace' => [
                     'documentDescription' => null,
+                ],
+                'jqFilter' => "{$this->queryPath}.documentDescription",
+            ],
+            'CreatedAt' => [
+                'GraphQLschemaToReplace' => [
                     'createdAt' => null,
                 ],
+                'jqFilter' => "{$this->queryPath}.createdAt",
+                'parseResultCallback' => 'formatCreatedAt',
             ],
-            'currentPage' => null,
-            'lastPage' => null,
-            'total' => null,
+            'AgentTaskNote' => [
+                'GraphQLschemaToReplace' => [
+                    'errorMessage' => null,
+                    'documentDescription' => null,
+                ],
+                'jqFilter' => "{$this->queryPath} | {errorMessage, documentDescription}",
+                'parseResultCallback' => 'getAgentTaskNote',
+            ],
+            'AgentTaskId' => [
+                'GraphQLschemaToReplace' => [],
+                'jqFilter' => null,
+                'parseResultCallback' => 'getAgentTaskId',
+            ],
+            'AgentTaskTitle' => [
+                'GraphQLschemaToReplace' => [],
+                'jqFilter' => null,
+                'parseResultCallback' => 'getAgentTaskTitle',
+            ],
         ];
 
-        return [
-            'TransactionId' => ['GraphQLschemaToReplace' => $dataSchema],
-            'PolicyMasterId' => ['GraphQLschemaToReplace' => $dataSchema],
-            'PolicyNumber' => ['GraphQLschemaToReplace' => $dataSchema],
-            'ActionCode' => ['GraphQLschemaToReplace' => $dataSchema],
-            'ErrorMessage' => ['GraphQLschemaToReplace' => $dataSchema],
-            'DocumentDescription' => ['GraphQLschemaToReplace' => $dataSchema],
-            'CreatedAt' => ['GraphQLschemaToReplace' => $dataSchema],
-            'AgentTaskNote' => ['GraphQLschemaToReplace' => $dataSchema],
-            'AgentTaskId' => ['GraphQLschemaToReplace' => []],
-            'AgentTaskTitle' => ['GraphQLschemaToReplace' => []],
-        ];
+        return $this->wrapFieldMappingSchemaUnderData($fieldMapping);
     }
 
-    private function formatError(array $error): array
+    public function getPolicyMasterId($policyNo): string
     {
-        $policyNo = $error['policyNo'] ?? '';
-
-        return [
-            'TransactionId' => $error['transactionId'] ?? '',
-            'PolicyMasterId' => $this->getPolicyMasterId($policyNo),
-            'PolicyNumber' => $policyNo,
-            'ActionCode' => $error['actionCode'] ?? '',
-            'ErrorMessage' => $error['errorMessage'] ?? '',
-            'DocumentDescription' => $error['documentDescription'] ?? '',
-            'CreatedAt' => ! empty($error['createdAt']) ? Helper::formatDateTime($error['createdAt']) : '',
-            'AgentTaskNote' => $this->getAgentTaskNote($error),
-            'AgentTaskId' => $this->getAgentTaskId(),
-            'AgentTaskTitle' => $this->getAgentTaskTitle(),
-        ];
-    }
-
-    public function getPolicyMasterId(?string $policyNo): string
-    {
-        if (empty($policyNo)) {
+        if (empty($policyNo) || $policyNo === 'null') {
             return '';
         }
 
-        return (string) (TbPolicy::where('Policy_No', $policyNo)->value('n_PolicyNoId_PK') ?? '');
+        return (string) (TbPolicy::where('Policy_No', (string) $policyNo)->value('n_PolicyNoId_PK') ?? '');
+    }
+
+    public function formatCreatedAt($createdAt): string
+    {
+        return ! empty($createdAt) && $createdAt !== 'null' ? Helper::formatDateTime($createdAt) : '';
     }
 
     /**
      * Combines the failure reason and the document it was raised for into the task note.
      */
-    public function getAgentTaskNote(array $error): string
+    public function getAgentTaskNote($error): string
     {
+        if (! is_array($error)) {
+            return '';
+        }
+
         return implode(' - ', array_filter([
-            trim($error['errorMessage'] ?? ''),
-            trim($error['documentDescription'] ?? ''),
+            trim((string) ($error['errorMessage'] ?? '')),
+            trim((string) ($error['documentDescription'] ?? '')),
         ]));
     }
 
     public function getAgentTaskId(): int
     {
-        return 13;
+        return (int) ($this->getReturnMailTask()['id'] ?? 0);
     }
 
     public function getAgentTaskTitle(): string
     {
-        return 'Return Mail';
+        return (string) ($this->getReturnMailTask()['task_title'] ?? '');
+    }
+
+    /**
+     * The RETURNMAIL task from tb_agent_tasks_list, looked up once per run
+     * since the callbacks are invoked for every record.
+     */
+    private function getReturnMailTask(): array
+    {
+        if ($this->returnMailTask === null) {
+            $task = TbAgentTasksList::where('task_code', self::RETURN_MAIL_TASK_CODE)
+                ->where('is_active', 'Y')
+                ->where('is_deleted', 'N')
+                ->first(['id', 'task_title']);
+
+            $this->returnMailTask = $task ? $task->toArray() : [];
+        }
+
+        return $this->returnMailTask;
     }
 }
