@@ -52,7 +52,7 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
         $mappingId = $this->saveAgentTask($payload, $policy, $transactionPK, $taskId, $taskTitle, $note);
 
         if (! $mappingId) {
-            Log::warning('WORKFLOW - Agent task already open for policy, skipping', [
+            Log::warning('WORKFLOW - Agent task already open for policy, appended note to the master', [
                 'workflowId' => $context['workflowId'] ?? null,
                 'policyPK' => $policyPK,
                 'taskId' => $taskId,
@@ -77,7 +77,8 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
      * Adds the task under the policy's existing agent task master, or under a
      * new master when the policy has none yet.
      *
-     * @return int|null The new mapping id, or null when the task is already open for the policy.
+     * @return int|null The new mapping id, or null when the task is already open for the policy
+     *                  (the note is then appended to the master's note).
      */
     private function saveAgentTask(array $payload, TbPolicy $policy, int $transactionPK, int $taskId, string $taskTitle, string $note): ?int
     {
@@ -98,8 +99,19 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
                     ->where('complete_status', 'N')
                     ->value('id');
 
-                // The same task is already open for the policy, don't add it twice.
+                // The same task is already open for the policy, don't add it twice,
+                // only append the new note to the master's note.
                 if ($openMappingId) {
+                    if ($note !== '') {
+                        $existingNote = (string) TbAgentTasksMaster::where('id', $masterId)->value('note');
+
+                        TbAgentTasksMaster::where('id', $masterId)->update([
+                            'note' => $existingNote === '' ? $note : $existingNote."\n".$note,
+                            'updated_by' => $userId,
+                            'updated_at' => $nowDate,
+                        ]);
+                    }
+
                     return null;
                 }
             } else {
