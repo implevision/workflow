@@ -83,7 +83,7 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
     {
         $policyPK = (int) $policy->n_PolicyNoId_PK;
         $userId = user()->Admin_ID ?? Config::get('workflow.default_system_user_id');
-        $nowDate = date('Y-m-d h:i:s');
+        $nowDate = date('Y-m-d H:i:s');
 
         return DB::transaction(function () use ($payload, $policy, $policyPK, $transactionPK, $taskId, $taskTitle, $note, $userId, $nowDate) {
             $masterId = TbAgentTasksMaster::where('policymaster_FK', $policyPK)->orderByDesc('id')->value('id');
@@ -131,6 +131,14 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
         $transactionPK = (int) ($payload['policyTransactionId'] ?? 0);
 
         if ($transactionPK) {
+            $belongsToPolicy = TbPotransaction::where('n_potransaction_PK', $transactionPK)
+                ->where('n_PolicyMaster_FK', $policyPK)
+                ->exists();
+
+            if (! $belongsToPolicy) {
+                throw new \InvalidArgumentException("Transaction {$transactionPK} does not belong to policy {$policyPK}.");
+            }
+
             return $transactionPK;
         }
 
