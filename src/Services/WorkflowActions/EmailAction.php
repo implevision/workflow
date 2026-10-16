@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Services\WorkflowActions;
 
 use Taurus\Workflow\Services\WorkflowActions\Helpers\Email\PrepareEmailData;
 use Taurus\Workflow\Services\WorkflowEmailService;
+use Taurus\Workflow\Services\WorkflowService;
 
 class EmailAction extends AbstractWorkflowAction
 {
@@ -85,7 +86,7 @@ class EmailAction extends AbstractWorkflowAction
         $recordIdentifier = $this->getRecordIdentifier();
         $feedFile = $this->getFeedFile();
         $data = $this->getData();
-        $payload = $this->getPayload();
+        $payload = $this->removeUnsubscribedCopyRecipients($this->getPayload());
 
         try {
             \Log::info('WORKFLOW - Preparing email data');
@@ -99,5 +100,30 @@ class EmailAction extends AbstractWorkflowAction
         } catch (\Exception $e) {
             throw $e;
         }
+    }
+
+    /**
+     * Drops unsubscribed addresses from the action's CC/BCC lists for promotional
+     * emails, the same way the To recipients are filtered in
+     * AbstractDispatchService::validateAndFilterData().
+     */
+    private function removeUnsubscribedCopyRecipients(array $payload): array
+    {
+        if (! $this->isPromotionalEmail()) {
+            return $payload;
+        }
+
+        $workflowService = app(WorkflowService::class);
+
+        foreach (['cc', 'bcc'] as $field) {
+            if (empty($payload[$field])) {
+                continue;
+            }
+
+            $emails = array_values(array_filter(array_map('trim', explode(',', $payload[$field]))));
+            $payload[$field] = implode(',', $workflowService->applyEmailSupressedByConsumerFilter($emails, true));
+        }
+
+        return $payload;
     }
 }
