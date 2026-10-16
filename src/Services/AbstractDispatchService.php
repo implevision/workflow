@@ -127,6 +127,45 @@ abstract class AbstractDispatchService
     }
 
     /**
+     * The module's field mapping plus its consumer's common placeholders, if any
+     * (only Taurus has them, see Taurus CommonPlaceholders). A module mapping the
+     * same placeholder wins.
+     */
+    protected function fieldMapping(): array
+    {
+        return $this->moduleSchema()->getFieldMapping() + $this->commonFieldMapping();
+    }
+
+    /**
+     * Common placeholder mapping of this run's schema; empty for consumers whose
+     * schemas do not use CommonPlaceholders (currently Nova, which is out of scope).
+     */
+    protected function commonFieldMapping(): array
+    {
+        $moduleSchema = $this->moduleSchema();
+
+        return method_exists($moduleSchema, 'getCommonFieldMapping') ? $moduleSchema->getCommonFieldMapping() : [];
+    }
+
+    /**
+     * Resolves the common placeholders among $listOfRequiredData, for rows that do
+     * not go through parseGraphQLResponse(). Common placeholders come from callbacks
+     * only, so no GraphQL response is needed.
+     */
+    protected function resolveCommonPlaceholders(array $listOfRequiredData): array
+    {
+        $moduleSchema = $this->moduleSchema();
+        $resolved = [];
+
+        foreach (array_intersect_key($this->commonFieldMapping(), array_flip($listOfRequiredData)) as $placeHolder => $mapping) {
+            $callback = $mapping['parseResultCallback'] ?? null;
+            $resolved[$placeHolder] = $callback && method_exists($moduleSchema, $callback) ? $moduleSchema->$callback() : '';
+        }
+
+        return $resolved;
+    }
+
+    /**
      * Placeholders seeded into the schema object when it is created. Only the
      * configured-workflow engine has them.
      */
@@ -364,7 +403,7 @@ abstract class AbstractDispatchService
     ): ?array {
         try {
             $moduleClassForGraphQL = $this->moduleSchema();
-            $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
+            $fieldMapping = $this->fieldMapping();
             $queryName = $moduleClassForGraphQL->getQueryName();
             $graphQLHeaders = $useHeaders ? $moduleClassForGraphQL->getHeaders() : [];
 
@@ -434,7 +473,7 @@ abstract class AbstractDispatchService
         GraphQLSchemaBuilderService $graphQLSchemaBuilder,
     ): array {
         $moduleClassForGraphQL = $this->moduleSchema();
-        $fieldMapping = $moduleClassForGraphQL->getFieldMapping();
+        $fieldMapping = $this->fieldMapping();
         $parsedData = [];
 
         foreach ($listOfRequiredData as $placeHolder) {
@@ -493,7 +532,8 @@ abstract class AbstractDispatchService
         array $listOfMandateData,
         array $actionPayload,
         string $actionType,
-        array $placeHolderToExtract = []
+        array $placeHolderToExtract = [],
+        bool $isPromotionalEmail = false
     ): array|false {
         $hasPriorDataForWorkflow = false;
 
@@ -539,7 +579,34 @@ abstract class AbstractDispatchService
                     continue;
                 }
 
+                $emailAddresses = $this->workflowService->applyEmailSupressedByConsumerFilter(
+                    $emailAddresses,
+                    $isPromotionalEmail
+                );
+
+                // Every recipient of the row has unsubscribed, so there is no one to send to
+                if (empty($emailAddresses)) {
+                    $this->addWorkflowLog(
+                        'EMAIL_UNSUBSCRIBED',
+                        'All recipients of the record have unsubscribed from emails'
+                    );
+                    Log::info("{$this->logPrefix} - All recipients have unsubscribed, skipping the record");
+                    $hasPriorDataForWorkflow = false;
+                    unset($data[$index]);
+
+                    continue;
+                }
+
                 $data[$index]['email'] = $emailAddresses;
+
+                // e.g. UnsubscribeURL needs the recipient, which is only known now. A row may
+                // come back split into one row per recipient; the extra rows are appended
+                // after the loop's copy of $data, so they are not validated again.
+                if ($this->commonFieldMapping()) {
+                    $recipientRows = $this->moduleSchema()->applyRecipientToCommonPlaceholders($data[$index]);
+                    $data[$index] = array_shift($recipientRows);
+                    array_push($data, ...$recipientRows);
+                }
             }
         }
 
@@ -548,6 +615,15 @@ abstract class AbstractDispatchService
         }
 
         return $data;
+    }
+
+    /**
+     * Whether the action's email template is promotional, so its recipients are
+     * checked for unsubscribes (see EmailAction::isPromotionalEmail()).
+     */
+    protected function isPromotionalEmail(AbstractWorkflowAction $action): bool
+    {
+        return method_exists($action, 'isPromotionalEmail') && $action->isPromotionalEmail();
     }
 
     /**

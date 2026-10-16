@@ -59,6 +59,18 @@ class EmailAction extends AbstractWorkflowAction
         return [...$extractedPlaceHolder, ...$subjectPlaceholderMatches[1], ...$senderPlaceholderMatches[1]];
     }
 
+    /**
+     * Whether recipients who unsubscribed must be skipped for this template: it is
+     * flagged as promotional (`isTransactionalEmail`, shown as "Allow users to
+     * unsubscribe from promotional emails") or it carries the UnsubscribeURL placeholder.
+     * Any other email is transactional and goes to every recipient.
+     */
+    public function isPromotionalEmail(): bool
+    {
+        return ! empty($this->emailInformation['isTransactionalEmail'])
+            || in_array('UnsubscribeURL', $this->getListOfRequiredData(), true);
+    }
+
     public function getListOfMandateData()
     {
         $payload = $this->getPayload();
