@@ -55,6 +55,11 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
         $this->linkLexisNexisError($context, $mappingId, $created);
 
         if (! $created) {
+            // The note was appended to the master, so record it on the policy notes too.
+            if ($note !== '') {
+                $this->addPolicyNote($policyPK, $transactionPK, $taskTitle, $note);
+            }
+
             Log::warning('WORKFLOW - Agent task already open for policy, appended note to the master', [
                 'workflowId' => $context['workflowId'] ?? null,
                 'policyPK' => $policyPK,
