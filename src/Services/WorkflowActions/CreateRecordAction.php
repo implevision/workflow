@@ -73,13 +73,15 @@ class CreateRecordAction extends AbstractWorkflowAction
             'workflowId' => $this->getWorkflowId(),
             'jobWorkflowId' => $this->getJobWorkflowId(),
             'recordIdentifier' => $this->getRecordIdentifier(),
+            'workflowModule' => $this->getModule(),
         ];
 
         foreach ($data as $placeHolderData) {
             $resolvedPayload = $this->replacePlaceholders($payload['fieldMapping'], $placeHolderData);
 
             try {
-                $createRecordService->execute($payload['module'], $resolvedPayload, $context);
+                // The source record lets the handler link the created record back to it.
+                $createRecordService->execute($payload['module'], $resolvedPayload, $context + ['sourceRecord' => $placeHolderData]);
             } catch (\Exception $e) {
                 throw new \Exception('Create record execution failed: '.$e->getMessage());
             }

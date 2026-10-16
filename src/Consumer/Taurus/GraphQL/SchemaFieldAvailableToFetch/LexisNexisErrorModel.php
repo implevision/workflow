@@ -65,6 +65,15 @@ class LexisNexisErrorModel extends AbstractSchema
     }
 
     /**
+     * The error's Id is always fetched for CREATE_RECORD actions so the agent task
+     * handler can store the created mapping on the tb_lexisnexis_errors row.
+     */
+    public function getRequiredPlaceholdersForCreateRecord(): array
+    {
+        return ['Id'];
+    }
+
+    /**
      * Initializes the field mapping with GraphQL schema for the LexisNexisErrorModel class.
      *
      * KEYS are PLACEHOLDER for the GraphQL schema to be replaced.

@@ -456,7 +456,7 @@ class DispatchWorkflowService extends AbstractDispatchService
                 return null;
             }
 
-            $actionToExecute->setWorkflowData($this->workflowId, $this->jobWorkflowId, $this->recordIdentifier);
+            $actionToExecute->setWorkflowData($this->workflowId, $this->jobWorkflowId, $this->recordIdentifier, $this->module);
             $actionToExecute->setDataForAction($feedFile, $data);
             $actionToExecute->execute();
         } catch (\Exception $e) {
