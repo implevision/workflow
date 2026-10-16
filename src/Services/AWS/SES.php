@@ -83,13 +83,14 @@ class SES
 
         $bulkEmailEntries = [];
         foreach ($payload as $item) {
-            $recipient = $item['email'];
-            unset($item['email']);
             if (empty($item['email']) || count($item) < count($placeHolders)) {
                 \Log::info('WORKFLOW - Skipping email due to missing placeholders', $item);
 
                 continue;
             }
+
+            $recipient = $item['email'];
+            unset($item['email']);
 
             \Log::info('WORKFLOW - Sending email to: ', (array) $recipient);
 
@@ -99,7 +100,7 @@ class SES
 
             $bulkEmailEntries[] = [
                 'Destination' => [
-                    'ToAddresses' => (array) $item['email'],
+                    'ToAddresses' => (array) $recipient,
                     ...($cc ? ['CcAddresses' => (array) $cc] : []),
                     ...($bcc ? ['BccAddresses' => (array) $bcc] : []),
                 ],
