@@ -63,7 +63,7 @@ class SES
         if (preg_match('/\{\{#(?:if|each)\s/', $htmlContent)) {
             $messageId = null;
             foreach ($payload as $item) {
-                $messageId = self::sendEmail($from, $subject, $htmlContent, $item, $textContent, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc, $workflowId);
+                $messageId = self::sendEmail($from, $subject, $htmlContent, $item, $textContent, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
             }
 
             return $messageId;
