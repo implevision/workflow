@@ -343,6 +343,13 @@ abstract class AbstractDispatchService
 
         $listOfRequiredData = array_merge($listOfRequiredData, $extraPlaceholders);
 
+        if ($actionType == 'CREATE_RECORD') {
+            $listOfRequiredData = array_values(array_unique(array_merge(
+                $listOfRequiredData,
+                $this->moduleSchema()->getRequiredPlaceholdersForCreateRecord()
+            )));
+        }
+
         if ($actionType == 'EMAIL' && strtoupper($actionPayload['emailRecipient']) != 'CUSTOM') {
             $listOfRequiredData[] = $listOfMandateData[] = ucfirst($actionPayload['emailRecipient']);
         }

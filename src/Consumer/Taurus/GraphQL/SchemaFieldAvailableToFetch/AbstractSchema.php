@@ -148,6 +148,16 @@ class AbstractSchema
         return false;
     }
 
+    /**
+     * Placeholders always fetched for CREATE_RECORD actions, on top of the ones the
+     * action's field mapping uses, so the create-record handler can link the created
+     * record back to the source row (e.g. the source row's Id).
+     */
+    public function getRequiredPlaceholdersForCreateRecord(): array
+    {
+        return [];
+    }
+
     public function getRecordsFromResponse(array $response): array
     {
         return [];

@@ -256,7 +256,7 @@ class DispatchManualWorkflowService extends AbstractDispatchService
                 return null;
             }
 
-            $actionToExecute->setWorkflowData($this->workflowId, $this->jobWorkflowId, $this->recordIdentifier);
+            $actionToExecute->setWorkflowData($this->workflowId, $this->jobWorkflowId, $this->recordIdentifier, $this->module);
             $actionToExecute->setDataForAction('', $data);
 
             return $actionToExecute->execute();

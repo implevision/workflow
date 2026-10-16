@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\CreateRecord\Handlers;
 
+use Avatar\Infrastructure\Models\Api\v1\LexisNexisErrorModel;
 use Avatar\Infrastructure\Models\Api\v1\PolicyNoteModel;
 use Avatar\Infrastructure\Models\Api\v1\TbAgentTasksMaster;
 use Avatar\Infrastructure\Models\Api\v1\TbAgentTasksMasterMapping;
@@ -49,13 +50,16 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
 
         $transactionPK = $this->resolveTransactionPK($payload, $policyPK);
 
-        $mappingId = $this->saveAgentTask($payload, $policy, $transactionPK, $taskId, $taskTitle, $note);
+        ['mappingId' => $mappingId, 'created' => $created] = $this->saveAgentTask($payload, $policy, $transactionPK, $taskId, $taskTitle, $note);
 
-        if (! $mappingId) {
+        $this->linkLexisNexisError($context, $mappingId, $created);
+
+        if (! $created) {
             Log::warning('WORKFLOW - Agent task already open for policy, appended note to the master', [
                 'workflowId' => $context['workflowId'] ?? null,
                 'policyPK' => $policyPK,
                 'taskId' => $taskId,
+                'mappingId' => $mappingId,
             ]);
 
             return null;
@@ -77,10 +81,10 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
      * Adds the task under the policy's existing agent task master, or under a
      * new master when the policy has none yet.
      *
-     * @return int|null The new mapping id, or null when the task is already open for the policy
-     *                  (the note is then appended to the master's note).
+     * @return array{mappingId: int, created: bool} The new mapping, or the already open one
+     *                                              (created = false, the note is then appended to the master's note).
      */
-    private function saveAgentTask(array $payload, TbPolicy $policy, int $transactionPK, int $taskId, string $taskTitle, string $note): ?int
+    private function saveAgentTask(array $payload, TbPolicy $policy, int $transactionPK, int $taskId, string $taskTitle, string $note): array
     {
         $policyPK = (int) $policy->n_PolicyNoId_PK;
         $userId = user()->Admin_ID ?? Config::get('workflow.default_system_user_id');
@@ -112,7 +116,7 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
                         ]);
                     }
 
-                    return null;
+                    return ['mappingId' => (int) $openMappingId, 'created' => false];
                 }
             } else {
                 $masterId = TbAgentTasksMaster::insertGetId([
@@ -124,7 +128,7 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
                 ]);
             }
 
-            return TbAgentTasksMasterMapping::insertGetId([
+            $mappingId = TbAgentTasksMasterMapping::insertGetId([
                 'agent_tasks_masters_id' => $masterId,
                 'task_id' => $taskId,
                 'task_title' => $taskTitle,
@@ -132,7 +136,36 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
                 'created_by' => $userId,
                 'created_at' => $nowDate,
             ]);
+
+            return ['mappingId' => (int) $mappingId, 'created' => true];
         });
+    }
+
+    /**
+     * For workflows on the LexisNexis error module, stores the agent task mapping on
+     * the tb_lexisnexis_errors row the task was raised for. A newly created mapping
+     * is always stored; an already open one only fills a row that isn't linked yet.
+     */
+    private function linkLexisNexisError(array $context, int $mappingId, bool $created): void
+    {
+        if (class_basename((string) ($context['workflowModule'] ?? '')) !== class_basename(LexisNexisErrorModel::class)) {
+            return;
+        }
+
+        $errorId = (int) ($context['sourceRecord']['Id'] ?? 0);
+
+        if (! $errorId) {
+            Log::warning('WORKFLOW - LexisNexis error id missing, agent task mapping not linked', [
+                'workflowId' => $context['workflowId'] ?? null,
+                'mappingId' => $mappingId,
+            ]);
+
+            return;
+        }
+
+        LexisNexisErrorModel::where('id', $errorId)
+            ->when(! $created, fn ($query) => $query->whereNull('agent_task_master_mapping_id'))
+            ->update(['agent_task_master_mapping_id' => $mappingId]);
     }
 
     /**
