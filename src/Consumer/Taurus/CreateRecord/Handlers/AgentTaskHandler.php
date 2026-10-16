@@ -50,16 +50,17 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
 
         $transactionPK = $this->resolveTransactionPK($payload, $policyPK);
 
-        ['mappingId' => $mappingId, 'created' => $created] = $this->saveAgentTask($payload, $policy, $transactionPK, $taskId, $taskTitle, $note);
+        ['mappingId' => $mappingId, 'created' => $created, 'masterNote' => $masterNote] = $this->saveAgentTask($payload, $policy, $transactionPK, $taskId, $taskTitle, $note);
 
         $this->linkLexisNexisError($context, $mappingId, $created);
 
-        if (! $created) {
-            // The note was appended to the master, so record it on the policy notes too.
-            if ($note !== '') {
-                $this->addPolicyNote($policyPK, $transactionPK, $taskTitle, $note);
-            }
+        // A new task is always noted on the policy; an already open one only when a note was appended.
+        // The policy note carries exactly the note saved on the agent task master (the combined one when appended).
+        if ($created || $note !== '') {
+            $this->addPolicyNote($policyPK, $transactionPK, $taskTitle, $masterNote);
+        }
 
+        if (! $created) {
             Log::warning('WORKFLOW - Agent task already open for policy, appended note to the master', [
                 'workflowId' => $context['workflowId'] ?? null,
                 'policyPK' => $policyPK,
@@ -71,7 +72,6 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
         }
 
         $this->fireMappingCreatedEvent($mappingId);
-        $this->addPolicyNote($policyPK, $transactionPK, $taskTitle, $note);
 
         Log::info('WORKFLOW - Agent task created', [
             'workflowId' => $context['workflowId'] ?? null,
@@ -86,8 +86,9 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
      * Adds the task under the policy's existing agent task master, or under a
      * new master when the policy has none yet.
      *
-     * @return array{mappingId: int, created: bool} The new mapping, or the already open one
-     *                                              (created = false, the note is then appended to the master's note).
+     * @return array{mappingId: int, created: bool, masterNote: string} The new mapping, or the already open one
+     *                                                                  (created = false, the note is then appended to the master's note),
+     *                                                                  with the note as saved on the master.
      */
     private function saveAgentTask(array $payload, TbPolicy $policy, int $transactionPK, int $taskId, string $taskTitle, string $note): array
     {
@@ -111,17 +112,20 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
                 // The same task is already open for the policy, don't add it twice,
                 // only append the new note to the master's note.
                 if ($openMappingId) {
+                    $masterNote = $note;
+
                     if ($note !== '') {
                         $existingNote = (string) TbAgentTasksMaster::where('id', $masterId)->value('note');
+                        $masterNote = $existingNote === '' ? $note : $existingNote."\n".$note;
 
                         TbAgentTasksMaster::where('id', $masterId)->update([
-                            'note' => $existingNote === '' ? $note : $existingNote."\n".$note,
+                            'note' => $masterNote,
                             'updated_by' => $userId,
                             'updated_at' => $nowDate,
                         ]);
                     }
 
-                    return ['mappingId' => (int) $openMappingId, 'created' => false];
+                    return ['mappingId' => (int) $openMappingId, 'created' => false, 'masterNote' => $masterNote];
                 }
             } else {
                 $masterId = TbAgentTasksMaster::insertGetId([
@@ -142,7 +146,7 @@ class AgentTaskHandler implements CreateRecordHandlerInterface
                 'created_at' => $nowDate,
             ]);
 
-            return ['mappingId' => (int) $mappingId, 'created' => true];
+            return ['mappingId' => (int) $mappingId, 'created' => true, 'masterNote' => $note];
         });
     }
 
