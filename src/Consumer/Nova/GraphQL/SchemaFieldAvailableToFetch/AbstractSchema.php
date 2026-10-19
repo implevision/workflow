@@ -53,6 +53,15 @@ class AbstractSchema
     }
 
     /**
+     * Maps condition relation names (HAS) to the GraphQL fields they filter.
+     * See the Taurus AbstractSchema for details.
+     */
+    public function getRelationFieldMap(): array
+    {
+        return [];
+    }
+
+    /**
      * Nova modules query a single record directly under the query root
      * (no `{data: [...], paginatorInfo: {...}}` wrapper), so pagination
      * doesn't apply by default. Override to return true for a module whose
@@ -77,6 +86,16 @@ class AbstractSchema
     public function hasCustomRecordExtraction(): bool
     {
         return false;
+    }
+
+    /**
+     * Placeholders always fetched for CREATE_RECORD actions, on top of the ones the
+     * action's field mapping uses, so the create-record handler can link the created
+     * record back to the source row (e.g. the source row's Id).
+     */
+    public function getRequiredPlaceholdersForCreateRecord(): array
+    {
+        return [];
     }
 
     public function getRecordsFromResponse(array $response): array

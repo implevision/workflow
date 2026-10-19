@@ -1194,6 +1194,55 @@ class TbPotransaction extends AbstractSchema
             'jqFilter' => "{$this->queryPath}.tbTasks[] | select((.taskId|tostring) == ({$assignedTaskId}|tostring)) | .assignedTo.email",
         ];
 
+        $mortgageePk = isset($appendedPlaceHolders['MortgageePk']) ? (int) $appendedPlaceHolders['MortgageePk'] : 'null';
+
+        $mortgageeJqFilter = "{$this->queryPath}.mortgageeInfo[]? | select((.id|tostring) == ({$mortgageePk}|tostring))";
+
+        $fieldMapping['MortgageeType'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'id' => null,
+                    'mortgageeType' => null,
+                ],
+            ],
+            'jqFilter' => "{$mortgageeJqFilter} | .mortgageeType",
+        ];
+
+        $fieldMapping['MortgageeName'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'id' => null,
+                    'mortgageePersonInfo' => [
+                        'fullName' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => $mortgageeJqFilter,
+            'parseResultCallback' => 'parsePrimaryMortgageeName',
+        ];
+
+        $fieldMapping['MortgageeAddress'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'id' => null,
+                    'mortgageeAddress' => $addressStructure,
+                ],
+            ],
+            'jqFilter' => $mortgageeJqFilter,
+            'parseResultCallback' => 'parsePrimaryMortgageeAddress',
+        ];
+
+        $fieldMapping['MortgageeLoanNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'mortgageeInfo' => [
+                    'id' => null,
+                    'loanNumber' => null,
+                ],
+            ],
+            'jqFilter' => $mortgageeJqFilter,
+            'parseResultCallback' => 'parseLoanNumber',
+        ];
+
         $fieldMapping['CurrentYear'] = [
             'GraphQLschemaToReplace' => [],
             'jqFilter' => '',

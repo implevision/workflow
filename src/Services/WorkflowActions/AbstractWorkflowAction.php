@@ -14,6 +14,8 @@ class AbstractWorkflowAction
 
     protected $recordIdentifier;
 
+    protected $module = '';
+
     protected $data;
 
     protected $feedFile;
@@ -67,11 +69,17 @@ class AbstractWorkflowAction
         return $this->feedFile;
     }
 
-    public function setWorkflowData($workflowId, $jobWorkflowId, $recordIdentifier)
+    public function getModule()
+    {
+        return $this->module;
+    }
+
+    public function setWorkflowData($workflowId, $jobWorkflowId, $recordIdentifier, $module = '')
     {
         $this->workflowId = $workflowId;
         $this->jobWorkflowId = $jobWorkflowId;
         $this->recordIdentifier = $recordIdentifier;
+        $this->module = $module;
     }
 
     public function setDataForAction($feedFile, $data)
