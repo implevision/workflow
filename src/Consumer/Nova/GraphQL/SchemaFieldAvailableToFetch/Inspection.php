@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Nova\GraphQL\SchemaFieldAvailableToFetch;
 
+use App\Models\Client;
 use App\Services\ClientApiKeyService;
 use Taurus\Workflow\Consumer\Nova\Helper;
 
@@ -147,6 +148,11 @@ class Inspection extends AbstractSchema
                 'jqFilter' => "{$this->queryPath}.claim.clientId",
                 'parseResultCallback' => 'resolveApiSecret',
             ],
+            'BaseUrl' => [
+                'GraphQLschemaToReplace' => ['claim' => ['clientId' => null]],
+                'jqFilter' => "{$this->queryPath}.claim.clientId",
+                'parseResultCallback' => 'resolveBaseUrl',
+            ],
         ];
     }
 
@@ -223,6 +229,21 @@ class Inspection extends AbstractSchema
     public function resolveApiSecret($clientId): string
     {
         return $this->resolveClientApiKey($clientId)?->api_secret ?? '';
+    }
+
+    /**
+     * API host for the portal this claim's client belongs to, without a
+     * trailing slash so callers can append their own path.
+     */
+    public function resolveBaseUrl($clientId): string
+    {
+        if (! $clientId) {
+            return '';
+        }
+
+        $baseUrl = Client::find((int) $clientId)?->base_url ?? '';
+
+        return rtrim((string) $baseUrl, '/');
     }
 
     /** Shared by the ApiKey/ApiSecret/XClientKey resolvers above. */
