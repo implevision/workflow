@@ -69,17 +69,6 @@ class InitInstance
         }
     }
 
-    public function getParentClassService()
-    {
-        $parentClassServiceClass = 'Taurus\\Workflow\\Consumer\\Nova\\ParentClass\\ParentClassService';
-
-        if (class_exists($parentClassServiceClass)) {
-            return new $parentClassServiceClass;
-        } else {
-            throw new \Exception("Parent class service class '$parentClassServiceClass' does not exist.");
-        }
-    }
-
     public function getCreateRecordService()
     {
         $createRecordServiceClass = 'Taurus\\Workflow\\Consumer\\Nova\\CreateRecord\\CreateRecordService';
