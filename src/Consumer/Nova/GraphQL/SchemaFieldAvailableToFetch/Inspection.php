@@ -148,10 +148,10 @@ class Inspection extends AbstractSchema
                 'jqFilter' => "{$this->queryPath}.claim.clientId",
                 'parseResultCallback' => 'resolveApiSecret',
             ],
-            'BaseUrl' => [
+            'ClientBaseUrl' => [
                 'GraphQLschemaToReplace' => ['claim' => ['clientId' => null]],
                 'jqFilter' => "{$this->queryPath}.claim.clientId",
-                'parseResultCallback' => 'resolveBaseUrl',
+                'parseResultCallback' => 'resolveClientBaseUrl',
             ],
         ];
     }
@@ -235,7 +235,7 @@ class Inspection extends AbstractSchema
      * API host for the portal this claim's client belongs to, without a
      * trailing slash so callers can append their own path.
      */
-    public function resolveBaseUrl($clientId): string
+    public function resolveClientBaseUrl($clientId): string
     {
         if (! $clientId) {
             return '';
