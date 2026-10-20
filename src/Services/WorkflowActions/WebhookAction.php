@@ -100,6 +100,7 @@ class WebhookAction extends AbstractWorkflowAction
             $payload['webhookRequestPayload'] ?? [],
             $payload['webhookRequestHeaders'] ?? [],
             $payload['webhookRequestUrl'] ?? '',
+            $payload['authUrl'] ?? '',
             $payload['authHeaders'] ?? [],
             $payload['authParams'] ?? [],
         ];
