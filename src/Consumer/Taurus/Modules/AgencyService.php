@@ -2,7 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\Modules;
 
-class TbPersonInfoService extends ModuleService
+class AgencyService extends ModuleService
 {
     public function getPostFixForTaskDefinition()
     {
