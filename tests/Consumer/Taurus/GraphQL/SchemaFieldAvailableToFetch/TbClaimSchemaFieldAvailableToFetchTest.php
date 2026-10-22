@@ -1,12 +1,12 @@
 <?php
 
-namespace Taurus\Workflow\Tests\GraphQL\Taurus;
+namespace Taurus\Workflow\Tests\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
 use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Avatar\Infrastructure\Models\Api\v1\TbProduct;
 use Illuminate\Support\Facades\DB;
-use Orchestra\Testbench\TestCase;
 use Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch\TbClaim;
+use Taurus\Workflow\Tests\Consumer\Taurus\TestCase;
 
 class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
 {

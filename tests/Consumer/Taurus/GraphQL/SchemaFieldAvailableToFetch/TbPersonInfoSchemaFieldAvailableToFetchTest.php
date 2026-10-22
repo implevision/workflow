@@ -1,9 +1,9 @@
 <?php
 
-namespace Taurus\Workflow\Tests\GraphQL\Taurus;
+namespace Taurus\Workflow\Tests\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
-use Orchestra\Testbench\TestCase;
 use Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch\TbPersonInfo;
+use Taurus\Workflow\Tests\Consumer\Taurus\TestCase;
 
 class TbPersonInfoSchemaFieldAvailableToFetchTest extends TestCase
 {
