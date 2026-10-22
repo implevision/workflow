@@ -3,7 +3,6 @@
 namespace Taurus\Workflow\Services;
 
 use Illuminate\Support\Facades\Log;
-use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Services\WorkflowActions\AbstractWorkflowAction;
 
 /**
@@ -91,7 +90,7 @@ class DispatchManualWorkflowService extends AbstractDispatchService
             }
         }
 
-        WorkflowLog::markWorkflowCompleted($this->workflowId, $this->jobWorkflowId);
+        $this->workflowLogRepo->markCompleted($this->workflowId, $this->jobWorkflowId);
 
         return [
             'success' => true,
