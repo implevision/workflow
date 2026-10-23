@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Services;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Taurus\Workflow\Models\WorkflowLog;
+use Taurus\Workflow\Repositories\Contracts\WorkflowLogRepositoryInterface;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
@@ -32,6 +33,7 @@ use Taurus\Workflow\Services\WorkflowActions\WorkflowOutputAction;
  * the concrete class.
  *
  * @property JobWorkflowRepository $jobWorkflowRepo Repository used to create the job-workflow tracking rows.
+ * @property WorkflowLogRepositoryInterface $workflowLogRepo Repository used to create and complete the workflow-log rows.
  * @property WorkflowService $workflowService Provides the module GraphQL mappings, template info, query builders and error logging.
  * @property int $workflowId The saved workflow being run; 0 for a manual run.
  * @property int $jobWorkflowId The job-workflow row tracking this run, set once creation succeeds.
@@ -76,6 +78,8 @@ abstract class AbstractDispatchService
 
     protected $jobWorkflowRepo;
 
+    protected $workflowLogRepo;
+
     protected $workflowService;
 
     protected int $workflowId = 0;
@@ -103,6 +107,7 @@ abstract class AbstractDispatchService
     protected function initializeServices(): void
     {
         $this->jobWorkflowRepo = app(JobWorkflowRepository::class);
+        $this->workflowLogRepo = app(WorkflowLogRepositoryInterface::class);
         $this->workflowService = app(WorkflowService::class);
     }
 
@@ -215,7 +220,7 @@ abstract class AbstractDispatchService
             $attributes['action_config_payload'] = $actionConfigPayload;
         }
 
-        return WorkflowLog::create($attributes);
+        return $this->workflowLogRepo->create($attributes);
     }
 
     /**
@@ -268,7 +273,7 @@ abstract class AbstractDispatchService
 
         try {
             $actionClass = $actionConfig['class'];
-            $action = new $actionClass($actionType, $actionPayload);
+            $action = app($actionClass, ['action' => $actionType, 'payload' => $actionPayload]);
 
             if ($actionConfig['usesTemplateInfo']) {
                 $action->setExtendedTemplateInfo(
@@ -377,7 +382,7 @@ abstract class AbstractDispatchService
 
             // The builder accumulates fields, so it stays per-call even though the
             // schema object above is shared for the whole run.
-            $graphQLSchemaBuilder = new GraphQLSchemaBuilderService($fieldMapping);
+            $graphQLSchemaBuilder = app(GraphQLSchemaBuilderService::class, ['fieldMapping' => $fieldMapping]);
             foreach ($listOfRequiredData as $placeHolder) {
                 $graphQLSchemaBuilder->addField($placeHolder);
             }

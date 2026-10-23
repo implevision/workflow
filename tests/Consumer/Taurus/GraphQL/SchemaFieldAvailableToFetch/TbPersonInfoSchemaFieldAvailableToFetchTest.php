@@ -1,47 +1,38 @@
 <?php
 
-namespace Taurus\Workflow\Tests\GraphQL\Taurus;
+namespace Taurus\Workflow\Tests\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
-use Orchestra\Testbench\TestCase;
 use Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch\TbPersonInfo;
+use Taurus\Workflow\Tests\Consumer\Taurus\TestCase;
 
 class TbPersonInfoSchemaFieldAvailableToFetchTest extends TestCase
 {
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Mirrors AbstractSchema::getFieldMapping(), which wraps every non-empty
-     * GraphQLschemaToReplace fragment under a 'data' key.
-     */
-    private function wrapSchemaWithData(array $schema): array
+    public function test_query_name()
     {
-        return empty($schema) ? $schema : ['data' => $schema];
+        $tbPersonInfo = new TbPersonInfo;
+        $this->assertEquals('producersQuery', $tbPersonInfo->getQueryName(), "Query name should be 'producersQuery'");
     }
 
-    // -------------------------------------------------------------------------
-    // W9FormEmployeeIdentificationNumber field mapping tests
-    // -------------------------------------------------------------------------
-
-    public function test_field_mapping_for_w9_form_employee_identification_number()
+    public function test_field_mapping()
     {
         $tbPersonInfo = new TbPersonInfo;
         $fieldMapping = $tbPersonInfo->getFieldMapping();
 
-        $expectedArray = [
-            'GraphQLschemaToReplace' => $this->wrapSchemaWithData([
-                'userAgent' => [
-                    'agency' => [
-                        'feinSsnNo' => null,
+        $expectedArray = $this->wrapFieldMappingSchemaUnderData([
+            'W9FormEmployeeIdentificationNumber' => [
+                'GraphQLschemaToReplace' => [
+                    'userAgent' => [
+                        'agency' => [
+                            'feinSsnNo' => null,
+                        ],
                     ],
                 ],
-            ]),
-            'jqFilter' => '.producersQuery.userAgent.agency.feinSsnNo',
-            'parseResultCallback' => 'parseW9FormEmployeeIdentificationNumber',
-        ];
+                'jqFilter' => '.producersQuery.userAgent.agency.feinSsnNo',
+                'parseResultCallback' => 'parseW9FormEmployeeIdentificationNumber',
+            ],
+        ]);
 
-        $this->assertEquals($expectedArray, $fieldMapping['W9FormEmployeeIdentificationNumber']);
+        $this->assertEquals($expectedArray['W9FormEmployeeIdentificationNumber'], $fieldMapping['W9FormEmployeeIdentificationNumber']);
     }
 
     // -------------------------------------------------------------------------
