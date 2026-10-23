@@ -34,8 +34,14 @@
     "phpunit/phpunit": "^12.1"
   },
   "autoload-dev": {
+    "psr-4": {
+      "Taurus\\Workflow\\Tests\\": "tests/"
+    },
     "files": [
       "tests/Stubs/AvatarModelsStub.php"
     ]
+  },
+  "scripts": {
+    "test": "phpunit"
   }
 }
