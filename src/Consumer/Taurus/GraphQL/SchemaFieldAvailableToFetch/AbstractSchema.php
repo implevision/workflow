@@ -83,6 +83,20 @@ class AbstractSchema
     }
 
     /**
+     * Maps condition relation names (as used in HAS conditions) to the GraphQL
+     * fields they correspond to in the selection. When an AND-ed HAS condition
+     * targets a mapped relation that is being fetched, the same condition is
+     * applied to that field too, so only the matching related rows come back.
+     * Example: ['TbDocuploadinfo' => 'docuploadinfo']
+     *
+     * @return array relation name => GraphQL field name
+     */
+    public function getRelationFieldMap(): array
+    {
+        return [];
+    }
+
+    /**
      * Whether this module's query returns a page of records
      * (`{queryName: {data: [...], paginatorInfo: {...}}}`) rather than a
      * single record directly under the query root. Controls whether the
@@ -132,6 +146,16 @@ class AbstractSchema
     public function hasCustomRecordExtraction(): bool
     {
         return false;
+    }
+
+    /**
+     * Placeholders always fetched for CREATE_RECORD actions, on top of the ones the
+     * action's field mapping uses, so the create-record handler can link the created
+     * record back to the source row (e.g. the source row's Id).
+     */
+    public function getRequiredPlaceholdersForCreateRecord(): array
+    {
+        return [];
     }
 
     public function getRecordsFromResponse(array $response): array

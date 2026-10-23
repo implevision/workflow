@@ -127,7 +127,7 @@ class PolicyRenewal extends AbstractSchema
         ];
 
         // Drop null/empty args so the generated GraphQL stays valid (no "executionEvent: " gaps).
-        return array_filter($args, fn ($value) => $value !== null && $value !== '');
+        return array_filter($args, fn($value) => $value !== null && $value !== '');
     }
 
     public function getNextPageArgs(array $response, array $currentArgs): ?array
@@ -177,6 +177,7 @@ class PolicyRenewal extends AbstractSchema
                         'policyNo' => null,
                         'insuredName' => null,
                         'termEndDate' => null,
+                        'termStartDate' => null,
                         'premiumAmount' => null,
                         'paymentAmt' => null,
                     ],
@@ -215,6 +216,7 @@ class PolicyRenewal extends AbstractSchema
                 'PolicyNo' => $item['policyNo'] ?? '',
                 'InsuredName' => $item['insuredName'] ?? '',
                 'TermEndDate' => ! empty($item['termEndDate']) ? Helper::formatDate($item['termEndDate']) : '',
+                'TermStartDate' => ! empty($item['termStartDate']) ? Helper::formatDate($item['termStartDate']) : '',
                 'PremiumAmount' => $item['premiumAmount'] ?? '',
                 'PaymentAmt' => $item['paymentAmt'] ?? '',
             ];

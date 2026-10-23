@@ -89,8 +89,16 @@ class TbPersonInfo extends AbstractSchema
             'AgencyName' => [
                 'GraphQLschemaToReplace' => [
                     'agencyName' => null,
+                    'entityType' => null,
+                    'userAgent' => [
+                        'agency' => [
+                            'agencyName' => null,
+                            'entityType' => null,
+                        ],
+                    ],
                 ],
-                'jqFilter' => "{$this->queryPath}.agencyName",
+                'jqFilter' => "{$this->queryPath}",
+                'parseResultCallback' => 'parseAgencyName',
             ],
 
             'DBAName' => [
@@ -238,6 +246,23 @@ class TbPersonInfo extends AbstractSchema
                 ],
             ],
             'jqFilter' => "{$this->queryPath}.managers[0].managerPerson.phoneInfo[0].phoneNumber",
+        ];
+
+        $fieldMapping['AgencyPhoneNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'phoneInfo' => [
+                    'phoneNumber' => null,
+                    'phoneTypeCode' => null,
+                ],
+                'addresses' => [
+                    'phoneInfo' => [
+                        'phoneNumber' => null,
+                        'phoneTypeCode' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => "[{$this->queryPath}.phoneInfo[]?, {$this->queryPath}.addresses[]?.phoneInfo[]?] | map(select(.phoneTypeCode == \"Phone\")) | first | .phoneNumber",
+            'parseResultCallback' => 'parsePhoneNumber',
         ];
 
         $fieldMapping['ManagerEmail'] = [
@@ -407,6 +432,18 @@ class TbPersonInfo extends AbstractSchema
             'parseResultCallback' => 'parseW9FormFeinSsnNo',
         ];
 
+        $fieldMapping['W9FormEmployeeIdentificationNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'userAgent' => [
+                    'agency' => [
+                        'feinSsnNo' => null,
+                    ],
+                ],
+            ],
+            'jqFilter' => "{$this->queryPath}.userAgent.agency.feinSsnNo",
+            'parseResultCallback' => 'parseW9FormEmployeeIdentificationNumber',
+        ];
+
         $targetAgentStatementMasterPK = isset($appendedPlaceHolders['AgentStatementMasterPK']) ? $appendedPlaceHolders['AgentStatementMasterPK'] : null;
 
         $fieldMapping['AttachStatementSheet'] = [
@@ -482,7 +519,7 @@ class TbPersonInfo extends AbstractSchema
         ];
 
         $fieldMapping['AgentDashboardURL'] = [
-            'GraphQLschemaToReplace' => '',
+            'GraphQLschemaToReplace' => [],
             'jqFilter' => '',
             'parseResultCallback' => 'getAgentDashboard',
         ];
@@ -625,7 +662,7 @@ class TbPersonInfo extends AbstractSchema
 
         $digits = preg_replace('/\D/', '', $feinSsnNo);
 
-        // SSN format: XXX-XX-XXXX — each digit spaced, groups separated by 3 spaces
+        // SSN format: XXX-XX-XXXX — each digit spaced
         if (strlen($digits) === 9) {
             $part1 = implode(' ', str_split(substr($digits, 0, 3)));
             $part2 = implode(' ', str_split(substr($digits, 3, 2)));
@@ -634,7 +671,26 @@ class TbPersonInfo extends AbstractSchema
             return $part1.'    '.$part2.'   '.$part3;
         }
 
-        return implode(' ', str_split($digits));
+        return null;
+    }
+
+    public function parseW9FormEmployeeIdentificationNumber($einNumber)
+    {
+        if (empty($einNumber)) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', $einNumber);
+
+        // Employee Identification Number format: XX-XXXXXXX — each digit spaced
+        if (strlen($digits) === 9) {
+            $part1 = implode(' ', str_split(substr($digits, 0, 2)));
+            $part2 = implode(' ', str_split(substr($digits, 2, 7)));
+
+            return $part1.'   '.$part2;
+        }
+
+        return null;
     }
 
     public function getTodaysDate(): string
@@ -655,6 +711,19 @@ class TbPersonInfo extends AbstractSchema
     public function parseCompanyName($response)
     {
         return $this->resolveCompanyDetail($response, 'companyName', 'wyo');
+    }
+
+    public function parseAgencyName($response)
+    {
+        if (($response['entityType'] ?? null) === 'ORGANISATION') {
+            return $response['agencyName'] ?? null;
+        }
+
+        if (($response['userAgent']['agency']['entityType'] ?? null) === 'ORGANISATION') {
+            return $response['userAgent']['agency']['agencyName'] ?? null;
+        }
+
+        return null;
     }
 
     private function resolveCompanyDetail($response, string $companyKey, string $holdingKey): string
@@ -736,5 +805,10 @@ class TbPersonInfo extends AbstractSchema
             'advantageflood' => 'CEO - Taurus Services',
             default => '',
         };
+    }
+
+    public function parsePhoneNumber($phoneNumber)
+    {
+        return $phoneNumber ? Helper::formatPhone($phoneNumber) : $phoneNumber;
     }
 }

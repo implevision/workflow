@@ -48,6 +48,9 @@ class WorkflowEmailService
 
     public static function extractPlaceholders(array $payload)
     {
+        if (array_key_exists('subject', $payload) && $payload['subject'] === null) {
+            $payload['subject'] = '';
+        }
         $response = Http::withHeaders([
             'x-client-key' => config('workflow.email_template_service_client_key'),
             'X-Tenant' => getTenant(),

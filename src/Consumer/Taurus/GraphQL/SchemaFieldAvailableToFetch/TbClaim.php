@@ -9,8 +9,8 @@ use Taurus\Workflow\Consumer\Taurus\Helper;
 class TbClaim extends AbstractSchema
 {
     private const COVERAGE_DESC = [
-        'Building' => 'Building',
-        'Content' => 'Content',
+        'Building' => 'BUILDING',
+        'Content' => 'CONTENT',
     ];
 
     private const TRAN_TYPE = [
@@ -21,7 +21,7 @@ class TbClaim extends AbstractSchema
     private const RESERVE_TYPE = [
         'Advance' => 'A',
         'Final' => 'F',
-        'Supplemental' => '',
+        'Recovery' => 'R',
     ];
 
     private const TRAN_SUB_TYPE_CLAIM_PAYMENT = [
@@ -53,7 +53,6 @@ class TbClaim extends AbstractSchema
     {
         $this->queryName = 'claimsQuery';
         $this->queryPath = '.'.$this->queryName;
-        $this->fieldMapping = $this->initializeFieldMapping();
     }
 
     /**
@@ -66,6 +65,10 @@ class TbClaim extends AbstractSchema
      */
     public function getFieldMapping()
     {
+        if (empty($this->fieldMapping)) {
+            $this->fieldMapping = $this->initializeFieldMapping();
+        }
+
         return $this->fieldMapping;
     }
 
@@ -82,6 +85,13 @@ class TbClaim extends AbstractSchema
         return $this->queryName;
     }
 
+    public function getRelationFieldMap(): array
+    {
+        return [
+            'TbDocuploadinfo' => 'docuploadinfo',
+        ];
+    }
+
     /**
      * Initializes the field mapping with GraphQL schema for the TbClaim class.
      *
@@ -96,6 +106,8 @@ class TbClaim extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $appendedPlaceHolders = $this->getAppendedPlaceHolders();
+
         $fieldMapping = [
             'ClaimId' => [
                 'GraphQLschemaToReplace' => [
@@ -263,6 +275,25 @@ class TbClaim extends AbstractSchema
             ],
             'jqFilter' => "[{$this->queryPath}.adjustingFirm[].personInfo.phoneInfo[0] | select(.isDefault == \"Y\")]",
             'parseResultCallback' => 'parseAdjustingFirmPhone',
+        ];
+
+        $fieldMapping['AgencyPhoneNumber'] = [
+            'GraphQLschemaToReplace' => [
+                'agency' => [
+                    'phoneInfo' => [
+                        'phoneNumber' => null,
+                        'phoneTypeCode' => null,
+                    ],
+                    'TbPersonaddress' => [
+                        'phoneInfo' => [
+                            'phoneNumber' => null,
+                            'phoneTypeCode' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => "[{$this->queryPath}.agency.phoneInfo[]?, {$this->queryPath}.agency.TbPersonaddress[]?.phoneInfo[]?] | map(select(.phoneTypeCode == \"Phone\")) | first | .phoneNumber",
+            'parseResultCallback' => 'parsePhoneNumber',
         ];
 
         $fieldMapping['ExaminerName'] = [
@@ -443,11 +474,14 @@ class TbClaim extends AbstractSchema
 
         $paymentStructure = [
             'claimReserve' => [
+                'claimReserveId' => null,
                 'tranTypeCode' => null,
                 'tranSubTypeCode' => null,
                 'amount' => null,
                 'paymentApproved' => null,
                 'status' => null,
+                'approvedDate' => null,
+                'sourceFK' => null,
                 'claimReserveDetail' => [
                     'reserveType' => null,
                 ],
@@ -509,75 +543,113 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'sumAmounts',
         ];
 
-        $fieldMapping['BuildingAdvancedPayment'] = [
+        $fieldMapping['BuildingAdvancedPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
-            'parseResultCallback' => 'sumAmounts',
+            'parseResultCallback' => 'sumApprovedAmounts',
         ];
 
-        $fieldMapping['BuildingFinalPayment'] = [
+        $fieldMapping['BuildingFinalPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
-            'parseResultCallback' => 'sumAmounts',
+            'parseResultCallback' => 'sumApprovedAmounts',
         ];
 
-        $fieldMapping['BuildingRapPayment'] = [
+        $fieldMapping['BuildingRapPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
-            'parseResultCallback' => 'sumAmounts',
+            'jqFilter' => $this->buildApprovedPaymentJqFilterForSupplementalType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumApprovedAmounts',
+        ];
+
+        $fieldMapping['BuildingAdvancedMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumApprovedAmounts',
+        ];
+
+        $fieldMapping['BuildingFinalMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumApprovedAmounts',
+        ];
+
+        $fieldMapping['BuildingRapMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilterForSupplementalType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'parseResultCallback' => 'sumApprovedAmounts',
         ];
 
         $fieldMapping['BuildingTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
+            'jqFilter' => $this->buildPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Building']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
-        $fieldMapping['ContentsAdvancedPayment'] = [
+        $fieldMapping['ContentsAdvancedPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
-            'parseResultCallback' => 'sumAmounts',
+            'parseResultCallback' => 'sumApprovedAmounts',
         ];
 
-        $fieldMapping['ContentsFinalPayment'] = [
+        $fieldMapping['ContentsFinalPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
-            'parseResultCallback' => 'sumAmounts',
+            'parseResultCallback' => 'sumApprovedAmounts',
         ];
 
-        $fieldMapping['ContentsRapPayment'] = [
+        $fieldMapping['ContentsRapPaymentTotal'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
-            'parseResultCallback' => 'sumAmounts',
+            'jqFilter' => $this->buildApprovedPaymentJqFilterForSupplementalType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumApprovedAmounts',
+        ];
+
+        $fieldMapping['ContentsAdvancedMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumApprovedAmounts',
+        ];
+
+        $fieldMapping['ContentsFinalMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumApprovedAmounts',
+        ];
+
+        $fieldMapping['ContentsRapMostRecentPayment'] = [
+            'GraphQLschemaToReplace' => $paymentStructure,
+            'jqFilter' => $this->buildMostRecentPaymentJqFilterForSupplementalType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'parseResultCallback' => 'sumApprovedAmounts',
         ];
 
         $fieldMapping['ContentsTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
+            'jqFilter' => $this->buildPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['Content']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
+        /*
         $fieldMapping['ICCAdvancedPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Advance'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
-            'parseResultCallback' => 'sumAmounts',
+            'parseResultCallback' => 'sumApprovedAmounts',
         ];
 
         $fieldMapping['ICCFinalPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
             'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Final'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
-            'parseResultCallback' => 'sumAmounts',
+            'parseResultCallback' => 'sumApprovedAmounts',
         ];
 
         $fieldMapping['ICCSupplementalPayment'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilter(self::RESERVE_TYPE['Supplemental'], self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
-            'parseResultCallback' => 'sumAmounts',
+            'jqFilter' => $this->buildApprovedPaymentJqFilterForSupplementalType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'parseResultCallback' => 'sumApprovedAmounts',
         ];
+        */
 
         $fieldMapping['ICCTotalPayments'] = [
             'GraphQLschemaToReplace' => $paymentStructure,
-            'jqFilter' => $this->buildApprovedPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
+            'jqFilter' => $this->buildPaymentJqFilterByTranSubType(self::TRAN_SUB_TYPE_CLAIM_PAYMENT['ICC']),
             'parseResultCallback' => 'sumAmounts',
         ];
 
@@ -604,25 +676,88 @@ class TbClaim extends AbstractSchema
             'parseResultCallback' => 'parseClaimantAddress',
         ];
 
+        $docUploadInfoId = isset($appendedPlaceHolders['DocUploadInfoId']) ? (int) $appendedPlaceHolders['DocUploadInfoId'] : 'null';
+
+        $fieldMapping['AttachUploadedDocument'] = [
+            'GraphQLschemaToReplace' => [
+                'docuploadinfo' => [
+                    'id' => null,
+                    'docUploadDocInfoRel' => [
+                        'docInfo' => [
+                            'docPath' => null,
+                            'docName' => null,
+                        ],
+                    ],
+                ],
+            ],
+            'jqFilter' => "
+                [
+                    {$this->queryPath}.docuploadinfo[]
+                    | select((.id|tostring) == ({$docUploadInfoId}|tostring))
+                    | .docUploadDocInfoRel[]
+                    | .docInfo[]
+                    | {
+                        name: .docName,
+                        path: .docPath
+                    }
+                ]
+            ",
+            'parseResultCallback' => 'generatePresignedUrl',
+        ];
+
         return $this->wrapFieldMappingSchemaUnderData($fieldMapping);
     }
 
     private function buildApprovedPaymentJqFilter($reserveType, $tranSubTypeCode)
     {
         return sprintf(
-            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\"))]",
+            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and (.claimReserveDetail.reserveType == \"%s\" or .status == \"VOID\") and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\")]",
             self::TRAN_TYPE['LossPayment'],
             $reserveType,
             $tranSubTypeCode
         );
     }
 
-    private function buildApprovedPaymentJqFilterByTranSubType($tranSubTypeCode)
+    private function buildApprovedPaymentJqFilterForSupplementalType($tranSubTypeCode)
     {
         return sprintf(
-            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and (.status == null or .status == \"VOID\"))]",
+            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\")]",
+            self::TRAN_TYPE['LossPayment'],
+            $tranSubTypeCode,
+            self::RESERVE_TYPE['Advance'],
+            self::RESERVE_TYPE['Final'],
+            self::RESERVE_TYPE['Recovery']
+        );
+    }
+
+    private function buildPaymentJqFilterByTranSubType($tranSubTypeCode)
+    {
+        return sprintf(
+            "[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\")]",
             self::TRAN_TYPE['LossPayment'],
             $tranSubTypeCode
+        );
+    }
+
+    private function buildMostRecentPaymentJqFilter($reserveType, $tranSubTypeCode)
+    {
+        return sprintf(
+            "[[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .claimReserveDetail.reserveType == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and .status != \"VOID\")] | max_by(.approvedDate)]",
+            self::TRAN_TYPE['LossPayment'],
+            $reserveType,
+            $tranSubTypeCode
+        );
+    }
+
+    private function buildMostRecentPaymentJqFilterForSupplementalType($tranSubTypeCode)
+    {
+        return sprintf(
+            "[[{$this->queryPath}.claimReserve[] | select(.tranTypeCode == \"%s\" and .tranSubTypeCode == \"%s\" and .paymentApproved == \"Approved\" and .status != \"VOID\" and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\" and .claimReserveDetail.reserveType != \"%s\")] | max_by(.approvedDate)]",
+            self::TRAN_TYPE['LossPayment'],
+            $tranSubTypeCode,
+            self::RESERVE_TYPE['Advance'],
+            self::RESERVE_TYPE['Final'],
+            self::RESERVE_TYPE['Recovery']
         );
     }
 
@@ -708,6 +843,11 @@ class TbClaim extends AbstractSchema
     public function parseAdjustingFirmEmail($emailArr)
     {
         return is_array($emailArr) && count($emailArr) ? (last($emailArr)['email'] ?? null) : null;
+    }
+
+    public function parsePhoneNumber($phoneNumber)
+    {
+        return $phoneNumber ? Helper::formatPhone($phoneNumber) : $phoneNumber;
     }
 
     public function parseAdjustingFirmPhone($phoneArr)
@@ -871,5 +1011,38 @@ class TbClaim extends AbstractSchema
         }
 
         return Helper::formatCurrency(abs($amount));
+    }
+
+    /**
+     * Sums approved payment amounts, keeping a VOID transaction only when its
+     * sourceFK points to a claimReserveId of another (non-void) transaction in the set.
+     */
+    public function sumApprovedAmounts($items)
+    {
+        if (! is_array($items)) {
+            return $this->sumAmounts($items);
+        }
+
+        $isVoid = static fn ($item) => data_get($item, 'status') === 'VOID';
+
+        $claimReserveIds = [];
+        foreach ($items as $item) {
+            $claimReserveId = data_get($item, 'claimReserveId');
+            if (! $isVoid($item) && $claimReserveId !== null) {
+                $claimReserveIds[(string) $claimReserveId] = true;
+            }
+        }
+
+        $filteredItems = array_filter($items, static function ($item) use ($isVoid, $claimReserveIds) {
+            if (! $isVoid($item)) {
+                return true;
+            }
+
+            $sourceFK = data_get($item, 'sourceFK');
+
+            return $sourceFK !== null && isset($claimReserveIds[(string) $sourceFK]);
+        });
+
+        return $this->sumAmounts($filteredItems);
     }
 }
