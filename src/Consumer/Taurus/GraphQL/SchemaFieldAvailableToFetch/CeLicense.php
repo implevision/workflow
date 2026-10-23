@@ -66,8 +66,8 @@ class CeLicense extends AbstractSchema
 
         $agentMap = [];
 
-        foreach ($agents as $agent) {
-            $email = $agent['agentEmail'] ?? '';
+        foreach ($agents as $index => $agent) {
+            $email = ! empty($agent['agentEmail']) ? 'email:'.$agent['agentEmail'] : 'row:'.$index;
             if (! isset($agentMap[$email])) {
                 $agentMap[$email] = $this->baseAgentRecord($agent);
             }
@@ -220,7 +220,7 @@ class CeLicense extends AbstractSchema
             'AgencyAccountId' => ['GraphQLschemaToReplace' => $dataSchema],
             'CeLicenseListData' => ['GraphQLschemaToReplace' => $dataSchema],
             'CurrentYear' => [
-                'GraphQLschemaToReplace' => [],
+                'GraphQLschemaToReplace' => $dataSchema,
                 'jqFilter' => '',
                 'parseResultCallback' => 'getCurrentYear',
             ],
