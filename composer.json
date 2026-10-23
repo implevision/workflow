@@ -35,7 +35,8 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "Taurus\\Workflow\\Tests\\": "tests/"
+      "Taurus\\Workflow\\Tests\\": "tests/",
+      "Taurus\\Workflow\\Consumer\\Fake\\": "tests/Support/FakeConsumer/"
     },
     "files": [
       "tests/Stubs/AvatarModelsStub.php"

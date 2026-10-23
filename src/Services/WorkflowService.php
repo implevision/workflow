@@ -6,11 +6,11 @@ use Illuminate\Support\Facades\DB;
 use stdClass;
 use Taurus\Workflow\Consumer\ConsumerService;
 use Taurus\Workflow\Data\WorkflowData;
-use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Contracts\JobWorkflowRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowActionRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConfigRepositoryInterface;
+use Taurus\Workflow\Repositories\Contracts\WorkflowLogRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowRepositoryInterface;
 use Taurus\Workflow\Services\AWS\EventBridgeScheduler;
 
@@ -26,18 +26,22 @@ class WorkflowService
 
     protected $workflowConfigRepo;
 
+    protected $workflowLogRepo;
+
     public function __construct(
         WorkflowRepositoryInterface $workflowRepo,
         WorkflowConditionRepositoryInterface $workflowConditionRepo,
         WorkflowActionRepositoryInterface $workflowActionRepo,
         JobWorkflowRepositoryInterface $jobWorkflowRepo,
-        WorkflowConfigRepositoryInterface $workflowConfigRepo
+        WorkflowConfigRepositoryInterface $workflowConfigRepo,
+        WorkflowLogRepositoryInterface $workflowLogRepo
     ) {
         $this->workflowRepo = $workflowRepo;
         $this->workflowConditionRepo = $workflowConditionRepo;
         $this->workflowActionRepo = $workflowActionRepo;
         $this->jobWorkflowRepo = $jobWorkflowRepo;
         $this->workflowConfigRepo = $workflowConfigRepo;
+        $this->workflowLogRepo = $workflowLogRepo;
     }
 
     public function getAllWorkflows()
@@ -829,17 +833,7 @@ class WorkflowService
                 return ['data' => collect(), 'total' => 0];
             }
 
-            $query = WorkflowLog::with('workflow:id,name')
-                ->with('user:Admin_ID,s_ScreenName')
-                ->where('module', $moduleClass)
-                ->where('status', WorkflowLog::STATUS_COMPLETED)
-                ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))
-                ->orderBy('created_at', 'desc');
-
-            $total = $query->count();
-            $data = $query->limit($limit)->offset($offset)->get();
-
-            return ['data' => $data, 'total' => $total];
+            return $this->workflowLogRepo->getCompleted($moduleClass, $limit, $offset, $workflowId);
         } catch (\Exception $exception) {
             \Log::error('Error getting workflow log by module: '.$exception->getMessage());
 
@@ -864,16 +858,7 @@ class WorkflowService
             $startDate = now()->subDays(6)->startOfDay();
             $endDate = now()->endOfDay();
 
-            $rows = WorkflowLog::where('module', $moduleClass)
-                ->where('status', WorkflowLog::STATUS_COMPLETED)
-                ->where('created_at', '>=', $startDate)
-                ->where('created_at', '<=', $endDate)
-                ->when($workflowId !== null, fn ($q) => $q->where('workflow_id', $workflowId))
-                ->selectRaw('DATE(created_at) as log_date, COUNT(*) as log_count')
-                ->groupBy('log_date')
-                ->orderBy('log_date')
-                ->get()
-                ->keyBy('log_date');
+            $rows = $this->workflowLogRepo->getDailyCompletedCounts($moduleClass, $startDate, $endDate, $workflowId);
 
             $labels = [];
             $data = [];
@@ -905,12 +890,7 @@ class WorkflowService
                 return [];
             }
 
-            return WorkflowLog::with('workflow:id,name')
-                ->where('module', $moduleClass)
-                ->where('status', WorkflowLog::STATUS_COMPLETED)
-                ->select('workflow_id')
-                ->distinct()
-                ->get()
+            return $this->workflowLogRepo->getCompletedWorkflows($moduleClass)
                 ->map(fn ($log) => [
                     'id' => $log->workflow_id,
                     'name' => $log->workflow?->name ?? 'Manual Workflow',
@@ -958,9 +938,7 @@ class WorkflowService
      */
     public function addWorkflowLog($workflowId, $jobWorkflowId, $errorType, $exception = null): void
     {
-        $log = WorkflowLog::where('workflow_id', $workflowId)
-            ->where('job_workflow_id', $jobWorkflowId)
-            ->first();
+        $log = $this->workflowLogRepo->findForJob($workflowId, $jobWorkflowId);
 
         $existingErrors = [];
         if ($log) {
