@@ -759,7 +759,8 @@ class WorkflowService
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 
-            return $emails;
+            // Opt-outs could not be checked, so do not send - the dispatcher skips the action.
+            throw $e;
         }
     }
 
