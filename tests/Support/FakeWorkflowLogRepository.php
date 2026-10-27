@@ -2,7 +2,7 @@
 
 namespace Taurus\Workflow\Tests\Support;
 
-use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Contracts\WorkflowLogRepositoryInterface;
@@ -49,7 +49,7 @@ class FakeWorkflowLogRepository implements WorkflowLogRepositoryInterface
         return $this->completedLogs;
     }
 
-    public function getDailyCompletedCounts(string $module, Carbon $from, Carbon $to, ?int $workflowId = null): Collection
+    public function getDailyCompletedCounts(string $module, CarbonInterface $from, CarbonInterface $to, ?int $workflowId = null): Collection
     {
         $this->queries[] = ['getDailyCompletedCounts', $module, $from->toDateTimeString(), $to->toDateTimeString(), $workflowId];
 

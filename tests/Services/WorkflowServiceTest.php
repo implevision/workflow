@@ -2,7 +2,9 @@
 
 namespace Taurus\Workflow\Tests\Services;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Mockery\MockInterface;
@@ -499,6 +501,21 @@ class WorkflowServiceTest extends TestCase
             'data' => [2, 0, 0, 0, 0, 0, 5],
         ], $this->service->getWorkflowLogChart('policy', 7));
         $this->assertSame([['getDailyCompletedCounts', self::MODULE_CLASS, '2026-03-04 00:00:00', '2026-03-10 23:59:59', 7]], $this->logRepo->queries);
+    }
+
+    public function test_get_workflow_log_chart_accepts_immutable_dates_from_the_host_app(): void
+    {
+        $this->travelTo('2026-03-10 15:00:00');
+        Date::use(CarbonImmutable::class);
+
+        try {
+            $chart = $this->service->getWorkflowLogChart('policy');
+        } finally {
+            Date::useDefault();
+        }
+
+        $this->assertSame(['Mar 4', 'Mar 5', 'Mar 6', 'Mar 7', 'Mar 8', 'Mar 9', 'Mar 10'], $chart['labels']);
+        $this->assertSame([['getDailyCompletedCounts', self::MODULE_CLASS, '2026-03-04 00:00:00', '2026-03-10 23:59:59', null]], $this->logRepo->queries);
     }
 
     public function test_get_workflow_log_filter_lists_each_workflow_once_naming_manual_runs(): void

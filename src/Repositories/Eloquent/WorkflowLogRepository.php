@@ -2,7 +2,7 @@
 
 namespace Taurus\Workflow\Repositories\Eloquent;
 
-use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Contracts\WorkflowLogRepositoryInterface;
@@ -48,7 +48,7 @@ class WorkflowLogRepository implements WorkflowLogRepositoryInterface
         return ['data' => $data, 'total' => $total];
     }
 
-    public function getDailyCompletedCounts(string $module, Carbon $from, Carbon $to, ?int $workflowId = null): Collection
+    public function getDailyCompletedCounts(string $module, CarbonInterface $from, CarbonInterface $to, ?int $workflowId = null): Collection
     {
         return $this->model->where('module', $module)
             ->where('status', WorkflowLog::STATUS_COMPLETED)
