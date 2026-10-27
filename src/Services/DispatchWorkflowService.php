@@ -344,7 +344,8 @@ class DispatchWorkflowService extends AbstractDispatchService
      * Merges a CERTAIN condition's rules into the running GraphQL query.
      *
      * When the query already carries a JOIN the rules are appended to it; otherwise
-     * they become the JOIN, or the whole query when nothing has been built yet.
+     * they become the JOIN, or the whole query when nothing has been built yet. A
+     * query that is itself a group (no column) is AND-ed with the rules instead.
      */
     private function mergeConditionRules(array $condition, array $graphQLQuery): array
     {
@@ -362,10 +363,18 @@ class DispatchWorkflowService extends AbstractDispatchService
             return $conditionsToApply;
         }
 
+        // A group root carries no column, and the serializer reads a JOIN as hanging
+        // off a column condition - so AND the groups together instead.
+        if (! isset($graphQLQuery['column'])) {
+            return ['operator' => 'AND', 'condition' => [$graphQLQuery, $conditionsToApply]];
+        }
+
+        // Wrapped in its own AND so later groups are AND-ed in, rather than pushed
+        // inside this group and picking up its operator.
         if (isset($graphQLQuery['JOIN'])) {
             $graphQLQuery['JOIN']['condition'][] = $conditionsToApply;
         } else {
-            $graphQLQuery['JOIN'] = $conditionsToApply;
+            $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$conditionsToApply]];
         }
 
         return $graphQLQuery;
@@ -459,7 +468,7 @@ class DispatchWorkflowService extends AbstractDispatchService
                 return null;
             }
 
-            $actionToExecute->setWorkflowData($this->workflowId, $this->jobWorkflowId, $this->recordIdentifier);
+            $actionToExecute->setWorkflowData($this->workflowId, $this->jobWorkflowId, $this->recordIdentifier, $this->module);
             $actionToExecute->setDataForAction($feedFile, $data);
             $actionToExecute->execute();
         } catch (\Exception $e) {

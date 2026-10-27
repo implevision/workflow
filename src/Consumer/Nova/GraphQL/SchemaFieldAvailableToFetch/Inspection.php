@@ -147,6 +147,10 @@ class Inspection extends AbstractSchema
                 'jqFilter' => "{$this->queryPath}.claim.clientId",
                 'parseResultCallback' => 'resolveApiSecret',
             ],
+            'ClientBaseUrl' => [
+                'GraphQLschemaToReplace' => ['claim' => ['client' => ['baseUrl' => null]]],
+                'jqFilter' => "{$this->queryPath}.claim.client.baseUrl",
+            ],
         ];
     }
 

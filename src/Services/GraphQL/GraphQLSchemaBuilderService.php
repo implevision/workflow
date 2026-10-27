@@ -103,7 +103,7 @@ class GraphQLSchemaBuilderService
     public function generateGraphQLQuery($data, $queryName, $variable = [], $queryArgs = [], $page = 0, $supportsPagination = true)
     {
         if (! empty($queryArgs)) {
-            return $this->generateGraphQLQueryWithNamedArgs($data, $queryName, $queryArgs);
+            return $this->generateGraphQLQueryWithNamedArgs($data, $queryName, $queryArgs, $variable);
         }
 
         $fields = $this->arrayToGraphQLFields($data, 0);
@@ -123,8 +123,16 @@ class GraphQLSchemaBuilderService
     /**
      * Generates a GraphQL query using named arguments (e.g. PolicyRenewal(date: "...", days: 15))
      * instead of a where: clause. Used for modules like Renewal that use custom query args.
+     *
+     * $variable carries the workflow's "Certain conditions" tree, when the workflow
+     * has one. A module using named args can still be filtered, so the condition is
+     * appended as a where: argument alongside them.
+     *
+     * It is appended raw rather than going through the map above:
+     * arrayToGraphQLWhereCondition() already returns a GraphQL object literal, and
+     * quoting it would turn the whole condition into a plain string.
      */
-    public function generateGraphQLQueryWithNamedArgs(array $data, string $queryName, array $args): string
+    public function generateGraphQLQueryWithNamedArgs(array $data, string $queryName, array $args, $variable = []): string
     {
         $fields = $this->arrayToGraphQLFields($data, 0);
 
@@ -133,6 +141,10 @@ class GraphQLSchemaBuilderService
             array_keys($args),
             $args
         ));
+
+        if (! empty($variable)) {
+            $argsStr .= ', where: '.$this->arrayToGraphQLWhereCondition($variable);
+        }
 
         return "query {\n  $queryName($argsStr){\n".
             preg_replace('/^/m', '    ', $fields)."\n  }\n}";

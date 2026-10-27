@@ -7,7 +7,7 @@ use Taurus\Workflow\Services\WorkflowService;
 /**
  * CREATE_RECORD action.
  *
- * Payload shape: ['module' => 'agentTask', 'payload' => [...]]. The inner payload may
+ * Payload shape: ['module' => 'agentTask', 'fieldMapping' => [...]]. The field mapping may
  * contain {{Placeholder}} values which are resolved per record before the consumer's
  * handler for the module creates the record.
  */
@@ -21,8 +21,8 @@ class CreateRecordAction extends AbstractWorkflowAction
             throw new \Exception('Module is required to create a record.');
         }
 
-        if (! isset($payload['payload']) || ! is_array($payload['payload'])) {
-            throw new \Exception('Payload is required to create a record.');
+        if (! isset($payload['fieldMapping']) || ! is_array($payload['fieldMapping'])) {
+            throw new \Exception('Field mapping is required to create a record.');
         }
 
         $createRecordService = app(WorkflowService::class)->getCreateRecordService();
@@ -41,7 +41,7 @@ class CreateRecordAction extends AbstractWorkflowAction
         }
 
         $placeholders = [];
-        $search = $payload['payload'] ?? [];
+        $search = $payload['fieldMapping'] ?? [];
         array_walk_recursive($search, function ($value) use (&$placeholders) {
             if (is_string($value)) {
                 preg_match_all('/{{\s*(.*?)\s*}}/', $value, $matches);
@@ -73,13 +73,15 @@ class CreateRecordAction extends AbstractWorkflowAction
             'workflowId' => $this->getWorkflowId(),
             'jobWorkflowId' => $this->getJobWorkflowId(),
             'recordIdentifier' => $this->getRecordIdentifier(),
+            'workflowModule' => $this->getModule(),
         ];
 
         foreach ($data as $placeHolderData) {
-            $resolvedPayload = $this->replacePlaceholders($payload['payload'], $placeHolderData);
+            $resolvedPayload = $this->replacePlaceholders($payload['fieldMapping'], $placeHolderData);
 
             try {
-                $createRecordService->execute($payload['module'], $resolvedPayload, $context);
+                // The source record lets the handler link the created record back to it.
+                $createRecordService->execute($payload['module'], $resolvedPayload, $context + ['sourceRecord' => $placeHolderData]);
             } catch (\Exception $e) {
                 throw new \Exception('Create record execution failed: '.$e->getMessage());
             }

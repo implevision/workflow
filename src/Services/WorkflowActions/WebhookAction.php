@@ -45,12 +45,14 @@ class WebhookAction extends AbstractWorkflowAction
         }
 
         // Resolve placeholders (e.g. {{api_key}}, {{api_secret}}, {{X-Client-key}}) in
-        // authHeaders and authParams before the auth request is made.
+        // authHeaders, authParams and authUrl before the auth request is made.
         $data = $this->getData();
         if (! empty($data)) {
             $firstRecord = reset($data);
             $this->updatePayload('authHeaders', $this->replacePlaceholders($payload['authHeaders'] ?? [], $firstRecord, true));
             $this->updatePayload('authParams', $this->replacePlaceholders($payload['authParams'] ?? [], $firstRecord, true));
+            
+            $this->updatePayload('authUrl', $this->replacePlaceholders($payload['authUrl'] ?? '', $firstRecord));
             $payload = $this->getPayload();
         }
 
@@ -98,6 +100,7 @@ class WebhookAction extends AbstractWorkflowAction
             $payload['webhookRequestPayload'] ?? [],
             $payload['webhookRequestHeaders'] ?? [],
             $payload['webhookRequestUrl'] ?? '',
+            $payload['authUrl'] ?? '',
             $payload['authHeaders'] ?? [],
             $payload['authParams'] ?? [],
         ];
