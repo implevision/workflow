@@ -227,10 +227,28 @@ class GraphQLSchemaBuilderServiceTest extends TestCase
         $this->assertSame('POLICY_I_D', GraphQLSchemaBuilderService::convertToUnderscore('policyID'));
     }
 
+    // extractValue() shells out to jq, so it is a required dependency wherever the package runs.
+    public function test_jq_executable_is_installed(): void
+    {
+        exec('jq --version 2>&1', $output, $exitCode);
+
+        $this->assertSame(0, $exitCode, 'The jq executable must be installed: GraphQLSchemaBuilderService::extractValue() depends on it.');
+    }
+
+    private function requireJq(): void
+    {
+        exec('command -v jq >/dev/null 2>&1', $output, $exitCode);
+
+        if ($exitCode !== 0) {
+            $this->markTestSkipped('The jq executable is required for this test.');
+        }
+    }
+
     // extractValue() pipes JSON through `echo ... | jq`; Windows escapeshellarg() strips the quotes.
     #[RequiresOperatingSystem('Linux|Darwin')]
     public function test_extract_value_applies_the_jq_filter(): void
     {
+        $this->requireJq();
         $data = ['policiesQuery' => ['policyNumber' => 'P-1', 'tags' => ['gold'], 'missing' => null]];
 
         $this->assertSame('P-1', $this->builder()->extractValue($data, '.policiesQuery.policyNumber'));
@@ -241,6 +259,7 @@ class GraphQLSchemaBuilderServiceTest extends TestCase
     #[RequiresOperatingSystem('Linux|Darwin')]
     public function test_extract_value_returns_false_for_an_invalid_filter(): void
     {
+        $this->requireJq();
         $this->assertFalse($this->builder()->extractValue(['a' => 1], '.a |||'));
     }
 }
