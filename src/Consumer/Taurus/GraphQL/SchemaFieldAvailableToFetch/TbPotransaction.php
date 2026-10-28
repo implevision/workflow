@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Avatar\Infrastructure\Models\Api\v1\TbPatransactionmaster;
 use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Avatar\Infrastructure\Models\Api\v1\TbProduct;
 use Taurus\Workflow\Consumer\Taurus\Helper;
@@ -122,10 +123,26 @@ class TbPotransaction extends AbstractSchema
         $fieldMapping = [
             'PremiumDue' => [
                 'GraphQLschemaToReplace' => [
-                    'premiumChange' => null,
-                    'policyFees' => null,
+                    'policyTermMaster' => [
+                        'id' => null,
+                        'transactions' => [
+                            'premiumChange' => null,
+                            'policyFees' => null,
+                        ],
+                    ],
+                    'policy' => [
+                        'accountMaster' => [
+                            'policyAccountingTransactionMaster' => [
+                                'termMasterId' => null,
+                                'transactionTypeCode' => null,
+                                'policyAccountingTransactionDetails' => [
+                                    'amount' => null,
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
-                'jqFilter' => "{$this->queryPath}",
+                'jqFilter' => "{termMasterId: {$this->queryPath}.policyTermMaster?.id?, termTransactions: {$this->queryPath}.policyTermMaster?.transactions?, accountingTransactions: {$this->queryPath}.policy?.accountMaster?.policyAccountingTransactionMaster?}",
                 'parseResultCallback' => 'parsePremiumDue',
             ],
             'PolicyFees' => [
@@ -1093,7 +1110,8 @@ class TbPotransaction extends AbstractSchema
 
         $fieldMapping['CancelRefundAmount'] = [
             'GraphQLschemaToReplace' => [
-                ...$fieldMapping['PremiumDue']['GraphQLschemaToReplace'],
+                'premiumChange' => null,
+                'policyFees' => null,
             ],
             'jqFilter' => "{$this->queryPath}",
             'parseResultCallback' => 'parseCancelRefundAmount',
@@ -1252,17 +1270,46 @@ class TbPotransaction extends AbstractSchema
         return $this->wrapFieldMappingSchemaUnderData($fieldMapping);
     }
 
-    public function parsePremiumDue($premiumChangeAndFeesArr)
+    // Term balance: sum of premium change + fees for the term, less payments posted to the bill account for that term.
+    // Mirrors TbPatransactionmaster::checkNoPayPolicy().
+    public function parsePremiumDue($premiumDueData)
     {
-        $premiumDue = 0;
-        // Need to update for other products
-        if (is_array($premiumChangeAndFeesArr)) {
-            $premiumChange = $premiumChangeAndFeesArr['premiumChange'] ?? 0;
-            $policyFees = $premiumChangeAndFeesArr['policyFees'] ?? 0;
-            $premiumDue = $premiumChange + $policyFees;
+        if (! is_array($premiumDueData)) {
+            return $this->formatCurrency(0);
         }
 
+        $termMasterId = $premiumDueData['termMasterId'] ?? null;
+
+        $sumOfPremiumForTerm = 0;
+        foreach ($premiumDueData['termTransactions'] ?? [] as $transaction) {
+            $sumOfPremiumForTerm += ($transaction['premiumChange'] ?? 0) + ($transaction['policyFees'] ?? 0);
+        }
+
+        $paidAmount = 0;
+        foreach ($premiumDueData['accountingTransactions'] ?? [] as $accountingTransaction) {
+            if ((string) ($accountingTransaction['termMasterId'] ?? '') !== (string) $termMasterId
+                || ! in_array($accountingTransaction['transactionTypeCode'] ?? null, TbPatransactionmaster::PAYMENT_TRANS_TYPE_CODES, true)
+            ) {
+                continue;
+            }
+
+            foreach ($accountingTransaction['policyAccountingTransactionDetails'] ?? [] as $detail) {
+                $paidAmount += $detail['amount'] ?? 0;
+            }
+        }
+
+        $premiumDue = round($sumOfPremiumForTerm - abs($paidAmount), 2);
+
         return $this->formatCurrency($premiumDue);
+    }
+
+    private function sumPremiumChangeAndFees($premiumChangeAndFeesArr)
+    {
+        if (! is_array($premiumChangeAndFeesArr)) {
+            return 0;
+        }
+
+        return ($premiumChangeAndFeesArr['premiumChange'] ?? 0) + ($premiumChangeAndFeesArr['policyFees'] ?? 0);
     }
 
     public function parsePotentialDiscountLost($transactionId, $coverageCode)
@@ -1754,7 +1801,7 @@ class TbPotransaction extends AbstractSchema
 
     public function parseCancelRefundAmount($policyData)
     {
-        $cancelRefundAmount = $this->parsePremiumDue($policyData);
+        $cancelRefundAmount = $this->sumPremiumChangeAndFees($policyData);
 
         return abs($cancelRefundAmount);
     }
