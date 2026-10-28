@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
+use Avatar\Infrastructure\Models\Api\v1\TbPatransactionmaster;
 use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Avatar\Infrastructure\Models\Api\v1\TbProduct;
 use Illuminate\Support\Facades\DB;
@@ -341,12 +342,28 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 'GraphQLschemaToReplace' => [
                     'agentTask' => [
                         'policyTransaction' => [
-                            'premiumChange' => null,
-                            'policyFees' => null,
+                            'policyTermMaster' => [
+                                'id' => null,
+                                'transactions' => [
+                                    'premiumChange' => null,
+                                    'policyFees' => null,
+                                ],
+                            ],
+                            'policy' => [
+                                'accountMaster' => [
+                                    'policyAccountingTransactionMaster' => [
+                                        'termMasterId' => null,
+                                        'transactionTypeCode' => null,
+                                        'policyAccountingTransactionDetails' => [
+                                            'amount' => null,
+                                        ],
+                                    ],
+                                ],
+                            ],
                         ],
                     ],
                 ],
-                'jqFilter' => "{$this->queryPath}.agentTask.policyTransaction",
+                'jqFilter' => "{$this->queryPath}.agentTask.policyTransaction as \$transaction | {termMasterId: \$transaction.policyTermMaster?.id?, termTransactions: \$transaction.policyTermMaster?.transactions?, accountingTransactions: \$transaction.policy?.accountMaster?.policyAccountingTransactionMaster?}",
                 'parseResultCallback' => 'parsePremiumDue',
             ],
 
@@ -1296,14 +1313,35 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             : null;
     }
 
-    public function parsePremiumDue($premiumChangeAndFeesArr)
+    // Term balance: sum of premium change + fees for the term, less payments posted to the bill account for that term.
+    // Mirrors TbPatransactionmaster::checkNoPayPolicy().
+    public function parsePremiumDue($premiumDueData)
     {
-        $premiumDue = 0;
-        if (is_array($premiumChangeAndFeesArr)) {
-            $premiumChange = $premiumChangeAndFeesArr['premiumChange'] ?? 0;
-            $policyFees = $premiumChangeAndFeesArr['policyFees'] ?? 0;
-            $premiumDue = $premiumChange + $policyFees;
+        if (! is_array($premiumDueData)) {
+            return number_format(0, 2);
         }
+
+        $termMasterId = $premiumDueData['termMasterId'] ?? null;
+
+        $sumOfPremiumForTerm = 0;
+        foreach ($premiumDueData['termTransactions'] ?? [] as $transaction) {
+            $sumOfPremiumForTerm += ($transaction['premiumChange'] ?? 0) + ($transaction['policyFees'] ?? 0);
+        }
+
+        $paidAmount = 0;
+        foreach ($premiumDueData['accountingTransactions'] ?? [] as $accountingTransaction) {
+            if ((string) ($accountingTransaction['termMasterId'] ?? '') !== (string) $termMasterId
+                || ! in_array($accountingTransaction['transactionTypeCode'] ?? null, TbPatransactionmaster::PAYMENT_TRANS_TYPE_CODES, true)
+            ) {
+                continue;
+            }
+
+            foreach ($accountingTransaction['policyAccountingTransactionDetails'] ?? [] as $detail) {
+                $paidAmount += $detail['amount'] ?? 0;
+            }
+        }
+
+        $premiumDue = round($sumOfPremiumForTerm - abs($paidAmount), 2);
 
         return number_format($premiumDue, 2);
     }
