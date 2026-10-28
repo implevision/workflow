@@ -1318,7 +1318,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     public function parsePremiumDue($premiumDueData)
     {
         if (! is_array($premiumDueData)) {
-            return number_format(0, 2);
+            return $this->formatCurrency(0);
         }
 
         $termMasterId = $premiumDueData['termMasterId'] ?? null;
@@ -1343,7 +1343,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
 
         $premiumDue = round($sumOfPremiumForTerm - abs($paidAmount), 2);
 
-        return number_format($premiumDue, 2);
+        return $this->formatCurrency($premiumDue);
     }
 
     public function parseMetadata($metadata, $key)
