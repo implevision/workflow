@@ -771,7 +771,7 @@ class WorkflowService
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 
-            return new stdClass;
+            throw $e;
         }
     }
 
