@@ -425,6 +425,9 @@ class DispatchWorkflowService extends AbstractDispatchService
 
         if ($this->isManuallyInvoked) {
             $data = [$this->data];
+        } elseif ($feedFile) {
+            // CSV feed: the rows come from the CSV, so GraphQL is not used
+            $data = [];
         } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
             $result = $this->fetchDataForAction(
                 $graphQLQuery,
@@ -449,7 +452,7 @@ class DispatchWorkflowService extends AbstractDispatchService
         }
 
         if (config('app.env') != 'production') {
-            Log::info("{$this->logPrefix} - data: ", $data);
+            Log::info("{$this->logPrefix} - data: ", $feedFile ? (file($feedFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []) : $data);
         }
 
         try {
@@ -461,12 +464,13 @@ class DispatchWorkflowService extends AbstractDispatchService
                 $placeHolderToExtract
             );
 
-            if ($data === false) {
+            // A CSV feed has no GraphQL data; its rows are sent by the action itself
+            if ($data === false && ! $feedFile) {
                 return null;
             }
 
             $actionToExecute->setWorkflowData($this->workflowId, $this->jobWorkflowId, $this->recordIdentifier, $this->module);
-            $actionToExecute->setDataForAction($feedFile, $data);
+            $actionToExecute->setDataForAction($feedFile, $data ?: []);
             $actionToExecute->execute();
         } catch (\Exception $e) {
             Log::error("{$this->logPrefix} - Error while executing action - ".$actionType.' : '.$e->getMessage());

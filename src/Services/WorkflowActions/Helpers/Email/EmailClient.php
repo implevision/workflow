@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Services\WorkflowActions\Helpers\Email;
 
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Jobs\EmailJob;
+use Taurus\Workflow\Services\WorkflowService;
 
 class EmailClient
 {
@@ -96,7 +97,7 @@ class EmailClient
                     $leftover = $leftover - floor($leftover);
 
                     if (($rowCount - 1) && $leftover == 0) {
-                        $this->dispatchEmail($jobPayload);
+                        $this->dispatchCSVBatch($jobPayload);
                         $jobPayload['payload'] = [];
                     }
                     $data['attachments'] = [...$this->extractAttachments($data)];
@@ -105,12 +106,75 @@ class EmailClient
                 }
 
                 if (count($jobPayload['payload'])) {
-                    $this->dispatchEmail($jobPayload);
+                    $this->dispatchCSVBatch($jobPayload);
                 }
             }
         }
 
         return $rowCount - 1; // Return total number of records to execute
+    }
+
+    /**
+     * CSV rows never pass through the dispatcher's unsubscribe filter, so a promotional
+     * batch drops its unsubscribed recipients here, before it is queued.
+     */
+    private function dispatchCSVBatch($jobPayload)
+    {
+        if (! empty($jobPayload['isPromotionalEmail'])) {
+            $jobPayload['payload'] = $this->removeUnsubscribedRecipients($jobPayload['payload']);
+        }
+
+        if (count($jobPayload['payload'])) {
+            $this->dispatchEmail($jobPayload);
+        }
+    }
+
+    /**
+     * One lookup per batch: rows whose recipients have all unsubscribed are dropped,
+     * the rest keep only their still-subscribed addresses.
+     */
+    private function removeUnsubscribedRecipients(array $rows): array
+    {
+        $splitEmails = fn ($email) => array_values(array_filter(array_map('trim', is_array($email) ? $email : explode(',', (string) $email))));
+
+        $allEmails = [];
+        foreach ($rows as $row) {
+            $allEmails = [...$allEmails, ...$splitEmails($row['email'] ?? '')];
+        }
+
+        if (empty($allEmails)) {
+            return $rows;
+        }
+
+        $allowed = array_flip(array_map(
+            fn ($email) => strtolower($email),
+            app(WorkflowService::class)->applyEmailSupressedByConsumerFilter($allEmails, true)
+        ));
+
+        $filteredRows = [];
+        foreach ($rows as $row) {
+            $emails = $splitEmails($row['email'] ?? '');
+            if (empty($emails)) {
+                // No recipient to check - SES skips such rows itself.
+                $filteredRows[] = $row;
+
+                continue;
+            }
+
+            $kept = array_values(array_filter($emails, fn ($email) => isset($allowed[strtolower($email)])));
+            if (empty($kept)) {
+                \Log::info('WORKFLOW - Skipping CSV row as all recipients have unsubscribed from emails');
+
+                continue;
+            }
+
+            if (count($kept) != count($emails)) {
+                $row['email'] = is_array($row['email']) ? $kept : implode(',', $kept);
+            }
+            $filteredRows[] = $row;
+        }
+
+        return $filteredRows;
     }
 
     public function processData($jobData, $jobPayload)

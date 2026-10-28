@@ -83,6 +83,7 @@ class EmailAction extends AbstractWorkflowAction
                 'data' => $data,
                 'postAction' => ! empty($payload['postAction']) ? $payload['postAction'] : '',
                 'actionPayload' => $payload ?? [],
+                'isPromotionalEmail' => $this->isPromotionalEmail(),
             ], $this->emailInformation)->execute();
         } catch (\Exception $e) {
             throw $e;
