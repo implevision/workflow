@@ -79,4 +79,15 @@ class InitInstance
             throw new \Exception("Create record service class '$createRecordServiceClass' does not exist.");
         }
     }
+
+    public function getEmailSupressedByConsumerService()
+    {
+        $emailSupressedByConsumerServiceClass = 'Taurus\\Workflow\\Consumer\\Nova\\Email\\EmailSupressedByConsumerService';
+
+        if (class_exists($emailSupressedByConsumerServiceClass)) {
+            return new $emailSupressedByConsumerServiceClass;
+        } else {
+            throw new \Exception("Email supressed by consumer service class '$emailSupressedByConsumerServiceClass' does not exist.");
+        }
+    }
 }

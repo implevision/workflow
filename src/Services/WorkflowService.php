@@ -739,6 +739,27 @@ class WorkflowService
         }
     }
 
+    /**
+     * Consumer wise unsubscribe check. Nova sends to every recipient; Taurus checks
+     * the template flag and then the DB.
+     *
+     * @param  array  $emails  Recipient email addresses.
+     * @param  bool  $isPromotionalEmail  Whether the email template is promotional.
+     */
+    public function applyEmailSupressedByConsumerFilter($emails, bool $isPromotionalEmail = false)
+    {
+        try {
+            return $this->getConsumerService()
+                ->getEmailSupressedByConsumerService()
+                ->applyEmailSupressedByConsumerFilter($emails, $isPromotionalEmail);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            // Opt-outs could not be checked, so do not send - the dispatcher skips the action.
+            throw $e;
+        }
+    }
+
     private function getConsumerService()
     {
         try {
@@ -746,7 +767,7 @@ class WorkflowService
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
 
-            return new stdClass;
+            throw $e;
         }
     }
 
