@@ -424,7 +424,9 @@ class DispatchWorkflowService extends AbstractDispatchService
         }
 
         if ($this->isManuallyInvoked) {
-            $data = [$this->data];
+            // Caller data skips parseGraphQLResponse, so resolve the common placeholders here;
+            // a value the caller supplied wins
+            $data = [array_merge($this->resolveCommonPlaceholders($listOfRequiredData), $this->data)];
         } elseif ($feedFile) {
             // CSV feed: the rows come from the CSV, so GraphQL is not used
             $data = [];
@@ -461,7 +463,8 @@ class DispatchWorkflowService extends AbstractDispatchService
                 $listOfMandateData,
                 $actionPayload,
                 $actionType,
-                $placeHolderToExtract
+                $placeHolderToExtract,
+                $this->isPromotionalEmail($actionToExecute)
             );
 
             // A CSV feed has no GraphQL data; its rows are sent by the action itself
@@ -513,9 +516,16 @@ class DispatchWorkflowService extends AbstractDispatchService
 
         // If schema provides custom record extraction, use it directly (skip jqFilter)
         if ($moduleClassForGraphQL->hasCustomRecordExtraction()) {
+            // Custom records skip parseGraphQLResponse, so resolve the common placeholders here
+            $commonPlaceholderData = $this->parseGraphQLResponse(
+                $response,
+                array_values(array_intersect($listOfRequiredData, array_keys($this->commonFieldMapping()))),
+                $queryResult['graphQLSchemaBuilder']
+            );
+
             $data = [];
             foreach ($moduleClassForGraphQL->getRecordsFromResponse($response) as $record) {
-                $data[] = array_merge($record, $placeHolderWithValues);
+                $data[] = array_merge($commonPlaceholderData, $record, $placeHolderWithValues);
             }
         } else {
             if (empty(array_first($response))) {

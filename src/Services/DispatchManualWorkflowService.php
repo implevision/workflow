@@ -250,6 +250,8 @@ class DispatchManualWorkflowService extends AbstractDispatchService
                 $listOfMandateData,
                 $actionPayload,
                 $actionType,
+                [],
+                $this->isPromotionalEmail($actionToExecute)
             );
 
             if ($data === false) {
