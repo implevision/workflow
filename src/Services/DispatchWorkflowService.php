@@ -431,8 +431,8 @@ class DispatchWorkflowService extends AbstractDispatchService
 
         // CSV email: EmailClient sends the rows straight from the feed, so there is no
         // GraphQL data to fetch or validate. Other actions (e.g. WORKFLOW_OUTPUT) still
-        // need resolved data, so they keep the normal flow.
-        // A feed file is only resolved for CUSTOM_FEED conditions
+        // need resolved data, so they keep the normal flow. A feed file is only resolved
+        // for CUSTOM_FEED conditions.
         $isCsvEmail = $feedFile && $actionType == 'EMAIL' && ! $this->isManuallyInvoked;
 
         if ($this->isManuallyInvoked) {

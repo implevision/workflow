@@ -77,7 +77,8 @@ class EmailSupressedByConsumerService
                 if (! $kept) {
                     continue;
                 }
-                $row['email'] = implode(',', $kept);
+                // Kept as an array: SES casts `email` to ToAddresses, where a joined string is one invalid address
+                $row['email'] = array_values($kept);
             }
             $filteredRows[] = $row;
         }
