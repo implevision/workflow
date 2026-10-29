@@ -153,8 +153,9 @@ class DispatchWorkflowService extends AbstractDispatchService
             $feedFile = $this->resolveFeedFile($condition);
 
             // A CUSTOM_FEED condition never falls back to GraphQL; without its CSV
-            // (download failure is already logged) there is nothing to send
-            if ($condition['applyRuleTo'] == 'CUSTOM_FEED' && ! $feedFile) {
+            // (download failure is already logged) there is nothing to send. A manually
+            // invoked run uses the caller's data instead, so it does not need the CSV.
+            if ($condition['applyRuleTo'] == 'CUSTOM_FEED' && ! $feedFile && ! $this->isManuallyInvoked) {
                 continue;
             }
 
