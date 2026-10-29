@@ -152,6 +152,12 @@ class DispatchWorkflowService extends AbstractDispatchService
 
             $feedFile = $this->resolveFeedFile($condition);
 
+            // A CUSTOM_FEED condition never falls back to GraphQL; without its CSV
+            // (download failure is already logged) there is nothing to send
+            if ($condition['applyRuleTo'] == 'CUSTOM_FEED' && ! $feedFile) {
+                continue;
+            }
+
             // NOTE: the merge intentionally persists into subsequent conditions,
             // matching the original behaviour.
             $graphQLQuery = $this->mergeConditionRules($condition, $graphQLQuery);
