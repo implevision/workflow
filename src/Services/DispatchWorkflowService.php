@@ -429,12 +429,17 @@ class DispatchWorkflowService extends AbstractDispatchService
             return null;
         }
 
+        // CSV email: EmailClient sends the rows straight from the feed, so there is no
+        // GraphQL data to fetch or validate. Other actions (e.g. WORKFLOW_OUTPUT) still
+        // need resolved data, so they keep the normal flow.
+        // A feed file is only resolved for CUSTOM_FEED conditions
+        $isCsvEmail = $feedFile && $actionType == 'EMAIL' && ! $this->isManuallyInvoked;
+
         if ($this->isManuallyInvoked) {
             // Caller data skips parseGraphQLResponse, so resolve the common placeholders here;
             // a value the caller supplied wins
             $data = [array_merge($this->resolveCommonPlaceholders($listOfRequiredData), $this->data)];
-        } elseif ($feedFile) {
-            // CSV feed: the rows come from the CSV, so GraphQL is not used
+        } elseif ($isCsvEmail) {
             $data = [];
         } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
             $result = $this->fetchDataForAction(
@@ -460,7 +465,7 @@ class DispatchWorkflowService extends AbstractDispatchService
         }
 
         if (config('app.env') != 'production') {
-            if ($feedFile) {
+            if ($isCsvEmail) {
                 // CSV rows hold recipient details, so log only which feed is being processed
                 Log::info("{$this->logPrefix} - CSV feed: ".basename($feedFile));
             } else {
@@ -469,22 +474,24 @@ class DispatchWorkflowService extends AbstractDispatchService
         }
 
         try {
-            $data = $this->validateAndFilterData(
-                $data,
-                $listOfMandateData,
-                $actionPayload,
-                $actionType,
-                $placeHolderToExtract,
-                $this->isPromotionalEmail($actionToExecute)
-            );
+            // validateAndFilterData() returns false for empty data, which would stop the CSV send
+            if (! $isCsvEmail) {
+                $data = $this->validateAndFilterData(
+                    $data,
+                    $listOfMandateData,
+                    $actionPayload,
+                    $actionType,
+                    $placeHolderToExtract,
+                    $this->isPromotionalEmail($actionToExecute)
+                );
 
-            // A CSV feed has no GraphQL data; its rows are sent by the action itself
-            if ($data === false && ! $feedFile) {
-                return null;
+                if ($data === false) {
+                    return null;
+                }
             }
 
             $actionToExecute->setWorkflowData($this->workflowId, $this->jobWorkflowId, $this->recordIdentifier, $this->module);
-            $actionToExecute->setDataForAction($feedFile, $data ?: []);
+            $actionToExecute->setDataForAction($feedFile, $data);
             $actionToExecute->execute();
         } catch (\Exception $e) {
             Log::error("{$this->logPrefix} - Error while executing action - ".$actionType.' : '.$e->getMessage());
