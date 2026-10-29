@@ -15,4 +15,15 @@ class EmailSupressedByConsumerService
     {
         return $emails;
     }
+
+    /**
+     * Nova has no unsubscribe support, so every CSV row is sent as is.
+     *
+     * @param  array  $rows  CSV rows, each with an `email` column.
+     * @return array The same rows.
+     */
+    public function applyEmailSupressedByConsumerFilterOnRows(array $rows): array
+    {
+        return $rows;
+    }
 }

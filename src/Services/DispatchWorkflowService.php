@@ -454,7 +454,12 @@ class DispatchWorkflowService extends AbstractDispatchService
         }
 
         if (config('app.env') != 'production') {
-            Log::info("{$this->logPrefix} - data: ", $feedFile ? (file($feedFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []) : $data);
+            if ($feedFile) {
+                // CSV rows hold recipient details, so log only which feed is being processed
+                Log::info("{$this->logPrefix} - CSV feed: ".basename($feedFile));
+            } else {
+                Log::info("{$this->logPrefix} - data: ", $data);
+            }
         }
 
         try {

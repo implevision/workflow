@@ -760,6 +760,26 @@ class WorkflowService
         }
     }
 
+    /**
+     * Consumer wise unsubscribe check for promotional CSV rows. Nova keeps every row;
+     * Taurus drops the unsubscribed recipients of each row.
+     *
+     * @param  array  $rows  CSV rows, each with an `email` column.
+     */
+    public function applyEmailSupressedByConsumerFilterOnRows(array $rows): array
+    {
+        try {
+            return $this->getConsumerService()
+                ->getEmailSupressedByConsumerService()
+                ->applyEmailSupressedByConsumerFilterOnRows($rows);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            // Opt-outs could not be checked, so do not send this batch.
+            throw $e;
+        }
+    }
+
     private function getConsumerService()
     {
         try {
