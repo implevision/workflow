@@ -152,6 +152,13 @@ class DispatchWorkflowService extends AbstractDispatchService
 
             $feedFile = $this->resolveFeedFile($condition);
 
+            // A CUSTOM_FEED condition never falls back to GraphQL; without its CSV
+            // (download failure is already logged) there is nothing to send. A manually
+            // invoked run uses the caller's data instead, so it does not need the CSV.
+            if ($condition['applyRuleTo'] == 'CUSTOM_FEED' && ! $feedFile && ! $this->isManuallyInvoked) {
+                continue;
+            }
+
             // NOTE: the merge intentionally persists into subsequent conditions,
             // matching the original behaviour.
             $graphQLQuery = $this->mergeConditionRules($condition, $graphQLQuery);
@@ -423,10 +430,18 @@ class DispatchWorkflowService extends AbstractDispatchService
             return null;
         }
 
+        // CSV email: EmailClient sends the rows straight from the feed, so there is no
+        // GraphQL data to fetch or validate. Other actions (e.g. WORKFLOW_OUTPUT) still
+        // need resolved data, so they keep the normal flow. A feed file is only resolved
+        // for CUSTOM_FEED conditions.
+        $isCsvEmail = $feedFile && $actionType == 'EMAIL' && ! $this->isManuallyInvoked;
+
         if ($this->isManuallyInvoked) {
             // Caller data skips parseGraphQLResponse, so resolve the common placeholders here;
             // a value the caller supplied wins
             $data = [array_merge($this->resolveCommonPlaceholders($listOfRequiredData), $this->data)];
+        } elseif ($isCsvEmail) {
+            $data = [];
         } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
             $result = $this->fetchDataForAction(
                 $graphQLQuery,
@@ -451,21 +466,29 @@ class DispatchWorkflowService extends AbstractDispatchService
         }
 
         if (config('app.env') != 'production') {
-            Log::info("{$this->logPrefix} - data: ", $data);
+            if ($isCsvEmail) {
+                // CSV rows hold recipient details, so log only which feed is being processed
+                Log::info("{$this->logPrefix} - CSV feed: ".basename($feedFile));
+            } else {
+                Log::info("{$this->logPrefix} - data: ", $data);
+            }
         }
 
         try {
-            $data = $this->validateAndFilterData(
-                $data,
-                $listOfMandateData,
-                $actionPayload,
-                $actionType,
-                $placeHolderToExtract,
-                $this->isPromotionalEmail($actionToExecute)
-            );
+            // validateAndFilterData() returns false for empty data, which would stop the CSV send
+            if (! $isCsvEmail) {
+                $data = $this->validateAndFilterData(
+                    $data,
+                    $listOfMandateData,
+                    $actionPayload,
+                    $actionType,
+                    $placeHolderToExtract,
+                    $this->isPromotionalEmail($actionToExecute)
+                );
 
-            if ($data === false) {
-                return null;
+                if ($data === false) {
+                    return null;
+                }
             }
 
             $actionToExecute->setWorkflowData($this->workflowId, $this->jobWorkflowId, $this->recordIdentifier, $this->module);

@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Services\WorkflowActions\Helpers\Email;
 
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Jobs\EmailJob;
+use Taurus\Workflow\Services\WorkflowService;
 
 class EmailClient
 {
@@ -68,6 +69,7 @@ class EmailClient
     public function processCSVFile($csvFile, $jobPayload)
     {
         $rowCount = 0;
+        $queuedRows = 0;
         $placeholder = [];
         if (file_exists($csvFile)) {
             if (($handle = fopen($csvFile, 'r')) !== false) {
@@ -96,7 +98,7 @@ class EmailClient
                     $leftover = $leftover - floor($leftover);
 
                     if (($rowCount - 1) && $leftover == 0) {
-                        $this->dispatchEmail($jobPayload);
+                        $queuedRows += $this->dispatchCSVBatch($jobPayload);
                         $jobPayload['payload'] = [];
                     }
                     $data['attachments'] = [...$this->extractAttachments($data)];
@@ -105,12 +107,51 @@ class EmailClient
                 }
 
                 if (count($jobPayload['payload'])) {
-                    $this->dispatchEmail($jobPayload);
+                    $queuedRows += $this->dispatchCSVBatch($jobPayload);
                 }
             }
         }
 
-        return $rowCount - 1; // Return total number of records to execute
+        // Like rows dropped for missing mandate data, unsubscribed rows are not counted
+        return $queuedRows;
+    }
+
+    /**
+     * CSV rows never pass through the dispatcher's unsubscribe filter, so a promotional
+     * batch drops its unsubscribed recipients here, before it is queued.
+     *
+     * Returns the number of rows queued.
+     */
+    private function dispatchCSVBatch($jobPayload): int
+    {
+        if (! empty($jobPayload['isPromotionalEmail'])) {
+            $workflowService = app(WorkflowService::class);
+            $batchRows = count($jobPayload['payload']);
+            $jobPayload['payload'] = $workflowService->applyEmailSupressedByConsumerFilterOnRows($jobPayload['payload']);
+
+            // Same workflow log as a GraphQL record whose recipients have all unsubscribed;
+            // a count only, as the addresses are recipient details
+            $skippedRows = $batchRows - count($jobPayload['payload']);
+            if ($skippedRows && ! empty($jobPayload['jobWorkflowId'])) {
+                try {
+                    $workflowService->addWorkflowLog(
+                        $jobPayload['workflowId'] ?? null,
+                        $jobPayload['jobWorkflowId'],
+                        'EMAIL_UNSUBSCRIBED',
+                        "All recipients of {$skippedRows} CSV row(s) have unsubscribed from emails"
+                    );
+                } catch (\Throwable $e) {
+                    // A failed log must not stop the rest of the batch from being sent
+                    \Log::error('WORKFLOW - Error while adding EMAIL_UNSUBSCRIBED log: '.$e->getMessage());
+                }
+            }
+        }
+
+        if (count($jobPayload['payload'])) {
+            $this->dispatchEmail($jobPayload);
+        }
+
+        return count($jobPayload['payload']);
     }
 
     public function processData($jobData, $jobPayload)
