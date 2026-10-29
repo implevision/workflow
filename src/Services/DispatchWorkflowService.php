@@ -4,7 +4,6 @@ namespace Taurus\Workflow\Services;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
-use Taurus\Workflow\Models\WorkflowLog;
 use Taurus\Workflow\Repositories\Eloquent\WorkflowRepository;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 
@@ -168,7 +167,7 @@ class DispatchWorkflowService extends AbstractDispatchService
                 }
             }
 
-            WorkflowLog::markWorkflowCompleted($this->workflowId, $this->jobWorkflowId);
+            $this->workflowLogRepo->markCompleted($this->workflowId, $this->jobWorkflowId);
         }
 
         $this->dispatchNextPage();

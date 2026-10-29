@@ -31,7 +31,7 @@ class EventBridgeScheduler
     {
         try {
             $awsConfig = self::getAwsConfig();
-            $schedulerClient = new SchedulerClient($awsConfig);
+            $schedulerClient = app(SchedulerClient::class, ['args' => $awsConfig]);
 
             // List all schedule groups (pagination-aware)
             $exists = false;
@@ -87,7 +87,7 @@ class EventBridgeScheduler
     {
         try {
             $awsConfig = self::getAwsConfig();
-            $schedulerClient = new SchedulerClient($awsConfig);
+            $schedulerClient = app(SchedulerClient::class, ['args' => $awsConfig]);
 
             try {
                 $params = [
@@ -121,7 +121,7 @@ class EventBridgeScheduler
     {
         try {
             $awsConfig = self::getAwsConfig();
-            $schedulerClient = new SchedulerClient($awsConfig);
+            $schedulerClient = app(SchedulerClient::class, ['args' => $awsConfig]);
 
             try {
                 $params = [
