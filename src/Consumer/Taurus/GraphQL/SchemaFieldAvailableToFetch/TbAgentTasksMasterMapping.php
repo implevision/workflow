@@ -658,6 +658,20 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 'jqFilter' => "{$this->queryPath}.agentTask.policyTransaction.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
+            'AssignedUnderwriterName' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'underwriter' => [
+                                    'screenName' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => "{$this->queryPath}.agentTask.policyTransaction.policy.underwriter.screenName",
+            ],
 
             'TransactionEffectiveDate' => [
                 'GraphQLschemaToReplace' => [
