@@ -10,6 +10,7 @@ use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\GraphQL\Client as GraphQLClient;
 use Taurus\Workflow\Services\GraphQL\GraphQLSchemaBuilderService;
 use Taurus\Workflow\Services\WorkflowActions\AbstractWorkflowAction;
+use Taurus\Workflow\Services\WorkflowActions\AnalyzeWithAiAction;
 use Taurus\Workflow\Services\WorkflowActions\CreateRecordAction;
 use Taurus\Workflow\Services\WorkflowActions\EmailAction;
 use Taurus\Workflow\Services\WorkflowActions\WebhookAction;
@@ -70,6 +71,11 @@ abstract class AbstractDispatchService
         'CREATE_RECORD' => [
             'class' => CreateRecordAction::class,
             'label' => 'create record',
+            'usesTemplateInfo' => false,
+        ],
+        'ANALYZE_WITH_AI' => [
+            'class' => AnalyzeWithAiAction::class,
+            'label' => 'analyze with ai',
             'usesTemplateInfo' => false,
         ],
     ];

@@ -37,6 +37,15 @@ return [
 
     'rule_engine_client_key' => env('WORKFLOW_RULE_ENGINE_CLIENT_KEY'),
 
+    'ai_service' => [
+        'url' => env('WORKFLOW_AI_SERVICE_URL'),
+        's3_bucket' => env('AI_PLATFORM_S3_BUCKET', env('AWS_BUCKET')),
+        's3_key_prefix' => env('WORKFLOW_AI_SERVICE_S3_KEY_PREFIX', 'analysis'),
+        'default_model' => env('AI_PLATFORM_DEFAULT_MODEL'),
+        'max_tokens' => env('WORKFLOW_AI_SERVICE_MAX_TOKENS', 4096),
+        'temperature' => env('WORKFLOW_AI_SERVICE_TEMPERATURE', 0.1),
+    ],
+
     'email_template_service_url' => env('WORKFLOW_EMAIL_TEMPLATE_SERVICE_URL'),
 
     'email_template_service_client_key' => env('WORKFLOW_EMAIL_TEMPLATE_SERVICE_CLIENT_KEY'),

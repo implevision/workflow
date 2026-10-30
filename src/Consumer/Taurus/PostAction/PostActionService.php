@@ -3,6 +3,7 @@
 namespace Taurus\Workflow\Consumer\Taurus\PostAction;
 
 use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\SaveClaimLetterHandler;
+use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\UploadAiAnalysisHandler;
 use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\UploadAsDocumentHandler;
 
 class PostActionService
@@ -10,6 +11,7 @@ class PostActionService
     private array $handlers = [
         'uploadAsDocument' => UploadAsDocumentHandler::class,
         'saveClaimLetter' => SaveClaimLetterHandler::class,
+        'uploadAiAnalysis' => UploadAiAnalysisHandler::class,
     ];
 
     public function execute($module, $payload, $messageId): array
