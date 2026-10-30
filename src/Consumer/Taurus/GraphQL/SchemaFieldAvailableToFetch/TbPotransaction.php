@@ -449,6 +449,16 @@ class TbPotransaction extends AbstractSchema
                 'jqFilter' => "{$this->queryPath}.policy.policyApplicationMaster.underwriterApplicationStatusTypeCode",
                 'parseResultCallback' => 'parseAppCodeNameToDisplayName',
             ],
+            'AssignedUnderwriterName' => [
+                'GraphQLschemaToReplace' => [
+                    'policy' => [
+                        'underwriter' => [
+                            'screenName' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => "{$this->queryPath}.policy.underwriter.screenName",
+            ],
             'TransactionEffectiveDate' => [
                 'GraphQLschemaToReplace' => [
                     'transactionEffectiveFromDate' => null,
