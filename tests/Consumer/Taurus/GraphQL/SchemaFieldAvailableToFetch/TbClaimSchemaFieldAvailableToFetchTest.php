@@ -1,12 +1,12 @@
 <?php
 
-namespace Taurus\Workflow\Tests\GraphQL\Taurus;
+namespace Taurus\Workflow\Tests\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch;
 
 use Avatar\Infrastructure\Models\Api\v1\TbPolicy;
 use Avatar\Infrastructure\Models\Api\v1\TbProduct;
 use Illuminate\Support\Facades\DB;
-use Orchestra\Testbench\TestCase;
 use Taurus\Workflow\Consumer\Taurus\GraphQL\SchemaFieldAvailableToFetch\TbClaim;
+use Taurus\Workflow\Tests\Consumer\Taurus\TestCase;
 
 class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
 {
@@ -20,7 +20,7 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
     public function test_query_name()
     {
         $tbClaim = new TbClaim;
-        $this->assertEquals('claim', $tbClaim->getQueryName(), "Query name should be 'claim'");
+        $this->assertEquals('claimsQuery', $tbClaim->getQueryName(), "Query name should be 'claim'");
     }
 
     public function test_field_mapping()
@@ -28,15 +28,16 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
         $tbClaim = new TbClaim;
         $fieldMapping = $tbClaim->getFieldMapping();
 
-        // For claim ID
-        $expectedArray = [
-            'GraphQLschemaToReplace' => [
-                'claimId' => null,
+        $expectedArray = $this->wrapFieldMappingSchemaUnderData([
+            'ClaimId' => [
+                'GraphQLschemaToReplace' => [
+                    'claimId' => null,
+                ],
+                'jqFilter' => '.claimsQuery.claimId',
             ],
-            'jqFilter' => '.claim.ClaimId',
-        ];
+        ]);
 
-        $this->assertEquals($expectedArray, $fieldMapping['ClaimId']);
+        $this->assertEquals($expectedArray['ClaimId'], $fieldMapping['ClaimId']);
     }
 
     // -------------------------------------------------------------------------
@@ -215,6 +216,9 @@ class TbClaimSchemaFieldAvailableToFetchTest extends TestCase
             's_HoldingCompanyName' => null,
             'naic_number' => '12345',
             'payment_wesite_url' => 'https://portal.example.com',
+            'email' => null,
+            'phone_no' => null,
+            'company_address' => null,
         ], $overrides);
     }
 }

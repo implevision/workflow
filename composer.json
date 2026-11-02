@@ -34,8 +34,15 @@
     "phpunit/phpunit": "^12.1"
   },
   "autoload-dev": {
+    "psr-4": {
+      "Taurus\\Workflow\\Tests\\": "tests/",
+      "Taurus\\Workflow\\Consumer\\Fake\\": "tests/Support/FakeConsumer/"
+    },
     "files": [
       "tests/Stubs/AvatarModelsStub.php"
     ]
+  },
+  "scripts": {
+    "test": "phpunit"
   }
 }

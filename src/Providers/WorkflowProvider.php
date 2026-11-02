@@ -17,11 +17,13 @@ use Taurus\Workflow\Repositories\Contracts\JobWorkflowRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowActionRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConditionRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowConfigRepositoryInterface;
+use Taurus\Workflow\Repositories\Contracts\WorkflowLogRepositoryInterface;
 use Taurus\Workflow\Repositories\Contracts\WorkflowRepositoryInterface;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 use Taurus\Workflow\Repositories\Eloquent\WorkflowActionRepository;
 use Taurus\Workflow\Repositories\Eloquent\WorkflowConditionRepository;
 use Taurus\Workflow\Repositories\Eloquent\WorkflowConfigRepository;
+use Taurus\Workflow\Repositories\Eloquent\WorkflowLogRepository;
 use Taurus\Workflow\Repositories\Eloquent\WorkflowRepository;
 
 class WorkflowProvider extends ServiceProvider
@@ -71,6 +73,7 @@ class WorkflowProvider extends ServiceProvider
             WorkflowActionRepositoryInterface::class => WorkflowActionRepository::class,
             JobWorkflowRepositoryInterface::class => JobWorkflowRepository::class,
             WorkflowConfigRepositoryInterface::class => WorkflowConfigRepository::class,
+            WorkflowLogRepositoryInterface::class => WorkflowLogRepository::class,
         ];
 
         foreach ($repositories as $interface => $repository) {
