@@ -38,7 +38,7 @@ return [
     'rule_engine_client_key' => env('WORKFLOW_RULE_ENGINE_CLIENT_KEY'),
 
     'ai_service' => [
-        'url' => env('WORKFLOW_AI_SERVICE_URL'),
+        'url' => env('AI_PLATFORM_URL'),
         's3_bucket' => env('AI_PLATFORM_S3_BUCKET', env('AWS_BUCKET')),
         's3_key_prefix' => env('WORKFLOW_AI_SERVICE_S3_KEY_PREFIX', 'analysis'),
         'default_model' => env('AI_PLATFORM_DEFAULT_MODEL'),
