@@ -2,6 +2,7 @@
 
 namespace Taurus\Workflow\Consumer\Taurus\PostAction\Handlers;
 
+use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument\UploadAsDocumentService;
 use Taurus\Workflow\Services\AWS\S3;
 
@@ -10,7 +11,14 @@ use Taurus\Workflow\Services\AWS\S3;
  */
 class UploadAiAnalysisHandler implements PostActionHandlerInterface
 {
-    private const DOC_TYPE_VALUE = '';
+    private const DOC_TYPE_CODE = 'AI_ANALYSIS';
+
+    private const FILE_TYPES = [
+        'markdown' => 'text/markdown',
+        'text' => 'text/plain',
+        'html' => 'text/html',
+        'json' => 'application/json',
+    ];
 
     public function prepare(array $payload, array $placeholders, string $messageId): array
     {
@@ -22,10 +30,10 @@ class UploadAiAnalysisHandler implements PostActionHandlerInterface
         S3::uploadFile($bucketName, $docPath, S3::getInfo($placeholders['s3_bucket'], $placeholders['s3_key']));
 
         return [
-            'docTypeValue' => self::DOC_TYPE_VALUE,
+            'docTypeValue' => DB::table('tb_doctypes')->where('s_DocTypeCode', self::DOC_TYPE_CODE)->value('n_DocType_PK'),
             'docName' => $docName,
             'originalFileName' => $filename,
-            'fileType' => 'text/markdown',
+            'fileType' => self::FILE_TYPES[$placeholders['output_format'] ?? ''] ?? 'text/plain',
             'docPath' => $docPath,
             'docUrl' => '',
             'insertedByFlag' => 'System',
