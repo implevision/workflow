@@ -65,7 +65,7 @@ class AnalyzeWithAiAction extends AbstractWorkflowAction
         $response = Http::attach('file', Http::get($document['path'])->throw()->body(), $document['name'])
             ->post(rtrim($config['url'], '/').'/api/v1/analyze', $fields)
             ->throw()
-            ->json('data');
+            ->json();
 
         return [...$response, 'documentName' => $document['name']];
     }
