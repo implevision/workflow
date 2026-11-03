@@ -50,6 +50,7 @@ class PrepareEmailData
             'bcc' => ! empty($this->payload['actionPayload']['bcc']) ? array_values(array_filter(array_map('trim', explode(',', $this->payload['actionPayload']['bcc'])))) : [],
             'postAction' => $this->payload['postAction'] ?? '',
             'actionPayload' => $this->payload['actionPayload'] ?? [],
+            'isPromotionalEmail' => $this->payload['isPromotionalEmail'] ?? false,
             'tenant' => getTenant(),
             'configurationSetName' => config('workflow.ses_configuration_set', ''),
             // PDF letter template fields
