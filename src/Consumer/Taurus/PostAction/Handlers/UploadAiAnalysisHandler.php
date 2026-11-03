@@ -3,6 +3,7 @@
 namespace Taurus\Workflow\Consumer\Taurus\PostAction\Handlers;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument\UploadAsDocumentService;
 use Taurus\Workflow\Services\AWS\S3;
 
@@ -23,7 +24,7 @@ class UploadAiAnalysisHandler implements PostActionHandlerInterface
     public function prepare(array $payload, array $placeholders, string $messageId): array
     {
         $docName = $placeholders['documentName'].'_summary_'.date('YmdHis');
-        $filename = $docName.'.'.pathinfo($placeholders['s3_key'], PATHINFO_EXTENSION);
+        $filename = $docName.'_'.Str::uuid().'.'.pathinfo($placeholders['s3_key'], PATHINFO_EXTENSION);
         $docPath = sprintf('%s/%s/%s/%s/aiAnalysis/%s', getTenant(), date('Y'), date('m'), date('d'), $filename);
         $bucketName = config('workflow.bucket_to_save_email_letters', config('filesystems.disks.s3.bucket'));
 
