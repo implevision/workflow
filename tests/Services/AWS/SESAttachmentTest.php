@@ -60,6 +60,30 @@ class SESAttachmentTest extends TestCase
         );
     }
 
+    public function test_an_extension_outside_the_map_is_kept_and_the_path_gives_the_type(): void
+    {
+        $this->assertSame(
+            ['audit.log', 'text/plain'],
+            SES::resolveAttachmentType('audit.log', 'stored.txt', 'irrelevant bytes')
+        );
+    }
+
+    public function test_an_extension_outside_the_map_is_kept_when_the_bytes_give_the_type(): void
+    {
+        $this->assertSame(
+            ['scan.raw', 'image/png'],
+            SES::resolveAttachmentType('scan.raw', 'object-key', self::PNG_BYTES)
+        );
+    }
+
+    public function test_a_dot_inside_the_name_is_not_an_extension(): void
+    {
+        $this->assertSame(
+            ['J. Smith claim.pdf', 'application/pdf'],
+            SES::resolveAttachmentType('J. Smith claim', 'doc-1.pdf', 'irrelevant bytes')
+        );
+    }
+
     public function test_unknown_type_falls_back_to_octet_stream(): void
     {
         $this->assertSame(

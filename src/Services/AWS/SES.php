@@ -399,34 +399,49 @@ class SES
         return $processed;
     }
 
-
     /**
-     * Content type from the file name's extension. A name without a known extension takes the
-     * one from the file's path (S3 key), and only when neither has one are the bytes inspected.
+     * Content type from the file name's extension, else the file's path (S3 key), else the bytes.
      *
-     * Returns [fileName, contentType], the file name gaining the extension when it had none.
+     * Returns [fileName, contentType]. A name that already has an extension is kept as it is,
+     * even one outside the map; only a name without one gains the path's or detected extension.
      */
     public static function resolveAttachmentType(string $fileName, string $pathName, ?string $rawContent): array
     {
-        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        $extension = self::fileExtension($fileName);
 
         if (isset(self::ATTACHMENT_MIME_TYPES[$extension])) {
             return [$fileName, self::ATTACHMENT_MIME_TYPES[$extension]];
         }
 
-        $pathExtension = strtolower(pathinfo($pathName, PATHINFO_EXTENSION));
+        $pathExtension = self::fileExtension($pathName);
 
         if (isset(self::ATTACHMENT_MIME_TYPES[$pathExtension])) {
-            return [$fileName.'.'.$pathExtension, self::ATTACHMENT_MIME_TYPES[$pathExtension]];
+            return [$extension ? $fileName : $fileName.'.'.$pathExtension, self::ATTACHMENT_MIME_TYPES[$pathExtension]];
         }
 
         $detected = $rawContent ? (new \finfo(FILEINFO_MIME_TYPE))->buffer($rawContent) : false;
-        $detectedExtension = $detected ? array_search($detected, self::ATTACHMENT_MIME_TYPES, true) : false;
 
-        if ($detectedExtension !== false) {
-            return [$fileName.'.'.$detectedExtension, $detected];
+        if (! $detected) {
+            return [$fileName, 'application/octet-stream'];
         }
 
-        return [$fileName, 'application/octet-stream'];
+        $detectedExtension = array_search($detected, self::ATTACHMENT_MIME_TYPES, true);
+
+        if (! $extension && $detectedExtension !== false) {
+            $fileName .= '.'.$detectedExtension;
+        }
+
+        return [$fileName, $detected];
+    }
+
+    /**
+     * Lower-case extension, or '' when there is none. A dot followed by anything other than a
+     * short alphanumeric run ("J. Smith claim") is part of the name, not an extension.
+     */
+    private static function fileExtension(string $fileName): string
+    {
+        $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+
+        return preg_match('/^[a-z0-9]{1,10}$/i', $extension) ? strtolower($extension) : '';
     }
 }
