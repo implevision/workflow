@@ -9,6 +9,26 @@ use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
 class SES
 {
+    private const ATTACHMENT_MIME_TYPES = [
+        'pdf' => 'application/pdf',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'bmp' => 'image/bmp',
+        'webp' => 'image/webp',
+        'tif' => 'image/tiff',
+        'tiff' => 'image/tiff',
+        'heic' => 'image/heic',
+        'doc' => 'application/msword',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls' => 'application/vnd.ms-excel',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'csv' => 'text/csv',
+        'txt' => 'text/plain',
+        'zip' => 'application/zip',
+    ];
+
     public static function extractPlaceholders($html)
     {
         preg_match_all('/{{\s*(.*?)\s*}}/', $html, $matches);
@@ -343,30 +363,70 @@ class SES
 
         $processed = [];
 
-        foreach ($attachments as $file) {
-            /*if (!isset($file['path']) || !file_exists($file['path'])) {
-                continue;
-            }*/
+        foreach ($attachments as $field => $file) {
+            // No document, or its presigned URL could not be generated: the email must not go without it
+            if (empty($file['path'])) {
+                throw new \Exception("Attachment {$field} has no file");
+            }
 
             $filePath = $file['path'];
-            $fileName = $file['name'] ?? basename($filePath);
+            // The path is usually a presigned URL, so take the basename without its query string
+            $pathName = basename(parse_url($filePath, PHP_URL_PATH) ?: $filePath);
+            $fileName = ($file['name'] ?? '') ?: $pathName;
+
+            $rawContent = @file_get_contents($filePath);
+
+            if ($rawContent === false) {
+                throw new \Exception("Attachment {$field} could not be downloaded");
+            }
+
+            [$fileName, $contentType] = self::resolveAttachmentType($fileName, $pathName, $rawContent);
 
             if (strlen($fileName) > 255) {
                 $fileName = substr($fileName, -255);
             }
 
-            $rawContent = file_get_contents($filePath);
-
             $processed[] = [
                 'ContentDescription' => $fileName,
                 'ContentDisposition' => 'ATTACHMENT',
                 'ContentTransferEncoding' => 'BASE64',
-                'ContentType' => 'application/pdf',
+                'ContentType' => $contentType,
                 'FileName' => $fileName,
                 'RawContent' => $rawContent,
             ];
         }
 
         return $processed;
+    }
+
+
+    /**
+     * Content type from the file name's extension. A name without a known extension takes the
+     * one from the file's path (S3 key), and only when neither has one are the bytes inspected.
+     *
+     * Returns [fileName, contentType], the file name gaining the extension when it had none.
+     */
+    public static function resolveAttachmentType(string $fileName, string $pathName, ?string $rawContent): array
+    {
+        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+        if (isset(self::ATTACHMENT_MIME_TYPES[$extension])) {
+            return [$fileName, self::ATTACHMENT_MIME_TYPES[$extension]];
+        }
+
+        $pathExtension = strtolower(pathinfo($pathName, PATHINFO_EXTENSION));
+
+        if (isset(self::ATTACHMENT_MIME_TYPES[$pathExtension])) {
+            return [$fileName.'.'.$pathExtension, self::ATTACHMENT_MIME_TYPES[$pathExtension]];
+        }
+
+        $detected = $rawContent ? (new \finfo(FILEINFO_MIME_TYPE))->buffer($rawContent) : false;
+        $detectedExtension = $detected ? array_search($detected, self::ATTACHMENT_MIME_TYPES, true) : false;
+
+        if ($detectedExtension !== false) {
+            return [$fileName.'.'.$detectedExtension, $detected];
+        }
+
+        return [$fileName, 'application/octet-stream'];
     }
 }
