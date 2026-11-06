@@ -672,6 +672,20 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 ],
                 'jqFilter' => "{$this->queryPath}.agentTask.policyTransaction.policy.underwriter.screenName",
             ],
+            'AssignedUnderwriterEmail' => [
+                'GraphQLschemaToReplace' => [
+                    'agentTask' => [
+                        'policyTransaction' => [
+                            'policy' => [
+                                'underwriter' => [
+                                    'email' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'jqFilter' => "{$this->queryPath}.agentTask.policyTransaction.policy.underwriter.email",
+            ],
 
             'TransactionEffectiveDate' => [
                 'GraphQLschemaToReplace' => [
