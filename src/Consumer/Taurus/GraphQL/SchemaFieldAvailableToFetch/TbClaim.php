@@ -955,21 +955,12 @@ class TbClaim extends AbstractSchema
         return sprintf('%s%s%s', ucfirst(substr($tenant, 0, 1)), $holdingCompanyDetail['naic_number'], $referenceNo);
     }
 
-    public static function formatFileName(?string $fileName): string
-    {
-        if (empty($fileName)) {
-            return '';
-        }
-
-        return pathinfo($fileName, PATHINFO_FILENAME);
-    }
-
     public function generatePresignedUrl(array $documents): array
     {
         $data = array_values(array_map(
             function ($doc) {
                 return [
-                    'name' => $this->formatFileName($doc['name']),
+                    'name' => $doc['name'],
                     'path' => Helper::generatePresignedUrl($doc['path']),
                 ];
             },

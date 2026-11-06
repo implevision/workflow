@@ -1449,7 +1449,7 @@ class TbPotransaction extends AbstractSchema
         return array_values(array_map(
             function ($doc) {
                 return [
-                    'name' => $this->formatFileName($doc['name']),
+                    'name' => $doc['name'],
                     'path' => Helper::generatePresignedUrl($doc['path']),
                 ];
             },

@@ -9,6 +9,26 @@ use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
 
 class SES
 {
+    private const ATTACHMENT_MIME_TYPES = [
+        'pdf' => 'application/pdf',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'bmp' => 'image/bmp',
+        'webp' => 'image/webp',
+        'tif' => 'image/tiff',
+        'tiff' => 'image/tiff',
+        'heic' => 'image/heic',
+        'doc' => 'application/msword',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls' => 'application/vnd.ms-excel',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'csv' => 'text/csv',
+        'txt' => 'text/plain',
+        'zip' => 'application/zip',
+    ];
+
     public static function extractPlaceholders($html)
     {
         preg_match_all('/{{\s*(.*?)\s*}}/', $html, $matches);
@@ -343,30 +363,85 @@ class SES
 
         $processed = [];
 
-        foreach ($attachments as $file) {
-            /*if (!isset($file['path']) || !file_exists($file['path'])) {
-                continue;
-            }*/
+        foreach ($attachments as $field => $file) {
+            // No document, or its presigned URL could not be generated: the email must not go without it
+            if (empty($file['path'])) {
+                throw new \Exception("Attachment {$field} has no file");
+            }
 
             $filePath = $file['path'];
-            $fileName = $file['name'] ?? basename($filePath);
+            // The path is usually a presigned URL, so take the basename without its query string
+            $pathName = basename(parse_url($filePath, PHP_URL_PATH) ?: $filePath);
+            $fileName = ($file['name'] ?? '') ?: $pathName;
+
+            $rawContent = @file_get_contents($filePath);
+
+            if ($rawContent === false) {
+                throw new \Exception("Attachment {$field} could not be downloaded");
+            }
+
+            [$fileName, $contentType] = self::resolveAttachmentType($fileName, $pathName, $rawContent);
 
             if (strlen($fileName) > 255) {
                 $fileName = substr($fileName, -255);
             }
 
-            $rawContent = file_get_contents($filePath);
-
             $processed[] = [
                 'ContentDescription' => $fileName,
                 'ContentDisposition' => 'ATTACHMENT',
                 'ContentTransferEncoding' => 'BASE64',
-                'ContentType' => 'application/pdf',
+                'ContentType' => $contentType,
                 'FileName' => $fileName,
                 'RawContent' => $rawContent,
             ];
         }
 
         return $processed;
+    }
+
+    /**
+     * Content type from the file name's extension, else the file's path (S3 key), else the bytes.
+     *
+     * Returns [fileName, contentType]. A name that already has an extension is kept as it is,
+     * even one outside the map; only a name without one gains the path's or detected extension.
+     */
+    public static function resolveAttachmentType(string $fileName, string $pathName, ?string $rawContent): array
+    {
+        $extension = self::fileExtension($fileName);
+
+        if (isset(self::ATTACHMENT_MIME_TYPES[$extension])) {
+            return [$fileName, self::ATTACHMENT_MIME_TYPES[$extension]];
+        }
+
+        $pathExtension = self::fileExtension($pathName);
+
+        if (isset(self::ATTACHMENT_MIME_TYPES[$pathExtension])) {
+            return [$extension ? $fileName : $fileName.'.'.$pathExtension, self::ATTACHMENT_MIME_TYPES[$pathExtension]];
+        }
+
+        $detected = $rawContent ? (new \finfo(FILEINFO_MIME_TYPE))->buffer($rawContent) : false;
+
+        if (! $detected) {
+            return [$fileName, 'application/octet-stream'];
+        }
+
+        $detectedExtension = array_search($detected, self::ATTACHMENT_MIME_TYPES, true);
+
+        if (! $extension && $detectedExtension !== false) {
+            $fileName .= '.'.$detectedExtension;
+        }
+
+        return [$fileName, $detected];
+    }
+
+    /**
+     * Lower-case extension, or '' when there is none. A dot followed by anything other than a
+     * short alphanumeric run ("J. Smith claim") is part of the name, not an extension.
+     */
+    private static function fileExtension(string $fileName): string
+    {
+        $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+
+        return preg_match('/^[a-z0-9]{1,10}$/i', $extension) ? strtolower($extension) : '';
     }
 }

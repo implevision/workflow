@@ -188,10 +188,12 @@ class EmailClient
         foreach ($payload as $key => $value) {
             // Case-insensitive check for keys starting with "attachment"
             if (preg_match('/^attach/i', $key)) {
-                $attachments[$key] = array_pop($value);
+                // A field with no documents stays as null, so SES refuses to send the email without it
+                $attachments[$key] = is_array($value) ? array_pop($value) : null;
             }
         }
 
-        return array_values($attachments);
+        // Keyed by field name, for SES to name a missing attachment
+        return $attachments;
     }
 }
