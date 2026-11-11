@@ -5,12 +5,11 @@ namespace Taurus\Workflow\Consumer\Taurus\PostAction\Handlers;
 use Taurus\Workflow\Consumer\Taurus\PostAction\SaveClaimLetter\PrepareSaveClaimLetterData;
 use Taurus\Workflow\Consumer\Taurus\PostAction\SaveClaimLetter\SaveClaimLetterService;
 
-class SaveClaimLetterHandler implements PostActionHandlerInterface
+class SaveClaimLetterHandler extends AbstractPostActionHandler
 {
-    public function prepare(array $payload, array $placeholders, string $messageId): array
-    {
-        return PrepareSaveClaimLetterData::prepare($payload, $placeholders, $messageId);
-    }
+    protected array $preparers = [
+        'WORKFLOW_OUTPUT' => PrepareSaveClaimLetterData::class,
+    ];
 
     public function execute(string $module, array $payload, array $preparedData): mixed
     {

@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument;
 
 use Dompdf\Dompdf;
 use Taurus\Workflow\Consumer\Taurus\Helper;
+use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\PostActionDataPreparerInterface;
 use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\WorkflowActions\Helpers\WorkflowOutput\PdfStamper;
 use Taurus\Workflow\Services\WorkflowEmailService;
@@ -15,16 +16,16 @@ use Taurus\Workflow\Services\WorkflowEmailService;
  * It handles the necessary transformations and validations required
  * before the document is uploaded.
  */
-class PrepareUploadAsDocumentData
+class PrepareUploadAsDocumentData implements PostActionDataPreparerInterface
 {
     /**
      * Prepares the data for the "upload as document" post action based on the provided payload and placeholders.
      *
      * @param  mixed  $payload  The data to be processed for the document.
      * @param  array  $placeholders  An associative array of placeholders to be replaced in the document content.
-     * @return mixed The processed document data.
+     * @return array The processed document data.
      */
-    public static function prepare($payload, $placeholders, $messageId)
+    public static function prepare(array $payload, array $placeholders, string $messageId): array
     {
         $pageSize = 'A4';
         $pageOrientation = 'portrait';

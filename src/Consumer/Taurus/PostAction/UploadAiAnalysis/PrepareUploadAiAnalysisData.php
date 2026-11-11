@@ -1,16 +1,16 @@
 <?php
 
-namespace Taurus\Workflow\Consumer\Taurus\PostAction\Handlers;
+namespace Taurus\Workflow\Consumer\Taurus\PostAction\UploadAiAnalysis;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument\UploadAsDocumentService;
+use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\PostActionDataPreparerInterface;
 use Taurus\Workflow\Services\AWS\S3;
 
 /**
- * Copies the AI analysis output into the documents bucket and attaches it to the record.
+ * Copies the AI analysis output into the documents bucket and prepares it for upload as a document.
  */
-class UploadAiAnalysisHandler implements PostActionHandlerInterface
+class PrepareUploadAiAnalysisData implements PostActionDataPreparerInterface
 {
     private const DOC_TYPE_CODE = 'AI_ANALYSIS';
 
@@ -21,7 +21,7 @@ class UploadAiAnalysisHandler implements PostActionHandlerInterface
         'json' => 'application/json',
     ];
 
-    public function prepare(array $payload, array $placeholders, string $messageId): array
+    public static function prepare(array $payload, array $placeholders, string $messageId): array
     {
         $docName = $placeholders['documentName'].'_summary_'.date('YmdHis');
         $filename = $docName.'_'.Str::uuid().'.'.pathinfo($placeholders['s3_key'], PATHINFO_EXTENSION);
@@ -40,10 +40,5 @@ class UploadAiAnalysisHandler implements PostActionHandlerInterface
             'insertedByFlag' => 'System',
             'activityLogText' => "AI analysis summary for '".$placeholders['documentName']."' generated and uploaded.",
         ];
-    }
-
-    public function execute(string $module, array $payload, array $preparedData): mixed
-    {
-        return UploadAsDocumentService::execute($module, $payload, $preparedData);
     }
 }

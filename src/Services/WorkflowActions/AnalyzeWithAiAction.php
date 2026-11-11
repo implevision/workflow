@@ -39,7 +39,8 @@ class AnalyzeWithAiAction extends AbstractWorkflowAction
             'workflowId' => $this->getWorkflowId(),
             'jobWorkflowId' => $this->getJobWorkflowId(),
             'recordIdentifier' => $this->getRecordIdentifier(),
-            'postAction' => 'uploadAiAnalysis',
+            'actionType' => 'ANALYZE_WITH_AI',
+            'postAction' => 'uploadAsDocument',
             'payload' => $results,
         ], (string) $this->getJobWorkflowId()));
 

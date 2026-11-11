@@ -37,7 +37,7 @@ class PrepareEmailData
             'workflowId' => $this->workflowId,
             'jobWorkflowId' => $this->jobWorkflowId,
             'recordIdentifier' => $this->recordIdentifier,
-            'actionType' => 'Email',
+            'actionType' => 'EMAIL',
             'csvFile' => $this->payload['csvFile'] ?? null,
             'data' => $this->payload['data'] ?? [],
             'emailTemplate' => $this->emailInformation['html'],

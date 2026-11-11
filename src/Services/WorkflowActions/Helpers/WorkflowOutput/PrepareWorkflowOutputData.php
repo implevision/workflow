@@ -44,7 +44,7 @@ class PrepareWorkflowOutputData
                 'workflowId' => $this->workflowId,
                 'jobWorkflowId' => $this->jobWorkflowId,
                 'recordIdentifier' => $this->recordIdentifier,
-                'actionType' => 'workflow_output',
+                'actionType' => 'WORKFLOW_OUTPUT',
                 'data' => $data,
                 'payload' => $data,
                 'emailTemplate' => $this->templateInformation['html'] ?? '',
