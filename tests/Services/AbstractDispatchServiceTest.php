@@ -228,11 +228,19 @@ class AbstractDispatchServiceTest extends TestCase
         $this->assertSame(['a@allowed.test', 'b@allowed.test'], $this->service->call('resolveEmailForAction', $payload, [[]], 0, []));
     }
 
-    public function test_a_missing_recipient_address_is_reported(): void
+    public function test_a_missing_recipient_address_is_reported_and_the_row_dropped(): void
     {
-        $this->service->call('resolveEmailForAction', ['emailRecipient' => 'AgentEmail'], [[]], 0, []);
+        $this->assertFalse($this->service->call('resolveEmailForAction', ['emailRecipient' => 'AgentEmail'], [[]], 0, []));
 
-        $this->assertSame(['MISSING_EMAIL_ADDRESS', 'UNAUTHORIZED_EMAIL_ADDRESS'], $this->loggedErrorTypes());
+        $this->assertSame(['MISSING_EMAIL_ADDRESS'], $this->loggedErrorTypes());
+    }
+
+    public function test_a_missing_recipient_address_is_dropped_in_production(): void
+    {
+        config(['app.env' => 'production']);
+
+        $this->assertFalse($this->service->call('resolveEmailForAction', ['emailRecipient' => 'AgentEmail'], [['AgentEmail' => ' , ']], 0, []));
+        $this->assertSame(['MISSING_EMAIL_ADDRESS'], $this->loggedErrorTypes());
     }
 
     public function test_in_production_recipients_are_not_filtered(): void
@@ -241,6 +249,32 @@ class AbstractDispatchServiceTest extends TestCase
         $rows = [['AgentEmail' => 'x@anywhere.com,y@else.com']];
 
         $this->assertSame(['x@anywhere.com', 'y@else.com'], $this->service->call('resolveEmailForAction', ['emailRecipient' => 'AgentEmail'], $rows, 0, []));
+    }
+
+    public function test_invalid_recipient_addresses_are_dropped_and_reported(): void
+    {
+        config(['app.env' => 'production']);
+        $rows = [['AgentEmail' => 'x@anywhere.com, not-an-email ,y@else']];
+
+        $this->assertSame(['x@anywhere.com'], $this->service->call('resolveEmailForAction', ['emailRecipient' => 'AgentEmail'], $rows, 0, []));
+        $this->assertSame([['errorType' => 'INVALID_EMAIL_ADDRESS', 'exception' => 'Invalid email address: not-an-email,y@else']], $this->workflowService->errors);
+    }
+
+    public function test_a_row_without_any_valid_recipient_is_dropped(): void
+    {
+        config(['app.env' => 'production']);
+        $rows = [['PolicyNumber' => 'P-1', 'AgentEmail' => 'agent@@anywhere.com']];
+
+        $this->assertFalse($this->service->call('validateAndFilterData', $rows, ['PolicyNumber'], ['emailRecipient' => 'AgentEmail'], 'EMAIL'));
+        $this->assertSame(['INVALID_EMAIL_ADDRESS'], $this->loggedErrorTypes());
+    }
+
+    public function test_invalid_custom_recipients_are_dropped_in_non_production(): void
+    {
+        $payload = ['emailRecipient' => 'CUSTOM', 'customEmailRecipients' => 'a@allowed.test,bad address@allowed.test'];
+
+        $this->assertSame(['a@allowed.test'], $this->service->call('resolveEmailForAction', $payload, [[]], 0, []));
+        $this->assertSame(['INVALID_EMAIL_ADDRESS'], $this->loggedErrorTypes());
     }
 
     public function test_known_bug_place_holder_to_extract_recipient_branch_is_unreachable(): void

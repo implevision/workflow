@@ -6,6 +6,7 @@ use Aws\Exception\AwsException;
 use Aws\SesV2\SesV2Client;
 use Taurus\Workflow\Events\JobWorkflowUpdatedEvent;
 use Taurus\Workflow\Repositories\Eloquent\JobWorkflowRepository;
+use Taurus\Workflow\Services\WorkflowActions\Helpers\Email\EmailAddressValidator;
 
 class SES
 {
@@ -83,6 +84,13 @@ class SES
         if (preg_match('/\{\{#(?:if|each)\s/', $htmlContent)) {
             $messageId = null;
             foreach ($payload as $item) {
+                // One bad address must not stop the rest of the batch
+                if (! self::validRecipients($item)) {
+                    \Log::info('WORKFLOW - Skipping email due to missing or invalid recipient email address', $item);
+
+                    continue;
+                }
+
                 $messageId = self::sendEmail($from, $subject, $htmlContent, $item, $textContent, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
             }
 
@@ -103,13 +111,20 @@ class SES
 
         $bulkEmailEntries = [];
         foreach ($payload as $item) {
-            if (empty($item['email']) || count($item) < count($placeHolders)) {
+            $recipient = self::validRecipients($item);
+
+            if (! $recipient) {
+                \Log::info('WORKFLOW - Skipping email due to missing or invalid recipient email address', $item);
+
+                continue;
+            }
+
+            if (count($item) < count($placeHolders)) {
                 \Log::info('WORKFLOW - Skipping email due to missing placeholders', $item);
 
                 continue;
             }
 
-            $recipient = $item['email'];
             unset($item['email']);
 
             \Log::info('WORKFLOW - Sending email to: ', (array) $recipient);
@@ -252,15 +267,20 @@ class SES
         $placeHolders = is_array($placeHolders) ? $placeHolders : [];
         $placeHolders = array_fill_keys($placeHolders, '');
 
-        if (empty($payload['email']) || count($payload) < count($placeHolders)) {
+        $recipient = self::validRecipients($payload);
+
+        if (! $recipient) {
+            throw new \Exception('Skipping email due to missing or invalid recipient email address');
+        }
+
+        if (count($payload) < count($placeHolders)) {
             \Log::info('WORKFLOW - Skipping email due to missing placeholders', $payload);
 
             throw new \Exception('Skipping email due to missing placeholders');
         }
 
-        \Log::info('WORKFLOW - Sending email to: ', (array) $payload['email']);
+        \Log::info('WORKFLOW - Sending email to: ', $recipient);
 
-        $recipient = $payload['email'];
         unset($payload['email']);
 
         // Save attachments before removing arrays from payload
@@ -318,6 +338,21 @@ class SES
         } catch (AwsException $e) {
             throw new \Exception($e->getAwsErrorMessage());
         }
+    }
+
+    /**
+     * The item's well-formed recipient addresses. SES rejects the whole request for one
+     * malformed address, so those are dropped (and logged) before sending.
+     */
+    public static function validRecipients(array $item): array
+    {
+        [$validEmails, $invalidEmails] = EmailAddressValidator::partition($item['email'] ?? []);
+
+        if ($invalidEmails) {
+            \Log::warning('WORKFLOW - Skipping invalid email address(es)', $invalidEmails);
+        }
+
+        return $validEmails;
     }
 
     private static function updateState($jobWorkflowId, $processedRecord)
