@@ -1402,10 +1402,10 @@ class TbPotransaction extends AbstractSchema
                 continue;
             }
 
-            // Free-text user input: strip markup, drop control/invisible characters and
-            // collapse whitespace. Limits mirror the gfs-saas-client validation (5 lines, 255 chars).
-            $line = strip_tags((string) $line);
-            $line = preg_replace('/[\p{Cc}\p{Cf}]+/u', ' ', $line) ?? '';
+            // Free-text user input: keep the literal text (htmlspecialchars below stops it being
+            // read as HTML, e.g. "Support <support@example.com>"), drop control/invisible characters
+            // and collapse whitespace. Limits mirror the gfs-saas-client validation (5 lines, 255 chars).
+            $line = preg_replace('/[\p{Cc}\p{Cf}]+/u', ' ', (string) $line) ?? '';
             $line = trim(preg_replace('/\s+/u', ' ', $line) ?? '');
 
             if ($line !== '') {
