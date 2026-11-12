@@ -260,6 +260,21 @@ class AbstractDispatchServiceTest extends TestCase
         $this->assertSame([['errorType' => 'INVALID_EMAIL_ADDRESS', 'exception' => 'Invalid email address: not-an-email,y@else']], $this->workflowService->errors);
     }
 
+    public function test_a_quoted_local_part_is_not_split_into_separate_recipients(): void
+    {
+        config(['app.env' => 'production']);
+        $rows = [['AgentEmail' => '"x,victim@example.net,y"@example.com']];
+
+        $this->assertSame(['"x,victim@example.net,y"@example.com'], $this->service->call('resolveEmailForAction', ['emailRecipient' => 'AgentEmail'], $rows, 0, []));
+        $this->assertSame([], $this->loggedErrorTypes());
+    }
+
+    public function test_non_production_allowlist_does_not_match_inside_a_quoted_local_part(): void
+    {
+        $this->assertFalse($this->service->call('filterEmailForNonProduction', '"x,victim@allowed.test,y"@blocked.com', []));
+        $this->assertSame(['UNAUTHORIZED_EMAIL_ADDRESS'], $this->loggedErrorTypes());
+    }
+
     public function test_a_row_without_any_valid_recipient_is_dropped(): void
     {
         config(['app.env' => 'production']);

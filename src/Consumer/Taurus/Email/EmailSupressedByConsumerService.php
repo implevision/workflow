@@ -4,6 +4,7 @@ namespace Taurus\Workflow\Consumer\Taurus\Email;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Taurus\Workflow\Services\WorkflowActions\Helpers\Email\EmailAddressValidator;
 
 class EmailSupressedByConsumerService
 {
@@ -92,12 +93,11 @@ class EmailSupressedByConsumerService
     }
 
     /**
-     * A CSV email cell may hold several comma-separated addresses.
+     * A CSV email cell may hold several comma-separated addresses. Commas inside a quoted
+     * local part do not separate recipients (see EmailAddressValidator::split()).
      */
     private function splitEmails(array $row): array
     {
-        $emails = array_map('trim', explode(',', (string) ($row['email'] ?? '')));
-
-        return array_values(array_filter($emails, fn ($email) => $email !== ''));
+        return EmailAddressValidator::split($row['email'] ?? []);
     }
 }

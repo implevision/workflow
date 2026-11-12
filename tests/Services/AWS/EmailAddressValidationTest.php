@@ -3,6 +3,7 @@
 namespace Taurus\Workflow\Tests\Services\AWS;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use Taurus\Workflow\Consumer\Taurus\Email\EmailSupressedByConsumerService;
 use Taurus\Workflow\Services\AWS\SES;
 use Taurus\Workflow\Services\WorkflowActions\Helpers\Email\EmailAddressValidator;
 use Taurus\Workflow\Services\WorkflowActions\Helpers\Email\EmailClient;
@@ -46,6 +47,64 @@ class EmailAddressValidationTest extends TestCase
         $this->assertSame(
             [['a@example.com'], ['nope', 'b@']],
             EmailAddressValidator::partition('a@example.com,nope, b@')
+        );
+    }
+
+    public static function quotedListProvider(): array
+    {
+        return [
+            'comma inside a quoted local part' => [
+                '"x,victim@example.net,y"@example.com',
+                ['"x,victim@example.net,y"@example.com'],
+            ],
+            'escaped quote does not close the quoted local part' => [
+                '"a\",victim@example.net"@example.com',
+                ['"a\",victim@example.net"@example.com'],
+            ],
+            'quoted address among plain ones' => [
+                'a@example.com, "x,y"@example.com ,b@example.com',
+                ['a@example.com', '"x,y"@example.com', 'b@example.com'],
+            ],
+            'unclosed quote runs to the end of the value' => [
+                'a@example.com,"x,victim@example.net',
+                ['a@example.com', '"x,victim@example.net'],
+            ],
+            'quoted display name' => [
+                '"Smith, John" <john@example.com>',
+                ['"Smith, John" <john@example.com>'],
+            ],
+        ];
+    }
+
+    #[DataProvider('quotedListProvider')]
+    public function test_split_does_not_break_quoted_strings_on_commas(string $value, array $expected): void
+    {
+        $this->assertSame($expected, EmailAddressValidator::split($value));
+    }
+
+    public function test_a_quoted_address_is_never_turned_into_a_different_recipient(): void
+    {
+        $this->assertSame(
+            [['"x,victim@example.net,y"@example.com'], []],
+            EmailAddressValidator::partition('"x,victim@example.net,y"@example.com')
+        );
+        $this->assertSame(
+            [[], ['"x,victim@example.net']],
+            EmailAddressValidator::partition('"x,victim@example.net')
+        );
+        $this->assertSame(
+            ['"x,victim@example.net,y"@example.com'],
+            SES::validRecipients(['email' => ['"x,victim@example.net,y"@example.com']])
+        );
+    }
+
+    public function test_unsubscribe_filter_keeps_a_quoted_csv_address_whole(): void
+    {
+        $splitEmails = new \ReflectionMethod(EmailSupressedByConsumerService::class, 'splitEmails');
+
+        $this->assertSame(
+            ['"x,victim@example.net,y"@example.com', 'b@example.com'],
+            $splitEmails->invoke(new EmailSupressedByConsumerService, ['email' => '"x,victim@example.net,y"@example.com, b@example.com'])
         );
     }
 

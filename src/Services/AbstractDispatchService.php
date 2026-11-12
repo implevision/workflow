@@ -690,7 +690,7 @@ abstract class AbstractDispatchService
                 return false;
             }
         } else {
-            $emailAddresses = explode(',', $emailPlaceHolderValue);
+            $emailAddresses = EmailAddressValidator::split($emailPlaceHolderValue);
         }
 
         return $this->filterInvalidEmailAddresses($emailAddresses);
@@ -739,7 +739,7 @@ abstract class AbstractDispatchService
             $emailPlaceHolderValue = $sendAllEmailsTo;
         }
 
-        $emailPlaceHolderValue = explode(',', $emailPlaceHolderValue);
+        $emailPlaceHolderValue = EmailAddressValidator::split($emailPlaceHolderValue);
 
         $executeEmailAction = false;
         $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));
