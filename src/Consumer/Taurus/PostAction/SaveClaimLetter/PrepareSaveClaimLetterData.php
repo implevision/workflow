@@ -8,6 +8,7 @@ use Avatar\Infrastructure\Models\Api\v1\TbPotransaction;
 use Avatar\Infrastructure\Models\Api\v1\TbPrdoccodedoc;
 use Avatar\Infrastructure\Models\Api\v1\TbPrdoclist;
 use Taurus\Workflow\Consumer\Taurus\Helper;
+use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\PostActionDataPreparerInterface;
 
 /**
  * Class PrepareSaveClaimLetterData
@@ -16,16 +17,16 @@ use Taurus\Workflow\Consumer\Taurus\Helper;
  * It handles the necessary transformations and validations required
  * before the save claim letter data is processed.
  */
-class PrepareSaveClaimLetterData
+class PrepareSaveClaimLetterData implements PostActionDataPreparerInterface
 {
     /**
      * Prepares the save claim letter data based on the provided payload and placeholders.
      *
      * @param  mixed  $payload  The data to be processed for the save claim letter.
      * @param  array  $placeholders  An associative array of placeholders to be replaced in the save claim letter content.
-     * @return mixed The processed save claim letter data.
+     * @return array The processed save claim letter data.
      */
-    public static function prepare($payload, $placeholders, $messageId)
+    public static function prepare(array $payload, array $placeholders, string $messageId): array
     {
         if (array_key_exists('CompanyLogo', $placeholders)) {
             $placeholders['CompanyLogo'] = Helper::generateDataImage($placeholders['CompanyLogo']);
