@@ -14,6 +14,7 @@ use Taurus\Workflow\Services\WorkflowActions\AbstractWorkflowAction;
 use Taurus\Workflow\Services\WorkflowActions\AnalyzeWithAiAction;
 use Taurus\Workflow\Services\WorkflowActions\CreateRecordAction;
 use Taurus\Workflow\Services\WorkflowActions\EmailAction;
+use Taurus\Workflow\Services\WorkflowActions\Helpers\Email\EmailAddressValidator;
 use Taurus\Workflow\Services\WorkflowActions\WebhookAction;
 use Taurus\Workflow\Services\WorkflowActions\WorkflowOutputAction;
 
@@ -648,7 +649,9 @@ abstract class AbstractDispatchService
      * Determines the recipient email address(es) for an EMAIL action row.
      *
      * In non-production environments the result is passed through the allowlist filter.
-     * Returns an array of email addresses, or false when the address is blocked.
+     * Malformed addresses are dropped and reported via INVALID_EMAIL_ADDRESS.
+     * Returns an array of valid email addresses, or false when the address is missing,
+     * blocked or invalid.
      */
     protected function resolveEmailForAction(
         array $actionPayload,
@@ -670,18 +673,48 @@ abstract class AbstractDispatchService
 
         Log::info("{$this->logPrefix} - Actual email address: ".$emailPlaceHolderValue);
 
-        if (! $emailPlaceHolderValue) {
+        if (! EmailAddressValidator::split($emailPlaceHolderValue)) {
             $this->addWorkflowLog(
                 'MISSING_EMAIL_ADDRESS',
                 'System was not able to find email address for the record'
             );
+            Log::warning("{$this->logPrefix} - Missing email address, skipping the record");
+
+            return false;
         }
 
         if (config('app.env') != 'production') {
-            return $this->filterEmailForNonProduction($emailPlaceHolderValue, $actionPayload);
+            $emailAddresses = $this->filterEmailForNonProduction($emailPlaceHolderValue, $actionPayload);
+
+            if ($emailAddresses === false) {
+                return false;
+            }
+        } else {
+            $emailAddresses = EmailAddressValidator::split($emailPlaceHolderValue);
         }
 
-        return explode(',', $emailPlaceHolderValue);
+        return $this->filterInvalidEmailAddresses($emailAddresses);
+    }
+
+    /**
+     * Drops malformed addresses, logging them as INVALID_EMAIL_ADDRESS.
+     *
+     * Returns the valid addresses, or false when none is left so the caller drops the row.
+     */
+    protected function filterInvalidEmailAddresses(array $emailAddresses): array|false
+    {
+        [$validEmails, $invalidEmails] = EmailAddressValidator::partition($emailAddresses);
+
+        if ($invalidEmails) {
+            $implodedEmailList = implode(',', $invalidEmails);
+            $this->addWorkflowLog(
+                'INVALID_EMAIL_ADDRESS',
+                'Invalid email address: '.$implodedEmailList
+            );
+            Log::error("{$this->logPrefix} - Invalid email address: ".$implodedEmailList);
+        }
+
+        return $validEmails ?: false;
     }
 
     /**
@@ -706,7 +739,7 @@ abstract class AbstractDispatchService
             $emailPlaceHolderValue = $sendAllEmailsTo;
         }
 
-        $emailPlaceHolderValue = explode(',', $emailPlaceHolderValue);
+        $emailPlaceHolderValue = EmailAddressValidator::split($emailPlaceHolderValue);
 
         $executeEmailAction = false;
         $allowedEmailAddressList1 = array_intersect($emailPlaceHolderValue, config('workflow.allowed_receiver.email'));

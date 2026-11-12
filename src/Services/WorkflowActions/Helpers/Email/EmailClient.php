@@ -147,11 +147,64 @@ class EmailClient
             }
         }
 
+        $jobPayload['payload'] = $this->filterInvalidRecipientRows($jobPayload);
+
         if (count($jobPayload['payload'])) {
             $this->dispatchEmail($jobPayload);
         }
 
         return count($jobPayload['payload']);
+    }
+
+    /**
+     * CSV rows never pass through the dispatcher's address validation either, so rows
+     * whose email is missing or malformed are dropped here; the rest keep only their
+     * valid addresses.
+     *
+     * Returns the rows that still have someone to send to.
+     */
+    private function filterInvalidRecipientRows($jobPayload): array
+    {
+        $rows = [];
+        $skippedRows = 0;
+        $invalidAddresses = 0;
+
+        foreach ($jobPayload['payload'] as $row) {
+            [$validEmails, $invalidEmails] = EmailAddressValidator::partition($row['email'] ?? []);
+            $invalidAddresses += count($invalidEmails);
+
+            if (! $validEmails) {
+                $skippedRows++;
+
+                continue;
+            }
+
+            // Kept as an array: SES casts `email` to ToAddresses, where a joined string is one invalid address
+            $row['email'] = $validEmails;
+            $rows[] = $row;
+        }
+
+        if ($skippedRows || $invalidAddresses) {
+            // A count only, as the addresses are recipient details
+            $message = "Skipped {$invalidAddresses} invalid email address(es); {$skippedRows} CSV row(s) had no valid email address";
+            \Log::warning('WORKFLOW - '.$message);
+
+            if (! empty($jobPayload['jobWorkflowId'])) {
+                try {
+                    app(WorkflowService::class)->addWorkflowLog(
+                        $jobPayload['workflowId'] ?? null,
+                        $jobPayload['jobWorkflowId'],
+                        'INVALID_EMAIL_ADDRESS',
+                        $message
+                    );
+                } catch (\Throwable $e) {
+                    // A failed log must not stop the rest of the batch from being sent
+                    \Log::error('WORKFLOW - Error while adding INVALID_EMAIL_ADDRESS log: '.$e->getMessage());
+                }
+            }
+        }
+
+        return $rows;
     }
 
     public function processData($jobData, $jobPayload)
