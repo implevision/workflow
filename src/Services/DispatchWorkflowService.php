@@ -372,18 +372,29 @@ class DispatchWorkflowService extends AbstractDispatchService
         // A group root carries no column, and the serializer reads a JOIN as hanging
         // off a column condition - so AND the groups together instead.
         if (! isset($graphQLQuery['column'])) {
-            return ['operator' => 'AND', 'condition' => [$graphQLQuery, $conditionsToApply]];
+            return ['operator' => 'AND', 'condition' => [...$this->andOperands($graphQLQuery), ...$this->andOperands($conditionsToApply)]];
         }
 
-        // Wrapped in its own AND so later groups are AND-ed in, rather than pushed
-        // inside this group and picking up its operator.
-        if (isset($graphQLQuery['JOIN'])) {
-            $graphQLQuery['JOIN']['condition'][] = $conditionsToApply;
-        } else {
-            $graphQLQuery['JOIN'] = ['operator' => 'AND', 'condition' => [$conditionsToApply]];
-        }
+        // The JOIN is its own AND list, so later groups are AND-ed in rather than
+        // pushed inside this group and picking up its operator.
+        $graphQLQuery['JOIN'] ??= ['operator' => 'AND', 'condition' => []];
+        array_push($graphQLQuery['JOIN']['condition'], ...$this->andOperands($conditionsToApply));
 
         return $graphQLQuery;
+    }
+
+    /**
+     * The operands to add to an AND list: an AND group's own children, so it is
+     * not nested as { AND: [...] } inside another AND. Anything else (a rule, or
+     * an OR group) is kept whole.
+     */
+    private function andOperands(array $condition): array
+    {
+        if (isset($condition['condition']) && ($condition['operator'] ?? 'AND') === 'AND') {
+            return $condition['condition'];
+        }
+
+        return [$condition];
     }
 
     /**
