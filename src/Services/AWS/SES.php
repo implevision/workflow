@@ -147,6 +147,10 @@ class SES
             ];
         }
 
+        if (! $bulkEmailEntries) {
+            return null;
+        }
+
         // $attachments = $payload['attachments'];
 
         try {

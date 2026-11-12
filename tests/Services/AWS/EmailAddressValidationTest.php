@@ -65,6 +65,16 @@ class EmailAddressValidationTest extends TestCase
         SES::sendEmail('from@example.com', 'Subject', '<p>Hi</p>', ['email' => 'not-an-email']);
     }
 
+    public function test_ses_skips_a_bulk_batch_without_any_valid_recipient(): void
+    {
+        config(['workflow.aws_region' => 'us-east-1']);
+
+        $this->assertNull(SES::sendBulkEmail('from@example.com', 'Subject', '<p>Hi</p>', [
+            ['email' => 'not-an-email'],
+            ['email' => ''],
+        ]));
+    }
+
     public function test_csv_rows_without_a_valid_recipient_are_dropped_before_dispatch(): void
     {
         $this->app->instance(WorkflowService::class, $workflowService = new FakeWorkflowService);
