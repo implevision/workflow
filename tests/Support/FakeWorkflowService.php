@@ -25,6 +25,8 @@ class FakeWorkflowService extends WorkflowService
 
     public array $scheduledWorkflows = [];
 
+    public array $unsubscribedEmails = [];
+
     public function __construct()
     {
         $this->moduleSchema = new FakeModuleSchema;
@@ -62,6 +64,16 @@ class FakeWorkflowService extends WorkflowService
     public function getExtendedTemplateInfoForModule(string $module, array $templatePayload = []): array
     {
         return $this->extendedTemplateInfo;
+    }
+
+    public function applyEmailSupressedByConsumerFilter($emails, bool $isPromotionalEmail = false)
+    {
+        return array_values(array_diff($emails, $this->unsubscribedEmails));
+    }
+
+    public function applyEmailSupressedByConsumerFilterOnRows(array $rows): array
+    {
+        return $rows;
     }
 
     public function scheduleWorkflows($workflows)

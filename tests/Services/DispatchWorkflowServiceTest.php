@@ -194,6 +194,23 @@ class DispatchWorkflowServiceTest extends TestCase
         );
     }
 
+    public function test_certain_condition_or_groups_stay_nested_on_the_record_query(): void
+    {
+        $this->fakeGraphQL($this->graphQLRecords([self::RECORD]));
+        $orGroup = ['type' => 'group', 'operator' => 'OR', 'children' => [
+            WorkflowFactory::rule('@status', 'EQ', 'ACTIVE')['children'][0],
+            WorkflowFactory::rule('@state', 'EQ', 'TX')['children'][0],
+        ]];
+        $this->givenWorkflow(WorkflowFactory::condition([WorkflowFactory::emailAction()], 'CERTAIN', $orGroup));
+
+        $this->dispatchWorkflow(self::RECORD_ID);
+
+        $this->assertStringContainsString(
+            'where: { column: POLICY_ID, operator: EQ, value: "42", AND: [{ OR: ['.self::STATUS_IS_ACTIVE.', { column: STATE, operator: EQ, value: "TX" }] }] }',
+            $this->graphQLQueriesSent()[0]
+        );
+    }
+
     public function test_certain_condition_rules_carry_over_into_later_conditions(): void
     {
         $this->fakeGraphQL($this->graphQLRecords([self::RECORD]), $this->graphQLRecords([self::RECORD]));
@@ -449,7 +466,7 @@ class DispatchWorkflowServiceTest extends TestCase
         $this->assertSame('/local/feeds/list.csv', $this->executedActions()[0]->getFeedFile());
     }
 
-    public function test_custom_feed_download_failure_is_logged_and_the_run_continues(): void
+    public function test_custom_feed_download_failure_is_logged_and_the_condition_skipped(): void
     {
         $this->fakeGraphQL($this->graphQLRecords([self::RECORD]));
         $this->givenWorkflow(WorkflowFactory::condition([WorkflowFactory::emailAction()], 'CUSTOM_FEED', s3FilePath: '/feeds/list.csv'));
@@ -457,7 +474,7 @@ class DispatchWorkflowServiceTest extends TestCase
         $this->assertTrue($this->feedService(new \Exception('S3 unavailable'))->dispatch());
 
         Log::shouldHaveReceived('error')->with('WORKFLOW - Failed to download feed file from S3.', \Mockery::subset(['s3FilePath' => '/feeds/list.csv']));
-        $this->assertSame('', $this->executedActions()[0]->getFeedFile());
+        $this->assertSame([], $this->executedActions());
     }
 
     // getFileOnLocal() calls S3 statically, so it is overridden rather than injected.
