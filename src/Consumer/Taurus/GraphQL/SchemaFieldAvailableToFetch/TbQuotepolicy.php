@@ -80,6 +80,16 @@ class TbQuotepolicy extends AbstractSchema
                 ],
                 'jqFilter' => "{$this->queryPath}.quoteNo",
             ],
+            'ApplicantEmail' => [
+                'GraphQLschemaToReplace' => [
+                    'transaction' => [
+                        'ownerEmail' => [
+                            'email' => null,
+                        ],
+                    ],
+                ],
+                'jqFilter' => "{$this->queryPath}.transaction?.ownerEmail?.email?",
+            ],
         ];
 
         return $this->wrapFieldMappingSchemaUnderData($fieldMapping);
