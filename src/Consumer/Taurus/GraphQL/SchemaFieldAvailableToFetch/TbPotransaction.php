@@ -120,30 +120,39 @@ class TbPotransaction extends AbstractSchema
             ],
         ];
 
-        $fieldMapping = [
-            'PremiumDue' => [
-                'GraphQLschemaToReplace' => [
-                    'policyTermMaster' => [
-                        'id' => null,
-                        'transactions' => [
-                            'premiumChange' => null,
-                            'policyFees' => null,
-                        ],
-                    ],
-                    'policy' => [
-                        'accountMaster' => [
-                            'policyAccountingTransactionMaster' => [
-                                'termMasterId' => null,
-                                'transactionTypeCode' => null,
-                                'policyAccountingTransactionDetails' => [
-                                    'amount' => null,
-                                ],
-                            ],
+        $premiumDueSchema = [
+            'policyTermMaster' => [
+                'id' => null,
+                'transactions' => [
+                    'premiumChange' => null,
+                    'policyFees' => null,
+                ],
+            ],
+            'policy' => [
+                'accountMaster' => [
+                    'policyAccountingTransactionMaster' => [
+                        'termMasterId' => null,
+                        'transactionTypeCode' => null,
+                        'policyAccountingTransactionDetails' => [
+                            'amount' => null,
                         ],
                     ],
                 ],
-                'jqFilter' => "{termMasterId: {$this->queryPath}.policyTermMaster?.id?, termTransactions: {$this->queryPath}.policyTermMaster?.transactions?, accountingTransactions: {$this->queryPath}.policy?.accountMaster?.policyAccountingTransactionMaster?}",
+            ],
+        ];
+
+        $premiumDueJqFilter = "{termMasterId: {$this->queryPath}.policyTermMaster?.id?, termTransactions: {$this->queryPath}.policyTermMaster?.transactions?, accountingTransactions: {$this->queryPath}.policy?.accountMaster?.policyAccountingTransactionMaster?}";
+
+        $fieldMapping = [
+            'PremiumDue' => [
+                'GraphQLschemaToReplace' => $premiumDueSchema,
+                'jqFilter' => $premiumDueJqFilter,
                 'parseResultCallback' => 'parsePremiumDue',
+            ],
+            'RawPremiumDue' => [
+                'GraphQLschemaToReplace' => $premiumDueSchema,
+                'jqFilter' => $premiumDueJqFilter,
+                'parseResultCallback' => 'parseRawPremiumDue',
             ],
             'PolicyFees' => [
                 'GraphQLschemaToReplace' => [
@@ -1309,8 +1318,18 @@ class TbPotransaction extends AbstractSchema
     // Mirrors TbPatransactionmaster::checkNoPayPolicy().
     public function parsePremiumDue($premiumDueData)
     {
+        return $this->formatCurrency($this->calculatePremiumDue($premiumDueData));
+    }
+
+    public function parseRawPremiumDue($premiumDueData)
+    {
+        return number_format($this->calculatePremiumDue($premiumDueData), 2);
+    }
+
+    private function calculatePremiumDue($premiumDueData)
+    {
         if (! is_array($premiumDueData)) {
-            return $this->formatCurrency(0);
+            return 0;
         }
 
         $termMasterId = $premiumDueData['termMasterId'] ?? null;
@@ -1333,9 +1352,7 @@ class TbPotransaction extends AbstractSchema
             }
         }
 
-        $premiumDue = round($sumOfPremiumForTerm - abs($paidAmount), 2);
-
-        return $this->formatCurrency($premiumDue);
+        return round($sumOfPremiumForTerm - abs($paidAmount), 2);
     }
 
     private function sumPremiumChangeAndFees($premiumChangeAndFeesArr)

@@ -49,7 +49,15 @@ class Http
 
             $responseBody = json_decode($response->getBody(), true);
 
-            Log::info('WORKFLOW - Response status code: '.$response->getStatusCode());
+            $statusCode = $response->getStatusCode();
+            Log::info('WORKFLOW - Response status code: '.$statusCode);
+            if ($statusCode < 200 || $statusCode >= 300) {
+                Log::error('WORKFLOW - Non-2xx response received.', [
+                    'status_code' => $statusCode,
+                    'url' => $url,
+                    'response' => (string) $response->getBody(),
+                ]);
+            }
             if ($responseBody === null) {
                 Log::warning('WORKFLOW - Response body is empty or not valid JSON.');
             } else {
@@ -58,6 +66,14 @@ class Http
 
             return $responseBody;
         } catch (RequestException $e) {
+            $errorResponse = $e->getResponse();
+            Log::error('WORKFLOW - HTTP request failed.', [
+                'status_code' => $errorResponse?->getStatusCode(),
+                'url' => $url,
+                'message' => $e->getMessage(),
+                'response' => $errorResponse ? (string) $errorResponse->getBody() : null,
+            ]);
+
             throw new \Exception('HTTP Request failed: '.$e->getMessage());
         }
     }

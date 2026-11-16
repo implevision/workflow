@@ -76,6 +76,33 @@ class TbAgentTasksMasterMapping extends AbstractSchema
      */
     private function initializeFieldMapping()
     {
+        $premiumDueSchema = [
+            'agentTask' => [
+                'policyTransaction' => [
+                    'policyTermMaster' => [
+                        'id' => null,
+                        'transactions' => [
+                            'premiumChange' => null,
+                            'policyFees' => null,
+                        ],
+                    ],
+                    'policy' => [
+                        'accountMaster' => [
+                            'policyAccountingTransactionMaster' => [
+                                'termMasterId' => null,
+                                'transactionTypeCode' => null,
+                                'policyAccountingTransactionDetails' => [
+                                    'amount' => null,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $premiumDueJqFilter = "{$this->queryPath}.agentTask.policyTransaction as \$transaction | {termMasterId: \$transaction.policyTermMaster?.id?, termTransactions: \$transaction.policyTermMaster?.transactions?, accountingTransactions: \$transaction.policy?.accountMaster?.policyAccountingTransactionMaster?}";
+
         $addressStructure = [
             'addressTypeCode' => null,
             'houseNo' => null,
@@ -339,32 +366,14 @@ class TbAgentTasksMasterMapping extends AbstractSchema
                 'parseResultCallback' => 'parseDueDate',
             ],
             'PremiumDue' => [
-                'GraphQLschemaToReplace' => [
-                    'agentTask' => [
-                        'policyTransaction' => [
-                            'policyTermMaster' => [
-                                'id' => null,
-                                'transactions' => [
-                                    'premiumChange' => null,
-                                    'policyFees' => null,
-                                ],
-                            ],
-                            'policy' => [
-                                'accountMaster' => [
-                                    'policyAccountingTransactionMaster' => [
-                                        'termMasterId' => null,
-                                        'transactionTypeCode' => null,
-                                        'policyAccountingTransactionDetails' => [
-                                            'amount' => null,
-                                        ],
-                                    ],
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-                'jqFilter' => "{$this->queryPath}.agentTask.policyTransaction as \$transaction | {termMasterId: \$transaction.policyTermMaster?.id?, termTransactions: \$transaction.policyTermMaster?.transactions?, accountingTransactions: \$transaction.policy?.accountMaster?.policyAccountingTransactionMaster?}",
+                'GraphQLschemaToReplace' => $premiumDueSchema,
+                'jqFilter' => $premiumDueJqFilter,
                 'parseResultCallback' => 'parsePremiumDue',
+            ],
+            'RawPremiumDue' => [
+                'GraphQLschemaToReplace' => $premiumDueSchema,
+                'jqFilter' => $premiumDueJqFilter,
+                'parseResultCallback' => 'parseRawPremiumDue',
             ],
 
             'PolicyNumber' => [
@@ -1364,8 +1373,18 @@ class TbAgentTasksMasterMapping extends AbstractSchema
     // Mirrors TbPatransactionmaster::checkNoPayPolicy().
     public function parsePremiumDue($premiumDueData)
     {
+        return $this->formatCurrency($this->calculatePremiumDue($premiumDueData));
+    }
+
+    public function parseRawPremiumDue($premiumDueData)
+    {
+        return number_format($this->calculatePremiumDue($premiumDueData), 2);
+    }
+
+    private function calculatePremiumDue($premiumDueData)
+    {
         if (! is_array($premiumDueData)) {
-            return $this->formatCurrency(0);
+            return 0;
         }
 
         $termMasterId = $premiumDueData['termMasterId'] ?? null;
@@ -1388,9 +1407,7 @@ class TbAgentTasksMasterMapping extends AbstractSchema
             }
         }
 
-        $premiumDue = round($sumOfPremiumForTerm - abs($paidAmount), 2);
-
-        return $this->formatCurrency($premiumDue);
+        return round($sumOfPremiumForTerm - abs($paidAmount), 2);
     }
 
     public function parseMetadata($metadata, $key)
