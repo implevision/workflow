@@ -85,9 +85,16 @@ class GraphQLSchemaBuilderServiceTest extends TestCase
 
     public function test_generate_graphql_query_uses_named_args_instead_of_where_when_given(): void
     {
-        $query = $this->builder()->generateGraphQLQuery(['policyNumber' => null], 'PolicyRenewal', $this->rule('POLICY_ID', '7'), ['date' => '2026-01-31', 'days' => 15]);
+        $query = $this->builder()->generateGraphQLQuery(['policyNumber' => null], 'PolicyRenewal', [], ['date' => '2026-01-31', 'days' => 15]);
 
         $this->assertSame("query {\n  PolicyRenewal(date: \"2026-01-31\", days: 15){\n    policyNumber\n  }\n}", $query);
+    }
+
+    public function test_generate_graphql_query_appends_the_condition_to_named_args(): void
+    {
+        $query = $this->builder()->generateGraphQLQuery(['policyNumber' => null], 'PolicyRenewal', $this->rule('POLICY_ID', '7'), ['date' => '2026-01-31', 'days' => 15]);
+
+        $this->assertSame("query {\n  PolicyRenewal(date: \"2026-01-31\", days: 15, where: { column: POLICY_ID, operator: EQ, value: \"7\" }){\n    policyNumber\n  }\n}", $query);
     }
 
     public function test_where_condition_renders_a_single_rule(): void
