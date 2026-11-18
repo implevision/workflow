@@ -231,6 +231,23 @@ class DispatchWorkflowService extends AbstractDispatchService
     }
 
     /**
+     * The record / odyssey action this workflow is configured to run on - the event
+     * name passed to DispatchCustomEvents::fireEvent().
+     */
+    protected function triggerEvent(): ?string
+    {
+        $when = $this->workflowInfo['when'] ?? [];
+
+        $event = match ($when['effectiveActionToExecuteWorkflow'] ?? null) {
+            'ON_RECORD_ACTION' => $when['recordActionToExecuteWorkflow'] ?? null,
+            'ODYSSEY_ACTION' => $when['odysseyActionToExecuteWorkflow'] ?? null,
+            default => null,
+        };
+
+        return $event ?: null;
+    }
+
+    /**
      * Seeds the page and the workflow's date/event context, which modules with named
      * query args (PolicyRenewal, DeclarationPage) read back in getQueryArgs().
      */

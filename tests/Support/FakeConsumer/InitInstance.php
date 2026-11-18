@@ -34,6 +34,11 @@ class InitInstance
         return self::resolve('parentClass');
     }
 
+    public function getEventPlaceholderService()
+    {
+        return self::resolve('eventPlaceholder');
+    }
+
     public static function reset(): void
     {
         self::$services = [];

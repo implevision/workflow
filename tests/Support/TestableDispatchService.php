@@ -12,6 +12,13 @@ class TestableDispatchService extends AbstractDispatchService
         $this->initializeServices();
     }
 
+    public ?string $triggerEvent = null;
+
+    protected function triggerEvent(): ?string
+    {
+        return $this->triggerEvent;
+    }
+
     public function dispatch()
     {
         return null;

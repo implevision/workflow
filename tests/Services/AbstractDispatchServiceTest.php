@@ -144,6 +144,30 @@ class AbstractDispatchServiceTest extends TestCase
         $this->assertSame([], $mandated);
     }
 
+    public function test_the_triggering_events_placeholders_are_required_and_mandated(): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AttachUploadedDocument', 'PolicyNumber'], 'mandate' => ['AttachUploadedDocument']]];
+        $this->service->triggerEvent = 'DocumentUploaded';
+        $payload = ['emailRecipient' => 'CUSTOM', 'mandatoryPlaceholders' => ['PolicyNumber']];
+
+        [$required, $mandated] = $this->service->call('resolveActionDataRequirements', new FakeAction('EMAIL', $payload), 'EMAIL', $payload);
+
+        $this->assertSame(['FirstName', 'PolicyNumber', 'AttachUploadedDocument'], $required);
+        $this->assertSame(['PolicyNumber', 'AttachUploadedDocument'], $mandated);
+    }
+
+    public function test_an_event_without_placeholders_leaves_the_requirements_unchanged(): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AttachUploadedDocument'], 'mandate' => ['AttachUploadedDocument']]];
+        $this->service->triggerEvent = 'CREATE';
+        $payload = ['emailRecipient' => 'CUSTOM'];
+
+        [$required, $mandated] = $this->service->call('resolveActionDataRequirements', new FakeAction('EMAIL', $payload), 'EMAIL', $payload);
+
+        $this->assertSame(['FirstName', 'PolicyNumber'], $required);
+        $this->assertSame([], $mandated);
+    }
+
     public function test_create_record_action_also_requires_the_schema_create_record_placeholders(): void
     {
         $this->workflowService->moduleSchema->requiredPlaceholdersForCreateRecord = ['PolicyNumber', 'PolicyId'];

@@ -69,6 +69,31 @@ class FakeWorkflowService extends WorkflowService
         $this->scheduledWorkflows[] = $workflows;
     }
 
+    /**
+     * Placeholders per triggering event, as event => ['required' => [...], 'mandate' => [...]].
+     */
+    public array $eventPlaceholders = [];
+
+    public function getEventPlaceholderService()
+    {
+        $eventPlaceholders = $this->eventPlaceholders;
+
+        return new class($eventPlaceholders)
+        {
+            public function __construct(private array $eventPlaceholders) {}
+
+            public function getListOfRequiredData(?string $event): array
+            {
+                return $this->eventPlaceholders[$event]['required'] ?? [];
+            }
+
+            public function getListOfMandateData(?string $event): array
+            {
+                return $this->eventPlaceholders[$event]['mandate'] ?? [];
+            }
+        };
+    }
+
     public function addWorkflowLog($workflowId, $jobWorkflowId, $errorType, $exception = null): void
     {
         $this->errors[] = ['errorType' => $errorType, 'exception' => $exception];
