@@ -90,4 +90,15 @@ class InitInstance
             throw new \Exception("Email supressed by consumer service class '$emailSupressedByConsumerServiceClass' does not exist.");
         }
     }
+
+    public function getEventPlaceholderService()
+    {
+        $eventPlaceholderServiceClass = 'Taurus\\Workflow\\Consumer\\Nova\\Event\\EventPlaceholderService';
+
+        if (class_exists($eventPlaceholderServiceClass)) {
+            return new $eventPlaceholderServiceClass;
+        } else {
+            throw new \Exception("Event placeholder service class '$eventPlaceholderServiceClass' does not exist.");
+        }
+    }
 }

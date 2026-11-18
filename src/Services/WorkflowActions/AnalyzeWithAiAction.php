@@ -17,12 +17,12 @@ class AnalyzeWithAiAction extends AbstractWorkflowAction
 
     public function getListOfRequiredData()
     {
-        return [self::DOCUMENT_PLACEHOLDER];
+        return [];
     }
 
     public function getListOfMandateData()
     {
-        return [self::DOCUMENT_PLACEHOLDER];
+        return [];
     }
 
     public function execute()
@@ -33,7 +33,7 @@ class AnalyzeWithAiAction extends AbstractWorkflowAction
             return false;
         }
 
-        $results = array_map(fn ($row) => $this->analyze($row[self::DOCUMENT_PLACEHOLDER][0]), $data);
+        $results = array_map(fn ($row) => $this->analyze($row[self::DOCUMENT_PLACEHOLDER][0]), array_values($data));
 
         Event::dispatch(new PostActionEvent(getModuleForCurrentWorkflow(), [
             'workflowId' => $this->getWorkflowId(),

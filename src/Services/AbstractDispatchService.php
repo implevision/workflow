@@ -374,12 +374,22 @@ abstract class AbstractDispatchService
     }
 
     /**
+     * The event (record / odyssey action) that triggered this run, or null when the
+     * run was not triggered by an event (manual runs, date/time schedules).
+     */
+    protected function triggerEvent(): ?string
+    {
+        return null;
+    }
+
+    /**
      * Determines which placeholder fields an action needs and which are mandatory.
      *
-     * For EMAIL actions the recipient placeholder is also required (and mandated)
-     * unless the recipient is CUSTOM. $extraPlaceholders is merged into the required
-     * list only - it carries DispatchWorkflowService's placeHolderToExtract, which the
-     * manual engine has no equivalent of.
+     * The consumer's placeholders for the triggering event (see triggerEvent()) are
+     * added to both lists. For EMAIL actions the recipient placeholder is also
+     * required (and mandated) unless the recipient is CUSTOM. $extraPlaceholders is
+     * merged into the required list only - it carries DispatchWorkflowService's
+     * placeHolderToExtract, which the manual engine has no equivalent of.
      *
      * @return array{0: array, 1: array} [$listOfRequiredData, $listOfMandateData]
      */
@@ -393,6 +403,20 @@ abstract class AbstractDispatchService
         $listOfMandateData = $action->getListOfMandateData();
 
         $listOfRequiredData = array_merge($listOfRequiredData, $extraPlaceholders);
+
+        // Consumer wise placeholders the triggering event brings along
+        $triggerEvent = $this->triggerEvent();
+        if ($triggerEvent) {
+            $eventPlaceholderService = $this->workflowService->getEventPlaceholderService();
+            $listOfRequiredData = array_values(array_unique(array_merge(
+                $listOfRequiredData,
+                $eventPlaceholderService->getListOfRequiredData($triggerEvent)
+            )));
+            $listOfMandateData = array_values(array_unique(array_merge(
+                $listOfMandateData,
+                $eventPlaceholderService->getListOfMandateData($triggerEvent)
+            )));
+        }
 
         if ($actionType == 'CREATE_RECORD') {
             $listOfRequiredData = array_values(array_unique(array_merge(

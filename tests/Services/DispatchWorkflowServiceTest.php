@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Taurus\Workflow\Models\Workflow;
 use Taurus\Workflow\Repositories\Eloquent\WorkflowRepository;
 use Taurus\Workflow\Services\DispatchWorkflowService;
@@ -133,6 +134,45 @@ class DispatchWorkflowServiceTest extends TestCase
             'email' => ['agent@allowed.test'],
         ]], $action->getData());
         $this->assertSame('policy', getModuleForCurrentWorkflow());
+    }
+
+    #[DataProvider('triggeringEventWorkflows')]
+    public function test_the_triggering_events_placeholders_are_fetched_and_mandated(string $effectiveAction, string $recordAction, string $odysseyAction): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AgentEmail'], 'mandate' => ['AgentEmail']]];
+        $this->fakeGraphQL($this->graphQLRecords([[...self::RECORD, 'agentEmail' => null]]));
+        $this->workflowService->workflow = WorkflowFactory::workflow(
+            [WorkflowFactory::condition([WorkflowFactory::workflowOutputAction()])],
+            effectiveAction: $effectiveAction,
+            recordAction: $recordAction,
+            odysseyAction: $odysseyAction
+        );
+
+        $this->assertTrue($this->dispatchWorkflow(self::RECORD_ID));
+
+        $this->assertStringContainsString('agentEmail', $this->graphQLQueriesSent()[0]);
+        $this->assertSame([], $this->executedActions());
+        $this->assertSame(['MISSING_MANDATE_DATA'], $this->loggedErrorTypes());
+    }
+
+    public static function triggeringEventWorkflows(): array
+    {
+        return [
+            'record action' => ['ON_RECORD_ACTION', 'DocumentUploaded', ''],
+            'odyssey action' => ['ODYSSEY_ACTION', '', 'DocumentUploaded'],
+        ];
+    }
+
+    public function test_other_events_do_not_add_the_document_uploaded_placeholders(): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AgentEmail'], 'mandate' => ['AgentEmail']]];
+        $this->fakeGraphQL($this->graphQLRecords([self::RECORD]));
+        $this->givenWorkflow(WorkflowFactory::condition([WorkflowFactory::workflowOutputAction()]));
+
+        $this->assertTrue($this->dispatchWorkflow(self::RECORD_ID));
+
+        $this->assertStringNotContainsString('agentEmail', $this->graphQLQueriesSent()[0]);
+        $this->assertCount(1, $this->executedActions());
     }
 
     public function test_a_certain_condition_without_a_record_targets_every_matching_record(): void

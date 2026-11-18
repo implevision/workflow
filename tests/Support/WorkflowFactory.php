@@ -10,15 +10,16 @@ class WorkflowFactory
 
     public const MODULE = 'policy';
 
-    public static function workflow(array $conditions = [], bool $isActive = true, string $effectiveAction = 'ON_RECORD_ACTION', array $dateTimeInfo = []): WorkflowData
+    public static function workflow(array $conditions = [], bool $isActive = true, string $effectiveAction = 'ON_RECORD_ACTION', array $dateTimeInfo = [], string $recordAction = 'CREATE', string $odysseyAction = ''): WorkflowData
     {
         return WorkflowData::fromArray([
             'id' => self::ID,
             'detail' => ['module' => self::MODULE, 'name' => 'Test workflow', 'isActive' => $isActive],
             'when' => [
                 'effectiveActionToExecuteWorkflow' => $effectiveAction,
-                'recordActionToExecuteWorkflow' => 'CREATE',
+                'recordActionToExecuteWorkflow' => $recordAction,
                 'dateTimeInfoToExecuteWorkflow' => self::dateTimeInfo($dateTimeInfo),
+                'odysseyActionToExecuteWorkflow' => $odysseyAction,
             ],
             'workFlowConditions' => $conditions,
         ]);

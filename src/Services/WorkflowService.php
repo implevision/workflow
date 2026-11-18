@@ -784,6 +784,20 @@ class WorkflowService
         }
     }
 
+    /**
+     * Consumer wise placeholders a workflow needs because of the event that triggered it.
+     */
+    public function getEventPlaceholderService()
+    {
+        try {
+            return $this->getConsumerService()->getEventPlaceholderService();
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+
+            throw $e;
+        }
+    }
+
     private function getConsumerService()
     {
         try {
