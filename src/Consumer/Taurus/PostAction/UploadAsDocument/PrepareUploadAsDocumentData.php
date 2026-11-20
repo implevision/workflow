@@ -3,7 +3,6 @@
 namespace Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument;
 
 use Dompdf\Dompdf;
-use Illuminate\Support\Facades\DB;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\PostActionDataPreparerInterface;
 use Taurus\Workflow\Models\Workflow;
@@ -20,8 +19,6 @@ use Taurus\Workflow\Services\WorkflowEmailService;
  */
 class PrepareUploadAsDocumentData implements PostActionDataPreparerInterface
 {
-    private const SYSTEM_EMAIL_DOC_TYPE_CODE = 'SYSTEM_EMAIL';
-
     /**
      * Prepares the data for the "upload as document" post action based on the provided payload and placeholders.
      *
@@ -76,24 +73,15 @@ class PrepareUploadAsDocumentData implements PostActionDataPreparerInterface
             'docUrl' => $docUrl,
             'insertedByFlag' => 'System',
             'activityLogText' => "Email letter for '".$documentName."' generated and uploaded. Message ID - ".$messageId,
-            'desc' => self::prepareDescription($payload, $placeholders, $documentId),
+            'desc' => self::prepareDescription($payload, $placeholders),
         ];
     }
 
     /**
      * Description for the uploaded document, "{Workflow Description} to {recipient email}".
-     * It is set only for the System Email document type; every other type keeps no description.
      */
-    private static function prepareDescription(array $payload, array $placeholders, $documentId): ?string
+    private static function prepareDescription(array $payload, array $placeholders): ?string
     {
-        $systemEmailDocTypeId = DB::table('tb_doctypes')
-            ->where('s_DocTypeCode', self::SYSTEM_EMAIL_DOC_TYPE_CODE)
-            ->value('n_DocType_PK');
-
-        if (! $systemEmailDocTypeId || (int) $documentId !== (int) $systemEmailDocTypeId) {
-            return null;
-        }
-
         $workflow = Workflow::find($payload['workflowId'] ?? 0);
         // Fall back to the workflow name when it has no description
         $workflowDescription = trim($workflow->description ?? '') ?: trim($workflow->name ?? '');
