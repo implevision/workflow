@@ -43,7 +43,6 @@ class Http
             default:
                 throw new \InvalidArgumentException('Unsupported Content-Type: '.$contentType);
         }
-        \Log::info('WORKFLOW - Request options.', $options);
 
         try {
             $response = $client->request($method, $url, $options);
