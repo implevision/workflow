@@ -87,6 +87,7 @@ class UploadAsDocumentService
                 'docPath' => $docPath,
             ],
             'referenceNo' => $referenceNo,
+            'desc' => $preparedData['desc'] ?? null,
         ];
 
         try {
