@@ -546,14 +546,56 @@ class DispatchWorkflowServiceTest extends TestCase
         $this->assertSame('', $this->executedActions()[0]->getFeedFile());
     }
 
-    // getFileOnLocal() calls S3 statically, so it is overridden rather than injected.
-    private function feedService(string|\Exception $localFile): DispatchWorkflowService
+    #[DataProvider('documentUploadedFeeds')]
+    public function test_document_uploaded_feed_emails_require_the_event_context(array $tags, array $appendPlaceHolders, bool $expectSent, int $expectedQueries): void
     {
-        return new class(WorkflowFactory::ID, self::RECORD_ID, $localFile) extends DispatchWorkflowService
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['Tags'], 'mandate' => ['Tags']]];
+        $this->fakeGraphQL($this->graphQLRecords([[...self::RECORD, 'tags' => $tags]]));
+        $this->workflowService->workflow = WorkflowFactory::workflow(
+            [WorkflowFactory::condition([WorkflowFactory::emailAction()], 'CUSTOM_FEED', s3FilePath: '/feeds/list.csv')],
+            recordAction: 'DocumentUploaded'
+        );
+
+        $this->assertTrue($this->feedService('/local/feeds/list.csv', $appendPlaceHolders)->dispatch());
+
+        $this->assertCount($expectedQueries, $this->graphQLQueriesSent());
+        if ($expectSent) {
+            $this->assertSame('/local/feeds/list.csv', $this->executedActions()[0]->getFeedFile());
+            $this->assertSame([], $this->loggedErrorTypes());
+        } else {
+            $this->assertSame([], $this->executedActions());
+            $this->assertSame(['MISSING_MANDATE_DATA'], $this->loggedErrorTypes());
+        }
+    }
+
+    public static function documentUploadedFeeds(): array
+    {
+        return [
+            'record has no document' => [[], [], false, 1],
+            'record has a document' => [['doc-a'], [], true, 1],
+            'document appended by the event' => [[], ['Tags' => ['doc-a']], true, 0],
+        ];
+    }
+
+    public function test_feed_emails_for_other_events_do_not_query_the_event_context(): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['Tags'], 'mandate' => ['Tags']]];
+        $this->givenWorkflow(WorkflowFactory::condition([WorkflowFactory::emailAction()], 'CUSTOM_FEED', s3FilePath: '/feeds/list.csv'));
+
+        $this->feedService('/local/feeds/list.csv')->dispatch();
+
+        $this->assertSame([], $this->graphQLQueriesSent());
+        $this->assertSame('/local/feeds/list.csv', $this->executedActions()[0]->getFeedFile());
+    }
+
+    // getFileOnLocal() calls S3 statically, so it is overridden rather than injected.
+    private function feedService(string|\Exception $localFile, array $appendPlaceHolders = []): DispatchWorkflowService
+    {
+        return new class(WorkflowFactory::ID, self::RECORD_ID, $localFile, $appendPlaceHolders) extends DispatchWorkflowService
         {
-            public function __construct(int $workflowId, int $recordIdentifier, private string|\Exception $localFile)
+            public function __construct(int $workflowId, int $recordIdentifier, private string|\Exception $localFile, array $appendPlaceHolders)
             {
-                parent::__construct($workflowId, $recordIdentifier);
+                parent::__construct($workflowId, $recordIdentifier, [], $appendPlaceHolders);
             }
 
             protected function getFileOnLocal(string $s3FilePath): string

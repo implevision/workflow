@@ -394,8 +394,10 @@ abstract class AbstractDispatchService
      * The event-only placeholders are the event's placeholders the action did not ask
      * for itself (e.g. the uploaded documents for a webhook that never references
      * them). They are fetched and validated, but must not drive WEB_HOOK row expansion.
+     * The event's mandate list is also returned on its own, for paths that cannot run
+     * the normal validation (the CUSTOM_FEED email send).
      *
-     * @return array{0: array, 1: array, 2: array} [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders]
+     * @return array{0: array, 1: array, 2: array, 3: array} [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders, $eventMandateData]
      */
     protected function resolveActionDataRequirements(
         AbstractWorkflowAction $action,
@@ -410,6 +412,7 @@ abstract class AbstractDispatchService
 
         // Consumer wise placeholders the triggering event brings along
         $eventOnlyPlaceholders = [];
+        $eventMandateData = [];
         $triggerEvent = $this->triggerEvent();
         if ($triggerEvent) {
             $eventPlaceholderService = $this->workflowService->getEventPlaceholderService();
@@ -421,9 +424,10 @@ abstract class AbstractDispatchService
                 $listOfRequiredData,
                 $eventRequiredData
             )));
+            $eventMandateData = $eventPlaceholderService->getListOfMandateData($triggerEvent);
             $listOfMandateData = array_values(array_unique(array_merge(
                 $listOfMandateData,
-                $eventPlaceholderService->getListOfMandateData($triggerEvent)
+                $eventMandateData
             )));
         }
 
@@ -438,7 +442,7 @@ abstract class AbstractDispatchService
             $listOfRequiredData[] = $listOfMandateData[] = ucfirst($actionPayload['emailRecipient']);
         }
 
-        return [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders];
+        return [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders, $eventMandateData];
     }
 
     /**

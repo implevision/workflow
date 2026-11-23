@@ -434,7 +434,7 @@ class DispatchWorkflowService extends AbstractDispatchService
         [$placeHolderWithValues, $placeHolderToExtract] = $this->partitionPlaceholders($this->appendPlaceHolders);
 
         try {
-            [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders] = $this->resolveActionDataRequirements(
+            [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders, $eventMandateData] = $this->resolveActionDataRequirements(
                 $actionToExecute,
                 $actionType,
                 $actionPayload,
@@ -463,6 +463,19 @@ class DispatchWorkflowService extends AbstractDispatchService
             )];
         } elseif ($isCsvEmail) {
             $data = [];
+
+            // The feed rows never carry the triggering event's context (e.g. the uploaded
+            // document), so the event's mandates are checked against the triggering record
+            // before the feed is sent.
+            $signal = $this->validateEventContextForFeed($graphQLQuery, $eventMandateData, $placeHolderWithValues);
+
+            if ($signal === self::SIGNAL_NEXT_ACTION) {
+                return null;
+            }
+
+            if ($signal !== null) {
+                return $signal;
+            }
         } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
             $result = $this->fetchDataForAction(
                 $graphQLQuery,
@@ -523,6 +536,60 @@ class DispatchWorkflowService extends AbstractDispatchService
         }
 
         return null;
+    }
+
+    /**
+     * Checks the triggering event's mandated placeholders (e.g. DocumentUploaded ->
+     * AttachUploadedDocument) for a CUSTOM_FEED email, which skips validateAndFilterData().
+     *
+     * Values already supplied through appendPlaceHolders are used as they are; the rest
+     * are fetched for the triggering record. Returns null when at least one record has
+     * every mandated value, SIGNAL_NEXT_ACTION when none has (logged as
+     * MISSING_MANDATE_DATA) or the fetch failed, or the fetch's SIGNAL_STOP_ALL.
+     */
+    private function validateEventContextForFeed(array $graphQLQuery, array $eventMandateData, array $placeHolderWithValues): ?string
+    {
+        if (empty($eventMandateData)) {
+            return null;
+        }
+
+        $placeholdersToFetch = array_values(array_filter(
+            $eventMandateData,
+            fn ($placeholder) => empty($placeHolderWithValues[$placeholder])
+        ));
+
+        $rows = [$placeHolderWithValues];
+
+        if (! empty($placeholdersToFetch)) {
+            $result = $this->fetchDataForAction($graphQLQuery, $placeholdersToFetch, 'EMAIL', $placeHolderWithValues);
+
+            if ($result['signal'] !== null) {
+                return $result['signal'];
+            }
+
+            $rows = $result['data'];
+        }
+
+        $missingMandateDataRecords = $eventMandateData;
+        foreach ($rows as $row) {
+            $missingMandateDataRecords = array_values(array_filter(
+                $eventMandateData,
+                fn ($placeholder) => empty($row[$placeholder])
+            ));
+
+            if (empty($missingMandateDataRecords)) {
+                return null;
+            }
+        }
+
+        $logContext = [
+            'missingMandateDataRecords' => $missingMandateDataRecords,
+            'listOfMandateData' => $eventMandateData,
+        ];
+        $this->addWorkflowLog('MISSING_MANDATE_DATA', $logContext);
+        Log::warning("{$this->logPrefix} - Missing mandate data for the custom feed", $logContext);
+
+        return self::SIGNAL_NEXT_ACTION;
     }
 
     /**
