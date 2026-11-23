@@ -434,7 +434,7 @@ class DispatchWorkflowService extends AbstractDispatchService
         [$placeHolderWithValues, $placeHolderToExtract] = $this->partitionPlaceholders($this->appendPlaceHolders);
 
         try {
-            [$listOfRequiredData, $listOfMandateData] = $this->resolveActionDataRequirements(
+            [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders] = $this->resolveActionDataRequirements(
                 $actionToExecute,
                 $actionType,
                 $actionPayload,
@@ -463,7 +463,8 @@ class DispatchWorkflowService extends AbstractDispatchService
                 $graphQLQuery,
                 $listOfRequiredData,
                 $actionType,
-                $placeHolderWithValues
+                $placeHolderWithValues,
+                $eventOnlyPlaceholders
             );
 
             // SIGNAL_NEXT_ACTION simply abandons this action; anything else
@@ -533,7 +534,8 @@ class DispatchWorkflowService extends AbstractDispatchService
         array $graphQLQuery,
         array $listOfRequiredData,
         string $actionType,
-        array $placeHolderWithValues
+        array $placeHolderWithValues,
+        array $eventOnlyPlaceholders = []
     ): array {
         $queryResult = $this->buildAndExecuteGraphQLQuery(
             $listOfRequiredData,
@@ -573,7 +575,8 @@ class DispatchWorkflowService extends AbstractDispatchService
                 $queryResult,
                 $listOfRequiredData,
                 $actionType,
-                $placeHolderWithValues
+                $placeHolderWithValues,
+                $eventOnlyPlaceholders
             );
 
             if ($extraction['signal'] !== null) {
@@ -603,7 +606,8 @@ class DispatchWorkflowService extends AbstractDispatchService
         array $queryResult,
         array $listOfRequiredData,
         string $actionType,
-        array $placeHolderWithValues
+        array $placeHolderWithValues,
+        array $eventOnlyPlaceholders = []
     ): array {
         $moduleClassForGraphQL = $this->moduleSchema();
         $queryName = $moduleClassForGraphQL->getQueryName();
@@ -638,7 +642,7 @@ class DispatchWorkflowService extends AbstractDispatchService
                 }
 
                 if ($actionType == 'WEB_HOOK') {
-                    $data = array_merge($data, $this->generatePayloadFromParsedData($parsedData));
+                    $data = array_merge($data, $this->generatePayloadFromParsedData($parsedData, $eventOnlyPlaceholders));
                 } else {
                     // SET DATA FOR ACTION
                     $data[] = $parsedData;
@@ -709,16 +713,22 @@ class DispatchWorkflowService extends AbstractDispatchService
      * transmission. The structure of the payload will depend on
      * the specific requirements of the workflow.
      *
+     * Placeholders in $keepIntact (the triggering event's placeholders the webhook did
+     * not ask for, e.g. the uploaded documents) are copied whole onto every row and
+     * do not count towards the number of rows, so they never multiply or cut short
+     * the webhook's own payload rows.
+     *
      * @param  mixed  $parsedData  The data that has been parsed and
      *                             is to be converted into a payload.
+     * @param  array  $keepIntact  Placeholders whose values are not expanded.
      * @return array The generated payload based on the parsed data.
      */
-    private function generatePayloadFromParsedData($parsedData)
+    private function generatePayloadFromParsedData($parsedData, array $keepIntact = [])
     {
         $totalPayloadToGenerate = 0;
 
         foreach ($parsedData as $key => $value) {
-            if (is_array($value)) {
+            if (is_array($value) && ! in_array($key, $keepIntact, true)) {
                 $totalPayloadToGenerate = max($totalPayloadToGenerate, count($value));
             }
         }
@@ -731,7 +741,7 @@ class DispatchWorkflowService extends AbstractDispatchService
 
         $payload = [];
         foreach ($parsedData as $key => $value) {
-            if (! is_array($value)) {
+            if (! is_array($value) || in_array($key, $keepIntact, true)) {
                 for ($i = 0; $i < $totalPayloadToGenerate; $i++) {
                     $payload[$i][$key] = $value;
                 }

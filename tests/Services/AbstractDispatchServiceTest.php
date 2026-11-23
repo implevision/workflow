@@ -150,10 +150,23 @@ class AbstractDispatchServiceTest extends TestCase
         $this->service->triggerEvent = 'DocumentUploaded';
         $payload = ['emailRecipient' => 'CUSTOM', 'mandatoryPlaceholders' => ['PolicyNumber']];
 
-        [$required, $mandated] = $this->service->call('resolveActionDataRequirements', new FakeAction('EMAIL', $payload), 'EMAIL', $payload);
+        [$required, $mandated, $eventOnly] = $this->service->call('resolveActionDataRequirements', new FakeAction('EMAIL', $payload), 'EMAIL', $payload);
 
         $this->assertSame(['FirstName', 'PolicyNumber', 'AttachUploadedDocument'], $required);
         $this->assertSame(['PolicyNumber', 'AttachUploadedDocument'], $mandated);
+        $this->assertSame(['AttachUploadedDocument'], $eventOnly);
+    }
+
+    public function test_event_placeholders_the_action_asks_for_itself_are_not_event_only(): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AttachUploadedDocument'], 'mandate' => ['AttachUploadedDocument']]];
+        $this->service->triggerEvent = 'DocumentUploaded';
+        $payload = ['requiredData' => ['PolicyNumber', 'AttachUploadedDocument']];
+
+        [$required, , $eventOnly] = $this->service->call('resolveActionDataRequirements', new FakeAction('WEB_HOOK', $payload), 'WEB_HOOK', $payload);
+
+        $this->assertSame(['PolicyNumber', 'AttachUploadedDocument'], $required);
+        $this->assertSame([], $eventOnly);
     }
 
     public function test_an_event_without_placeholders_leaves_the_requirements_unchanged(): void

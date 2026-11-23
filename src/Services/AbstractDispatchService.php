@@ -391,7 +391,11 @@ abstract class AbstractDispatchService
      * merged into the required list only - it carries DispatchWorkflowService's
      * placeHolderToExtract, which the manual engine has no equivalent of.
      *
-     * @return array{0: array, 1: array} [$listOfRequiredData, $listOfMandateData]
+     * The event-only placeholders are the event's placeholders the action did not ask
+     * for itself (e.g. the uploaded documents for a webhook that never references
+     * them). They are fetched and validated, but must not drive WEB_HOOK row expansion.
+     *
+     * @return array{0: array, 1: array, 2: array} [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders]
      */
     protected function resolveActionDataRequirements(
         AbstractWorkflowAction $action,
@@ -405,12 +409,15 @@ abstract class AbstractDispatchService
         $listOfRequiredData = array_merge($listOfRequiredData, $extraPlaceholders);
 
         // Consumer wise placeholders the triggering event brings along
+        $eventOnlyPlaceholders = [];
         $triggerEvent = $this->triggerEvent();
         if ($triggerEvent) {
             $eventPlaceholderService = $this->workflowService->getEventPlaceholderService();
+            $eventRequiredData = $eventPlaceholderService->getListOfRequiredData($triggerEvent);
+            $eventOnlyPlaceholders = array_values(array_diff($eventRequiredData, $listOfRequiredData));
             $listOfRequiredData = array_values(array_unique(array_merge(
                 $listOfRequiredData,
-                $eventPlaceholderService->getListOfRequiredData($triggerEvent)
+                $eventRequiredData
             )));
             $listOfMandateData = array_values(array_unique(array_merge(
                 $listOfMandateData,
@@ -429,7 +436,7 @@ abstract class AbstractDispatchService
             $listOfRequiredData[] = $listOfMandateData[] = ucfirst($actionPayload['emailRecipient']);
         }
 
-        return [$listOfRequiredData, $listOfMandateData];
+        return [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders];
     }
 
     /**

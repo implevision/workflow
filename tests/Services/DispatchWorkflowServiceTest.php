@@ -175,6 +175,31 @@ class DispatchWorkflowServiceTest extends TestCase
         $this->assertCount(1, $this->executedActions());
     }
 
+    #[DataProvider('webhookEventListExpansion')]
+    public function test_event_only_lists_do_not_multiply_webhook_rows(array $webhookRequiredData, int $expectedRows): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['Tags'], 'mandate' => ['Tags']]];
+        $this->fakeGraphQL($this->graphQLRecords([[...self::RECORD, 'tags' => ['doc-a', 'doc-b']]]));
+        $this->workflowService->workflow = WorkflowFactory::workflow(
+            [WorkflowFactory::condition([['actionType' => 'WEB_HOOK', 'payload' => ['requiredData' => $webhookRequiredData]]])],
+            recordAction: 'DocumentUploaded'
+        );
+
+        $this->assertTrue($this->dispatchWorkflow(self::RECORD_ID));
+
+        $rows = $this->executedActions()[0]->getData();
+        $this->assertCount($expectedRows, $rows);
+        $this->assertSame([], $this->loggedErrorTypes());
+    }
+
+    public static function webhookEventListExpansion(): array
+    {
+        return [
+            'webhook never references the event list' => [['PolicyNumber'], 1],
+            'webhook references the event list itself' => [['PolicyNumber', 'Tags'], 2],
+        ];
+    }
+
     public function test_a_certain_condition_without_a_record_targets_every_matching_record(): void
     {
         $this->fakeGraphQL($this->graphQLRecords([self::RECORD, ['firstName' => 'Ben', 'policyNumber' => 'P-200', 'agentEmail' => 'ben@allowed.test']]));
@@ -537,10 +562,30 @@ class DispatchWorkflowServiceTest extends TestCase
         $this->generatePayload(['DriverName' => ['Ann', 'Ben'], 'DriverAge' => [30]]);
     }
 
-    private function generatePayload(array $parsedData): array
+    public function test_webhook_payload_keeps_event_only_lists_intact_on_a_scalar_only_row(): void
+    {
+        $documents = [['name' => 'a.pdf', 'path' => 'p/a'], ['name' => 'b.pdf', 'path' => 'p/b']];
+
+        $this->assertSame(
+            [['PolicyNumber' => 'P-1', 'AttachUploadedDocument' => $documents]],
+            $this->generatePayload(['PolicyNumber' => 'P-1', 'AttachUploadedDocument' => $documents], ['AttachUploadedDocument'])
+        );
+    }
+
+    public function test_webhook_payload_expands_only_its_own_lists_when_event_only_lists_are_shorter(): void
+    {
+        $documents = [['name' => 'a.pdf', 'path' => 'p/a']];
+
+        $this->assertSame([
+            ['DriverName' => 'Ann', 'AttachUploadedDocument' => $documents],
+            ['DriverName' => 'Ben', 'AttachUploadedDocument' => $documents],
+        ], $this->generatePayload(['DriverName' => ['Ann', 'Ben'], 'AttachUploadedDocument' => $documents], ['AttachUploadedDocument']));
+    }
+
+    private function generatePayload(array $parsedData, array $keepIntact = []): array
     {
         $service = new DispatchWorkflowService(WorkflowFactory::ID);
 
-        return (fn () => $this->generatePayloadFromParsedData($parsedData))->call($service);
+        return (fn () => $this->generatePayloadFromParsedData($parsedData, $keepIntact))->call($service);
     }
 }
