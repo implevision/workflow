@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Taurus\Workflow\Models\Workflow;
 use Taurus\Workflow\Repositories\Eloquent\WorkflowRepository;
 use Taurus\Workflow\Services\DispatchWorkflowService;
@@ -135,6 +136,71 @@ class DispatchWorkflowServiceTest extends TestCase
         $this->assertSame('policy', getModuleForCurrentWorkflow());
     }
 
+    #[DataProvider('triggeringEventWorkflows')]
+    public function test_the_triggering_events_placeholders_are_fetched_and_mandated(string $effectiveAction, string $recordAction, string $odysseyAction): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AgentEmail'], 'mandate' => ['AgentEmail']]];
+        $this->fakeGraphQL($this->graphQLRecords([[...self::RECORD, 'agentEmail' => null]]));
+        $this->workflowService->workflow = WorkflowFactory::workflow(
+            [WorkflowFactory::condition([WorkflowFactory::workflowOutputAction()])],
+            effectiveAction: $effectiveAction,
+            recordAction: $recordAction,
+            odysseyAction: $odysseyAction
+        );
+
+        $this->assertTrue($this->dispatchWorkflow(self::RECORD_ID));
+
+        $this->assertStringContainsString('agentEmail', $this->graphQLQueriesSent()[0]);
+        $this->assertSame([], $this->executedActions());
+        $this->assertSame(['MISSING_MANDATE_DATA'], $this->loggedErrorTypes());
+    }
+
+    public static function triggeringEventWorkflows(): array
+    {
+        return [
+            'record action' => ['ON_RECORD_ACTION', 'DocumentUploaded', ''],
+            'odyssey action' => ['ODYSSEY_ACTION', '', 'DocumentUploaded'],
+        ];
+    }
+
+    public function test_other_events_do_not_add_the_document_uploaded_placeholders(): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AgentEmail'], 'mandate' => ['AgentEmail']]];
+        $this->fakeGraphQL($this->graphQLRecords([self::RECORD]));
+        $this->givenWorkflow(WorkflowFactory::condition([WorkflowFactory::workflowOutputAction()]));
+
+        $this->assertTrue($this->dispatchWorkflow(self::RECORD_ID));
+
+        $this->assertStringNotContainsString('agentEmail', $this->graphQLQueriesSent()[0]);
+        $this->assertCount(1, $this->executedActions());
+    }
+
+    #[DataProvider('webhookEventListExpansion')]
+    public function test_event_only_lists_do_not_multiply_webhook_rows(array $webhookRequiredData, int $expectedRows, array $appendPlaceHolders = []): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['Tags'], 'mandate' => ['Tags']]];
+        $this->fakeGraphQL($this->graphQLRecords([[...self::RECORD, 'tags' => ['doc-a', 'doc-b']]]));
+        $this->workflowService->workflow = WorkflowFactory::workflow(
+            [WorkflowFactory::condition([['actionType' => 'WEB_HOOK', 'payload' => ['requiredData' => $webhookRequiredData]]])],
+            recordAction: 'DocumentUploaded'
+        );
+
+        $this->assertTrue($this->dispatchWorkflow(self::RECORD_ID, appendPlaceHolders: $appendPlaceHolders));
+
+        $rows = $this->executedActions()[0]->getData();
+        $this->assertCount($expectedRows, $rows);
+        $this->assertSame([], $this->loggedErrorTypes());
+    }
+
+    public static function webhookEventListExpansion(): array
+    {
+        return [
+            'webhook never references the event list' => [['PolicyNumber'], 1],
+            'webhook references the event list itself' => [['PolicyNumber', 'Tags'], 2],
+            'event list is also appended for lookup' => [['PolicyNumber'], 1, ['Tags' => '']],
+        ];
+    }
+
     public function test_a_certain_condition_without_a_record_targets_every_matching_record(): void
     {
         $this->fakeGraphQL($this->graphQLRecords([self::RECORD, ['firstName' => 'Ben', 'policyNumber' => 'P-200', 'agentEmail' => 'ben@allowed.test']]));
@@ -166,6 +232,26 @@ class DispatchWorkflowServiceTest extends TestCase
 
         $this->assertSame([], $this->graphQLQueriesSent());
         $this->assertSame([[...$data, 'hasPriorDataForWorkflow' => true, 'email' => ['manual@allowed.test']]], $this->executedActions()[0]->getData());
+    }
+
+    public function test_manually_invoked_runs_use_appended_placeholder_values_to_satisfy_event_mandates(): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AttachUploadedDocument'], 'mandate' => ['AttachUploadedDocument']]];
+        $this->workflowService->workflow = WorkflowFactory::workflow(
+            [WorkflowFactory::condition([WorkflowFactory::workflowOutputAction()])],
+            recordAction: 'DocumentUploaded'
+        );
+        $documents = [['name' => 'a.pdf', 'path' => 'p/a']];
+        $data = ['FirstName' => 'Manual', 'PolicyNumber' => 'P-1'];
+
+        $this->assertTrue($this->dispatchWorkflow(self::RECORD_ID, $data, ['AttachUploadedDocument' => $documents, 'PolicyNumber' => 'appended']));
+
+        $this->assertSame([], $this->loggedErrorTypes());
+        // assertEquals: key order is irrelevant, the caller's PolicyNumber must win over the appended one
+        $this->assertEquals(
+            [[...$data, 'AttachUploadedDocument' => $documents, 'hasPriorDataForWorkflow' => true]],
+            $this->executedActions()[0]->getData()
+        );
     }
 
     public function test_inactive_conditions_are_skipped(): void
@@ -460,14 +546,56 @@ class DispatchWorkflowServiceTest extends TestCase
         $this->assertSame('', $this->executedActions()[0]->getFeedFile());
     }
 
-    // getFileOnLocal() calls S3 statically, so it is overridden rather than injected.
-    private function feedService(string|\Exception $localFile): DispatchWorkflowService
+    #[DataProvider('documentUploadedFeeds')]
+    public function test_document_uploaded_feed_emails_require_the_event_context(array $tags, array $appendPlaceHolders, bool $expectSent, int $expectedQueries): void
     {
-        return new class(WorkflowFactory::ID, self::RECORD_ID, $localFile) extends DispatchWorkflowService
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['Tags'], 'mandate' => ['Tags']]];
+        $this->fakeGraphQL($this->graphQLRecords([[...self::RECORD, 'tags' => $tags]]));
+        $this->workflowService->workflow = WorkflowFactory::workflow(
+            [WorkflowFactory::condition([WorkflowFactory::emailAction()], 'CUSTOM_FEED', s3FilePath: '/feeds/list.csv')],
+            recordAction: 'DocumentUploaded'
+        );
+
+        $this->assertTrue($this->feedService('/local/feeds/list.csv', $appendPlaceHolders)->dispatch());
+
+        $this->assertCount($expectedQueries, $this->graphQLQueriesSent());
+        if ($expectSent) {
+            $this->assertSame('/local/feeds/list.csv', $this->executedActions()[0]->getFeedFile());
+            $this->assertSame([], $this->loggedErrorTypes());
+        } else {
+            $this->assertSame([], $this->executedActions());
+            $this->assertSame(['MISSING_MANDATE_DATA'], $this->loggedErrorTypes());
+        }
+    }
+
+    public static function documentUploadedFeeds(): array
+    {
+        return [
+            'record has no document' => [[], [], false, 1],
+            'record has a document' => [['doc-a'], [], true, 1],
+            'document appended by the event' => [[], ['Tags' => ['doc-a']], true, 0],
+        ];
+    }
+
+    public function test_feed_emails_for_other_events_do_not_query_the_event_context(): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['Tags'], 'mandate' => ['Tags']]];
+        $this->givenWorkflow(WorkflowFactory::condition([WorkflowFactory::emailAction()], 'CUSTOM_FEED', s3FilePath: '/feeds/list.csv'));
+
+        $this->feedService('/local/feeds/list.csv')->dispatch();
+
+        $this->assertSame([], $this->graphQLQueriesSent());
+        $this->assertSame('/local/feeds/list.csv', $this->executedActions()[0]->getFeedFile());
+    }
+
+    // getFileOnLocal() calls S3 statically, so it is overridden rather than injected.
+    private function feedService(string|\Exception $localFile, array $appendPlaceHolders = []): DispatchWorkflowService
+    {
+        return new class(WorkflowFactory::ID, self::RECORD_ID, $localFile, $appendPlaceHolders) extends DispatchWorkflowService
         {
-            public function __construct(int $workflowId, int $recordIdentifier, private string|\Exception $localFile)
+            public function __construct(int $workflowId, int $recordIdentifier, private string|\Exception $localFile, array $appendPlaceHolders)
             {
-                parent::__construct($workflowId, $recordIdentifier);
+                parent::__construct($workflowId, $recordIdentifier, [], $appendPlaceHolders);
             }
 
             protected function getFileOnLocal(string $s3FilePath): string
@@ -497,10 +625,30 @@ class DispatchWorkflowServiceTest extends TestCase
         $this->generatePayload(['DriverName' => ['Ann', 'Ben'], 'DriverAge' => [30]]);
     }
 
-    private function generatePayload(array $parsedData): array
+    public function test_webhook_payload_keeps_event_only_lists_intact_on_a_scalar_only_row(): void
+    {
+        $documents = [['name' => 'a.pdf', 'path' => 'p/a'], ['name' => 'b.pdf', 'path' => 'p/b']];
+
+        $this->assertSame(
+            [['PolicyNumber' => 'P-1', 'AttachUploadedDocument' => $documents]],
+            $this->generatePayload(['PolicyNumber' => 'P-1', 'AttachUploadedDocument' => $documents], ['AttachUploadedDocument'])
+        );
+    }
+
+    public function test_webhook_payload_expands_only_its_own_lists_when_event_only_lists_are_shorter(): void
+    {
+        $documents = [['name' => 'a.pdf', 'path' => 'p/a']];
+
+        $this->assertSame([
+            ['DriverName' => 'Ann', 'AttachUploadedDocument' => $documents],
+            ['DriverName' => 'Ben', 'AttachUploadedDocument' => $documents],
+        ], $this->generatePayload(['DriverName' => ['Ann', 'Ben'], 'AttachUploadedDocument' => $documents], ['AttachUploadedDocument']));
+    }
+
+    private function generatePayload(array $parsedData, array $keepIntact = []): array
     {
         $service = new DispatchWorkflowService(WorkflowFactory::ID);
 
-        return (fn () => $this->generatePayloadFromParsedData($parsedData))->call($service);
+        return (fn () => $this->generatePayloadFromParsedData($parsedData, $keepIntact))->call($service);
     }
 }

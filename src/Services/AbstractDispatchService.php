@@ -374,14 +374,30 @@ abstract class AbstractDispatchService
     }
 
     /**
+     * The event (record / odyssey action) that triggered this run, or null when the
+     * run was not triggered by an event (manual runs, date/time schedules).
+     */
+    protected function triggerEvent(): ?string
+    {
+        return null;
+    }
+
+    /**
      * Determines which placeholder fields an action needs and which are mandatory.
      *
-     * For EMAIL actions the recipient placeholder is also required (and mandated)
-     * unless the recipient is CUSTOM. $extraPlaceholders is merged into the required
-     * list only - it carries DispatchWorkflowService's placeHolderToExtract, which the
-     * manual engine has no equivalent of.
+     * The consumer's placeholders for the triggering event (see triggerEvent()) are
+     * added to both lists. For EMAIL actions the recipient placeholder is also
+     * required (and mandated) unless the recipient is CUSTOM. $extraPlaceholders is
+     * merged into the required list only - it carries DispatchWorkflowService's
+     * placeHolderToExtract, which the manual engine has no equivalent of.
      *
-     * @return array{0: array, 1: array} [$listOfRequiredData, $listOfMandateData]
+     * The event-only placeholders are the event's placeholders the action did not ask
+     * for itself (e.g. the uploaded documents for a webhook that never references
+     * them). They are fetched and validated, but must not drive WEB_HOOK row expansion.
+     * The event's mandate list is also returned on its own, for paths that cannot run
+     * the normal validation (the CUSTOM_FEED email send).
+     *
+     * @return array{0: array, 1: array, 2: array, 3: array} [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders, $eventMandateData]
      */
     protected function resolveActionDataRequirements(
         AbstractWorkflowAction $action,
@@ -389,10 +405,31 @@ abstract class AbstractDispatchService
         array $actionPayload,
         array $extraPlaceholders = []
     ): array {
-        $listOfRequiredData = $action->getListOfRequiredData();
+        $actionRequiredData = $action->getListOfRequiredData();
         $listOfMandateData = $action->getListOfMandateData();
 
-        $listOfRequiredData = array_merge($listOfRequiredData, $extraPlaceholders);
+        $listOfRequiredData = array_merge($actionRequiredData, $extraPlaceholders);
+
+        // Consumer wise placeholders the triggering event brings along
+        $eventOnlyPlaceholders = [];
+        $eventMandateData = [];
+        $triggerEvent = $this->triggerEvent();
+        if ($triggerEvent) {
+            $eventPlaceholderService = $this->workflowService->getEventPlaceholderService();
+            $eventRequiredData = $eventPlaceholderService->getListOfRequiredData($triggerEvent);
+            // Compared with the action's own requirements only: an appended lookup field
+            // (e.g. AttachUploadedDocument => '') is not something the action asked for.
+            $eventOnlyPlaceholders = array_values(array_diff($eventRequiredData, $actionRequiredData));
+            $listOfRequiredData = array_values(array_unique(array_merge(
+                $listOfRequiredData,
+                $eventRequiredData
+            )));
+            $eventMandateData = $eventPlaceholderService->getListOfMandateData($triggerEvent);
+            $listOfMandateData = array_values(array_unique(array_merge(
+                $listOfMandateData,
+                $eventMandateData
+            )));
+        }
 
         if ($actionType == 'CREATE_RECORD') {
             $listOfRequiredData = array_values(array_unique(array_merge(
@@ -405,7 +442,7 @@ abstract class AbstractDispatchService
             $listOfRequiredData[] = $listOfMandateData[] = ucfirst($actionPayload['emailRecipient']);
         }
 
-        return [$listOfRequiredData, $listOfMandateData];
+        return [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders, $eventMandateData];
     }
 
     /**

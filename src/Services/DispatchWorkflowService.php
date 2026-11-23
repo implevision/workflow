@@ -231,6 +231,23 @@ class DispatchWorkflowService extends AbstractDispatchService
     }
 
     /**
+     * The record / odyssey action this workflow is configured to run on - the event
+     * name passed to DispatchCustomEvents::fireEvent().
+     */
+    protected function triggerEvent(): ?string
+    {
+        $when = $this->workflowInfo['when'] ?? [];
+
+        $event = match ($when['effectiveActionToExecuteWorkflow'] ?? null) {
+            'ON_RECORD_ACTION' => $when['recordActionToExecuteWorkflow'] ?? null,
+            'ODYSSEY_ACTION' => $when['odysseyActionToExecuteWorkflow'] ?? null,
+            default => null,
+        };
+
+        return $event ?: null;
+    }
+
+    /**
      * Seeds the page and the workflow's date/event context, which modules with named
      * query args (PolicyRenewal, DeclarationPage) read back in getQueryArgs().
      */
@@ -417,7 +434,7 @@ class DispatchWorkflowService extends AbstractDispatchService
         [$placeHolderWithValues, $placeHolderToExtract] = $this->partitionPlaceholders($this->appendPlaceHolders);
 
         try {
-            [$listOfRequiredData, $listOfMandateData] = $this->resolveActionDataRequirements(
+            [$listOfRequiredData, $listOfMandateData, $eventOnlyPlaceholders, $eventMandateData] = $this->resolveActionDataRequirements(
                 $actionToExecute,
                 $actionType,
                 $actionPayload,
@@ -436,17 +453,36 @@ class DispatchWorkflowService extends AbstractDispatchService
         $isCsvEmail = $feedFile && $actionType == 'EMAIL' && ! $this->isManuallyInvoked;
 
         if ($this->isManuallyInvoked) {
-            // Caller data skips parseGraphQLResponse, so resolve the common placeholders here;
-            // a value the caller supplied wins
-            $data = [array_merge($this->resolveCommonPlaceholders($listOfRequiredData), $this->data)];
+            // Caller data skips parseGraphQLResponse, so resolve the common placeholders here
+            // and add the appended placeholders that already carry a value (e.g. the
+            // DocumentUploaded event's AttachUploadedDocument); a value the caller supplied wins
+            $data = [array_merge(
+                $this->resolveCommonPlaceholders($listOfRequiredData),
+                $placeHolderWithValues,
+                $this->data
+            )];
         } elseif ($isCsvEmail) {
             $data = [];
+
+            // The feed rows never carry the triggering event's context (e.g. the uploaded
+            // document), so the event's mandates are checked against the triggering record
+            // before the feed is sent.
+            $signal = $this->validateEventContextForFeed($graphQLQuery, $eventMandateData, $placeHolderWithValues);
+
+            if ($signal === self::SIGNAL_NEXT_ACTION) {
+                return null;
+            }
+
+            if ($signal !== null) {
+                return $signal;
+            }
         } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
             $result = $this->fetchDataForAction(
                 $graphQLQuery,
                 $listOfRequiredData,
                 $actionType,
-                $placeHolderWithValues
+                $placeHolderWithValues,
+                $eventOnlyPlaceholders
             );
 
             // SIGNAL_NEXT_ACTION simply abandons this action; anything else
@@ -503,6 +539,60 @@ class DispatchWorkflowService extends AbstractDispatchService
     }
 
     /**
+     * Checks the triggering event's mandated placeholders (e.g. DocumentUploaded ->
+     * AttachUploadedDocument) for a CUSTOM_FEED email, which skips validateAndFilterData().
+     *
+     * Values already supplied through appendPlaceHolders are used as they are; the rest
+     * are fetched for the triggering record. Returns null when at least one record has
+     * every mandated value, SIGNAL_NEXT_ACTION when none has (logged as
+     * MISSING_MANDATE_DATA) or the fetch failed, or the fetch's SIGNAL_STOP_ALL.
+     */
+    private function validateEventContextForFeed(array $graphQLQuery, array $eventMandateData, array $placeHolderWithValues): ?string
+    {
+        if (empty($eventMandateData)) {
+            return null;
+        }
+
+        $placeholdersToFetch = array_values(array_filter(
+            $eventMandateData,
+            fn ($placeholder) => empty($placeHolderWithValues[$placeholder])
+        ));
+
+        $rows = [$placeHolderWithValues];
+
+        if (! empty($placeholdersToFetch)) {
+            $result = $this->fetchDataForAction($graphQLQuery, $placeholdersToFetch, 'EMAIL', $placeHolderWithValues);
+
+            if ($result['signal'] !== null) {
+                return $result['signal'];
+            }
+
+            $rows = $result['data'];
+        }
+
+        $missingMandateDataRecords = $eventMandateData;
+        foreach ($rows as $row) {
+            $missingMandateDataRecords = array_values(array_filter(
+                $eventMandateData,
+                fn ($placeholder) => empty($row[$placeholder])
+            ));
+
+            if (empty($missingMandateDataRecords)) {
+                return null;
+            }
+        }
+
+        $logContext = [
+            'missingMandateDataRecords' => $missingMandateDataRecords,
+            'listOfMandateData' => $eventMandateData,
+        ];
+        $this->addWorkflowLog('MISSING_MANDATE_DATA', $logContext);
+        Log::warning("{$this->logPrefix} - Missing mandate data for the custom feed", $logContext);
+
+        return self::SIGNAL_NEXT_ACTION;
+    }
+
+    /**
      * Runs the GraphQL query for an action and turns the response into action data rows.
      *
      * Returns ['data' => array, 'signal' => string|null].
@@ -516,7 +606,8 @@ class DispatchWorkflowService extends AbstractDispatchService
         array $graphQLQuery,
         array $listOfRequiredData,
         string $actionType,
-        array $placeHolderWithValues
+        array $placeHolderWithValues,
+        array $eventOnlyPlaceholders = []
     ): array {
         $queryResult = $this->buildAndExecuteGraphQLQuery(
             $listOfRequiredData,
@@ -556,7 +647,8 @@ class DispatchWorkflowService extends AbstractDispatchService
                 $queryResult,
                 $listOfRequiredData,
                 $actionType,
-                $placeHolderWithValues
+                $placeHolderWithValues,
+                $eventOnlyPlaceholders
             );
 
             if ($extraction['signal'] !== null) {
@@ -586,7 +678,8 @@ class DispatchWorkflowService extends AbstractDispatchService
         array $queryResult,
         array $listOfRequiredData,
         string $actionType,
-        array $placeHolderWithValues
+        array $placeHolderWithValues,
+        array $eventOnlyPlaceholders = []
     ): array {
         $moduleClassForGraphQL = $this->moduleSchema();
         $queryName = $moduleClassForGraphQL->getQueryName();
@@ -621,7 +714,7 @@ class DispatchWorkflowService extends AbstractDispatchService
                 }
 
                 if ($actionType == 'WEB_HOOK') {
-                    $data = array_merge($data, $this->generatePayloadFromParsedData($parsedData));
+                    $data = array_merge($data, $this->generatePayloadFromParsedData($parsedData, $eventOnlyPlaceholders));
                 } else {
                     // SET DATA FOR ACTION
                     $data[] = $parsedData;
@@ -692,16 +785,22 @@ class DispatchWorkflowService extends AbstractDispatchService
      * transmission. The structure of the payload will depend on
      * the specific requirements of the workflow.
      *
+     * Placeholders in $keepIntact (the triggering event's placeholders the webhook did
+     * not ask for, e.g. the uploaded documents) are copied whole onto every row and
+     * do not count towards the number of rows, so they never multiply or cut short
+     * the webhook's own payload rows.
+     *
      * @param  mixed  $parsedData  The data that has been parsed and
      *                             is to be converted into a payload.
+     * @param  array  $keepIntact  Placeholders whose values are not expanded.
      * @return array The generated payload based on the parsed data.
      */
-    private function generatePayloadFromParsedData($parsedData)
+    private function generatePayloadFromParsedData($parsedData, array $keepIntact = [])
     {
         $totalPayloadToGenerate = 0;
 
         foreach ($parsedData as $key => $value) {
-            if (is_array($value)) {
+            if (is_array($value) && ! in_array($key, $keepIntact, true)) {
                 $totalPayloadToGenerate = max($totalPayloadToGenerate, count($value));
             }
         }
@@ -714,7 +813,7 @@ class DispatchWorkflowService extends AbstractDispatchService
 
         $payload = [];
         foreach ($parsedData as $key => $value) {
-            if (! is_array($value)) {
+            if (! is_array($value) || in_array($key, $keepIntact, true)) {
                 for ($i = 0; $i < $totalPayloadToGenerate; $i++) {
                     $payload[$i][$key] = $value;
                 }
