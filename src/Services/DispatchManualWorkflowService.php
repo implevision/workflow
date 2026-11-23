@@ -165,6 +165,10 @@ class DispatchManualWorkflowService extends AbstractDispatchService
             return null;
         }
 
+        foreach ($actionPayload['documentAttachments'] ?? [] as $index => $document) {
+            $data[0]['attachmentDocument'.$index] = [$document];
+        }
+
         if (config('app.env') != 'production') {
             Log::info("{$this->logPrefix} - Resolved data: ", $data);
         }
