@@ -5,6 +5,7 @@ namespace Taurus\Workflow\Consumer\Taurus\PostAction\UploadAsDocument;
 use Dompdf\Dompdf;
 use Taurus\Workflow\Consumer\Taurus\Helper;
 use Taurus\Workflow\Consumer\Taurus\PostAction\Handlers\PostActionDataPreparerInterface;
+use Taurus\Workflow\Models\Workflow;
 use Taurus\Workflow\Services\AWS\S3;
 use Taurus\Workflow\Services\WorkflowActions\Helpers\WorkflowOutput\PdfStamper;
 use Taurus\Workflow\Services\WorkflowEmailService;
@@ -72,7 +73,25 @@ class PrepareUploadAsDocumentData implements PostActionDataPreparerInterface
             'docUrl' => $docUrl,
             'insertedByFlag' => 'System',
             'activityLogText' => "Email letter for '".$documentName."' generated and uploaded. Message ID - ".$messageId,
+            'desc' => self::prepareDescription($payload, $placeholders),
         ];
+    }
+
+    /**
+     * Description for the uploaded document, "{Workflow Description} to {recipient email}".
+     */
+    private static function prepareDescription(array $payload, array $placeholders): ?string
+    {
+        $workflow = Workflow::find($payload['workflowId'] ?? 0);
+        // Fall back to the workflow name when it has no description
+        $workflowDescription = trim($workflow->description ?? '') ?: trim($workflow->name ?? '');
+        $recipients = implode(', ', (array) ($placeholders['email'] ?? []));
+
+        if ($workflowDescription === '' || $recipients === '') {
+            return $workflowDescription ?: null;
+        }
+
+        return $workflowDescription.' to '.$recipients;
     }
 
     private static function replacePlaceholders(string $template, array $placeholders): string
