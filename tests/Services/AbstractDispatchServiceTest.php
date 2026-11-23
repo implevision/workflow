@@ -157,6 +157,18 @@ class AbstractDispatchServiceTest extends TestCase
         $this->assertSame(['AttachUploadedDocument'], $eventOnly);
     }
 
+    public function test_appended_lookup_placeholders_do_not_make_event_placeholders_action_requested(): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AttachUploadedDocument'], 'mandate' => ['AttachUploadedDocument']]];
+        $this->service->triggerEvent = 'DocumentUploaded';
+        $payload = ['requiredData' => ['PolicyNumber']];
+
+        [$required, , $eventOnly] = $this->service->call('resolveActionDataRequirements', new FakeAction('WEB_HOOK', $payload), 'WEB_HOOK', $payload, ['AttachUploadedDocument']);
+
+        $this->assertSame(['PolicyNumber', 'AttachUploadedDocument'], $required);
+        $this->assertSame(['AttachUploadedDocument'], $eventOnly);
+    }
+
     public function test_event_placeholders_the_action_asks_for_itself_are_not_event_only(): void
     {
         $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AttachUploadedDocument'], 'mandate' => ['AttachUploadedDocument']]];

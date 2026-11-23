@@ -176,7 +176,7 @@ class DispatchWorkflowServiceTest extends TestCase
     }
 
     #[DataProvider('webhookEventListExpansion')]
-    public function test_event_only_lists_do_not_multiply_webhook_rows(array $webhookRequiredData, int $expectedRows): void
+    public function test_event_only_lists_do_not_multiply_webhook_rows(array $webhookRequiredData, int $expectedRows, array $appendPlaceHolders = []): void
     {
         $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['Tags'], 'mandate' => ['Tags']]];
         $this->fakeGraphQL($this->graphQLRecords([[...self::RECORD, 'tags' => ['doc-a', 'doc-b']]]));
@@ -185,7 +185,7 @@ class DispatchWorkflowServiceTest extends TestCase
             recordAction: 'DocumentUploaded'
         );
 
-        $this->assertTrue($this->dispatchWorkflow(self::RECORD_ID));
+        $this->assertTrue($this->dispatchWorkflow(self::RECORD_ID, appendPlaceHolders: $appendPlaceHolders));
 
         $rows = $this->executedActions()[0]->getData();
         $this->assertCount($expectedRows, $rows);
@@ -197,6 +197,7 @@ class DispatchWorkflowServiceTest extends TestCase
         return [
             'webhook never references the event list' => [['PolicyNumber'], 1],
             'webhook references the event list itself' => [['PolicyNumber', 'Tags'], 2],
+            'event list is also appended for lookup' => [['PolicyNumber'], 1, ['Tags' => '']],
         ];
     }
 

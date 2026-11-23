@@ -403,10 +403,10 @@ abstract class AbstractDispatchService
         array $actionPayload,
         array $extraPlaceholders = []
     ): array {
-        $listOfRequiredData = $action->getListOfRequiredData();
+        $actionRequiredData = $action->getListOfRequiredData();
         $listOfMandateData = $action->getListOfMandateData();
 
-        $listOfRequiredData = array_merge($listOfRequiredData, $extraPlaceholders);
+        $listOfRequiredData = array_merge($actionRequiredData, $extraPlaceholders);
 
         // Consumer wise placeholders the triggering event brings along
         $eventOnlyPlaceholders = [];
@@ -414,7 +414,9 @@ abstract class AbstractDispatchService
         if ($triggerEvent) {
             $eventPlaceholderService = $this->workflowService->getEventPlaceholderService();
             $eventRequiredData = $eventPlaceholderService->getListOfRequiredData($triggerEvent);
-            $eventOnlyPlaceholders = array_values(array_diff($eventRequiredData, $listOfRequiredData));
+            // Compared with the action's own requirements only: an appended lookup field
+            // (e.g. AttachUploadedDocument => '') is not something the action asked for.
+            $eventOnlyPlaceholders = array_values(array_diff($eventRequiredData, $actionRequiredData));
             $listOfRequiredData = array_values(array_unique(array_merge(
                 $listOfRequiredData,
                 $eventRequiredData
