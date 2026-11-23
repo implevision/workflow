@@ -233,6 +233,26 @@ class DispatchWorkflowServiceTest extends TestCase
         $this->assertSame([[...$data, 'hasPriorDataForWorkflow' => true, 'email' => ['manual@allowed.test']]], $this->executedActions()[0]->getData());
     }
 
+    public function test_manually_invoked_runs_use_appended_placeholder_values_to_satisfy_event_mandates(): void
+    {
+        $this->workflowService->eventPlaceholders = ['DocumentUploaded' => ['required' => ['AttachUploadedDocument'], 'mandate' => ['AttachUploadedDocument']]];
+        $this->workflowService->workflow = WorkflowFactory::workflow(
+            [WorkflowFactory::condition([WorkflowFactory::workflowOutputAction()])],
+            recordAction: 'DocumentUploaded'
+        );
+        $documents = [['name' => 'a.pdf', 'path' => 'p/a']];
+        $data = ['FirstName' => 'Manual', 'PolicyNumber' => 'P-1'];
+
+        $this->assertTrue($this->dispatchWorkflow(self::RECORD_ID, $data, ['AttachUploadedDocument' => $documents, 'PolicyNumber' => 'appended']));
+
+        $this->assertSame([], $this->loggedErrorTypes());
+        // assertEquals: key order is irrelevant, the caller's PolicyNumber must win over the appended one
+        $this->assertEquals(
+            [[...$data, 'AttachUploadedDocument' => $documents, 'hasPriorDataForWorkflow' => true]],
+            $this->executedActions()[0]->getData()
+        );
+    }
+
     public function test_inactive_conditions_are_skipped(): void
     {
         $this->fakeGraphQL($this->graphQLRecords([self::RECORD]));

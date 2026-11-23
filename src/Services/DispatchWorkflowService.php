@@ -453,9 +453,14 @@ class DispatchWorkflowService extends AbstractDispatchService
         $isCsvEmail = $feedFile && $actionType == 'EMAIL' && ! $this->isManuallyInvoked;
 
         if ($this->isManuallyInvoked) {
-            // Caller data skips parseGraphQLResponse, so resolve the common placeholders here;
-            // a value the caller supplied wins
-            $data = [array_merge($this->resolveCommonPlaceholders($listOfRequiredData), $this->data)];
+            // Caller data skips parseGraphQLResponse, so resolve the common placeholders here
+            // and add the appended placeholders that already carry a value (e.g. the
+            // DocumentUploaded event's AttachUploadedDocument); a value the caller supplied wins
+            $data = [array_merge(
+                $this->resolveCommonPlaceholders($listOfRequiredData),
+                $placeHolderWithValues,
+                $this->data
+            )];
         } elseif ($isCsvEmail) {
             $data = [];
         } elseif (count($graphQLQuery) || count($listOfRequiredData)) {
