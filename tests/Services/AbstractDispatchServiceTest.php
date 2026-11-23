@@ -221,6 +221,15 @@ class AbstractDispatchServiceTest extends TestCase
         $this->assertSame(['UNAUTHORIZED_EMAIL_ADDRESS'], $this->loggedErrorTypes());
     }
 
+    public function test_validate_and_filter_data_drops_rows_whose_recipients_have_all_unsubscribed(): void
+    {
+        $this->workflowService->unsubscribedEmails = ['agent@allowed.test'];
+
+        $result = $this->service->call('validateAndFilterData', [['AgentEmail' => 'agent@allowed.test']], [], ['emailRecipient' => 'AgentEmail'], 'EMAIL');
+
+        $this->assertFalse($result);
+    }
+
     public function test_custom_recipients_are_taken_from_the_payload(): void
     {
         $payload = ['emailRecipient' => 'CUSTOM', 'customEmailRecipients' => 'a@allowed.test,b@allowed.test'];
