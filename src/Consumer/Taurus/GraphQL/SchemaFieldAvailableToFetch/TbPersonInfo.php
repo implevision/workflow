@@ -336,6 +336,31 @@ class TbPersonInfo extends AbstractSchema
             'jqFilter' => "{$this->queryPath}.wyoUpn",
         ];
 
+        $fieldMapping['AgentName'] = [
+            'GraphQLschemaToReplace' => [
+                'agentUser' => [
+                    'screenName' => null,
+                ],
+            ],
+            'jqFilter' => "{$this->queryPath}.agentUser.screenName",
+        ];
+
+        $fieldMapping['AgentUserName'] = [
+            'GraphQLschemaToReplace' => [
+                'agentUser' => [
+                    'username' => null,
+                ],
+            ],
+            'jqFilter' => "{$this->queryPath}.agentUser.username",
+        ];
+
+        $fieldMapping['CeRejectionReason'] = [
+            'GraphQLschemaToReplace' => [
+                'ceRejectionReason' => null,
+            ],
+            'jqFilter' => "{$this->queryPath}.ceRejectionReason",
+        ];
+
         $fieldMapping['User'] = [
             'GraphQLschemaToReplace' => [
                 'userAgents' => [
