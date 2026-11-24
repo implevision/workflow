@@ -339,14 +339,13 @@ class TbPersonInfo extends AbstractSchema
         $fieldMapping['AgentName'] = [
             'GraphQLschemaToReplace' => [
                 'agentUser' => [
-                    'firstName' => null,
-                    'lastName' => null,
+                    'screenName' => null,
                 ],
             ],
-            'jqFilter' => "[{$this->queryPath}.agentUser.firstName, {$this->queryPath}.agentUser.lastName] | map(select(. != null and . != \"\")) | join(\" \")",
+            'jqFilter' => "{$this->queryPath}.agentUser.screenName",
         ];
 
-        $fieldMapping['AgentUsername'] = [
+        $fieldMapping['AgentUserName'] = [
             'GraphQLschemaToReplace' => [
                 'agentUser' => [
                     'username' => null,
