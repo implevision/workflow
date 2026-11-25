@@ -91,7 +91,7 @@ class SES
                     continue;
                 }
 
-                $messageId = self::sendEmail($from, $subject, $htmlContent, $item, $textContent, $jobWorkflowId, $replyTo, $configurationSetName, $tenant);
+                $messageId = self::sendEmail($from, $subject, $htmlContent, $item, $textContent, $jobWorkflowId, $replyTo, $configurationSetName, $tenant, $cc, $bcc, $workflowId);
             }
 
             return $messageId;
@@ -127,6 +127,11 @@ class SES
 
             unset($item['email']);
 
+            // A row has its own CC / BCC when their recipient type is a placeholder
+            $itemCc = (array) ($item['emailCc'] ?? $cc);
+            $itemBcc = (array) ($item['emailBcc'] ?? $bcc);
+            unset($item['emailCc'], $item['emailBcc']);
+
             \Log::info('WORKFLOW - Sending email to: ', (array) $recipient);
 
             $item = array_map(function ($value) {
@@ -136,8 +141,8 @@ class SES
             $bulkEmailEntries[] = [
                 'Destination' => [
                     'ToAddresses' => (array) $recipient,
-                    ...($cc ? ['CcAddresses' => (array) $cc] : []),
-                    ...($bcc ? ['BccAddresses' => (array) $bcc] : []),
+                    ...($itemCc ? ['CcAddresses' => $itemCc] : []),
+                    ...($itemBcc ? ['BccAddresses' => $itemBcc] : []),
                 ],
                 'ReplacementEmailContent' => [
                     'ReplacementTemplate' => [
@@ -286,6 +291,11 @@ class SES
         \Log::info('WORKFLOW - Sending email to: ', $recipient);
 
         unset($payload['email']);
+
+        // A row has its own CC / BCC when their recipient type is a placeholder
+        $cc = (array) ($payload['emailCc'] ?? $cc);
+        $bcc = (array) ($payload['emailBcc'] ?? $bcc);
+        unset($payload['emailCc'], $payload['emailBcc']);
 
         // Save attachments before removing arrays from payload
         $attachments = $payload['attachments'] ?? [];

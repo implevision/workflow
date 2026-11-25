@@ -405,6 +405,13 @@ abstract class AbstractDispatchService
             $listOfRequiredData[] = $listOfMandateData[] = ucfirst($actionPayload['emailRecipient']);
         }
 
+        // CC / BCC read from the record are fetched too, but are not mandatory
+        foreach (['ccRecipient', 'bccRecipient'] as $field) {
+            if ($actionType == 'EMAIL' && ! empty($actionPayload[$field]) && strtoupper($actionPayload[$field]) != 'CUSTOM') {
+                $listOfRequiredData[] = ucfirst($actionPayload[$field]);
+            }
+        }
+
         return [$listOfRequiredData, $listOfMandateData];
     }
 
@@ -617,6 +624,14 @@ abstract class AbstractDispatchService
                 }
 
                 $data[$index]['email'] = $emailAddresses;
+
+                // CC / BCC whose recipient type is a placeholder are read from this record
+                foreach (['ccRecipient' => 'emailCc', 'bccRecipient' => 'emailBcc'] as $field => $rowKey) {
+                    $type = $actionPayload[$field] ?? '';
+                    if ($type && strtoupper($type) != 'CUSTOM') {
+                        [$data[$index][$rowKey]] = EmailAddressValidator::partition($data[$index][ucfirst($type)] ?? []);
+                    }
+                }
 
                 // e.g. UnsubscribeURL needs the recipient, which is only known now. A row may
                 // come back split into one row per recipient; the extra rows are appended
